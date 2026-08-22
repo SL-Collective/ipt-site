@@ -191,6 +191,33 @@
     .shot-back { margin-right: -14px; }
   }
 
+  /* --- the hero on a wide screen -------------------------------------------------------
+     Measured on a 1280x900 desktop: the shots were 736px wide in a 1280px page, so 544px of
+     the viewport was empty, and the hero ran 273px past the fold — a visitor saw the top
+     quarter of two phones and nothing else. Stacking copy over screenshots is the right
+     composition on a phone and the wrong one on a monitor, where the room is sideways.
+
+     Two columns puts the empty width to work and brings both screens fully above the fold. No
+     markup changes: the copy is placed in column one by selector and `.shots` spans the rows
+     beside it, so the reading order a screen reader follows is exactly the order in the source. */
+  @media (min-width: 900px) {
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      column-gap: 40px; align-items: center; text-align: left;
+      padding: 24px 0 32px;
+    }
+    .hero > h1, .hero > .hero-sub, .hero > .cta-row, .hero > .cta-note { grid-column: 1; }
+    .hero > h1 { margin-top: 0; }
+    .hero-sub { margin-left: 0; margin-right: 0; max-width: 30rem; }
+    .cta-row { justify-content: flex-start; }
+    /* `1 / -1` rather than a row count: the column has four items today and this should not
+       become wrong the next time a line is added to it. */
+    .hero > .shots { grid-column: 2; grid-row: 1 / -1; margin: 0; align-self: center; }
+    /* Bigger, because they finally have a column of their own — and they are the product. */
+    .shot { width: min(258px, 21vw); }
+  }
+
   /* The performer's block, set apart so it does not read as more buyer copy. */
   .band {
     margin: 46px 0 0; padding: 26px 24px; border-radius: 20px;
