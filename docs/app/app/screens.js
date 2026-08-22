@@ -1495,6 +1495,15 @@ export function listeningScreen(store, {
     });
     player.append(play);
 
+    const marked = log.clip?.markers ?? [];
+    if (marked.length) {
+      player.append(el("p", {
+        class: "caption",
+        style: "margin:0; color: var(--accent)",
+        text: marked.length === 1 ? "They marked one spot" : `They marked ${marked.length} spots`,
+      }));
+    }
+
     return card(
       { class: "stack" },
       el(
@@ -2368,7 +2377,7 @@ export function youScreen(store, {
       { class: "stack" },
       el("h2", { text: "Your join code" }),
       el("p", { class: "numeral", style: "font-size:1.6rem; font-weight:700; letter-spacing:0.12em", text: groupedCode(studio.join_code) }),
-      el("p", { class: "caption", text: "Performers choose \"Join a studio\" and type this. It never uses characters that sound alike, so it is safe to read out across a rehearsal room. Everyone joins as a performer. To add another instructor, open the roster and make them one." }),
+      el("p", { class: "caption", text: "Performers choose “Join a studio” and type this. It never uses characters that sound alike, so it is safe to read out across a rehearsal room. Everyone joins as a performer. To add another instructor, open the roster and make them one." }),
     ),
     others.length > 1 && card(
       { class: "stack" },
