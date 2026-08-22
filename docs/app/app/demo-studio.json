@@ -1,0 +1,1795 @@
+{
+  "actions" : [
+    {
+      "blurb" : "A studio is your program: a roster, the work you assign, and a join code you give out once. Everything else in IPT hangs off it.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : true,
+      "name" : "createStudio",
+      "title" : "Starting a studio"
+    },
+    {
+      "blurb" : "A performer enters the code their instructor gave them and lands in the studio with this week's work already on screen. There is nothing else to set up.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : true,
+      "name" : "joinStudio",
+      "title" : "Joining a studio"
+    },
+    {
+      "blurb" : "Assign a piece with a weekly target and the instructions you would give in the room: hands separate, take it at 72, sticking as written. They have it on Tuesday night when you are not there.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : true,
+      "name" : "assignWork",
+      "title" : "Assigning the work"
+    },
+    {
+      "blurb" : "A performer starts a session before they play and stops it when they are done, so the time is counted rather than remembered. Sessions are saved on the phone first, so a practice room with no signal never loses one.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : true,
+      "name" : "logPractice",
+      "title" : "Logging a session"
+    },
+    {
+      "blurb" : "The performer plays their own click out loud and the take catches both, so their instructor can hear how the two line up. They mark the moments worth hearing, which turns a four-minute recording into a ten-second listen.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : false,
+      "name" : "recordTake",
+      "title" : "Recording a take"
+    },
+    {
+      "blurb" : "Each instruction on the plan gets ticked off as it is worked. It is deliberately worth no points, because a self-report you pay for stops being information.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : true,
+      "name" : "markFocusPoint",
+      "title" : "Ticking off the plan"
+    },
+    {
+      "blurb" : "You hear a take and send one line back. This is the step every rival product is missing, and a performer who thinks nobody listens stops recording inside a fortnight.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : true,
+      "name" : "acknowledgeSession",
+      "title" : "Saying you heard it"
+    },
+    {
+      "blurb" : "One line to one performer, with no thread and no reply. It reaches somebody who has gone quiet without turning the app into a chat client.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : true,
+      "name" : "sendNudge",
+      "title" : "Sending one line"
+    },
+    {
+      "blurb" : "Promote an assistant to instructor, move somebody between sections, or remove a performer who has left. A second adult in the room is the normal case, not the edge one.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : true,
+      "name" : "manageRoster",
+      "title" : "Running the roster"
+    },
+    {
+      "blurb" : "Tune what earns points, or switch the leaderboard off entirely. Running a studio without one is a first-class choice. What cannot be done is letting raw minutes outscore finishing the work.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : true,
+      "name" : "setScoring",
+      "title" : "How the studio scores"
+    },
+    {
+      "blurb" : "Tell IPT when your program is in session, so summer and exam weeks do not read as weeks somebody failed to practice. A break is not a miss.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : true,
+      "name" : "setTerms",
+      "title" : "When the studio is running"
+    },
+    {
+      "blurb" : "A performer's name, instrument and color are what the studio sees beside their practice. There are no photographs anywhere in IPT, and that is deliberate.",
+      "isPurchasable" : true,
+      "isStoreEnforced" : true,
+      "name" : "editProfile",
+      "title" : "Your profile"
+    },
+    {
+      "blurb" : "An account carries your studios, your practice and your recordings, on every device you sign in on. The demo needs none of it, which is why it is open to anybody.",
+      "isPurchasable" : false,
+      "isStoreEnforced" : true,
+      "name" : "createAccount",
+      "title" : "Your own account"
+    },
+    {
+      "blurb" : "A real account can be deleted from inside the app, and IPT names what that destroys before it happens: the studios, the people and the hours. The demo has no account to delete.",
+      "isPurchasable" : false,
+      "isStoreEnforced" : true,
+      "name" : "deleteAccount",
+      "title" : "Deleting an account"
+    }
+  ],
+  "assignments" : [
+    {
+      "audience" : [
+        "performer-2",
+        "performer-1"
+      ],
+      "focusPoints" : [
+
+      ],
+      "id" : "assignment-0",
+      "isOptional" : false,
+      "opensInWeek" : 1,
+      "section" : "doubles, 60 → 120",
+      "targetAmount" : 60,
+      "targetKind" : "minutes",
+      "title" : "Rudiment Ladder"
+    },
+    {
+      "focusPoints" : [
+        "Hands separate through the roll figures",
+        "mm. 17–24 four times clean before moving on",
+        "Sticking as written, no rewrites",
+        "One run at tempo, recorded"
+      ],
+      "id" : "assignment-1",
+      "isOptional" : false,
+      "opensInWeek" : 0,
+      "section" : "mm. 1–32, quarter = 88",
+      "targetAmount" : 120,
+      "targetKind" : "minutes",
+      "title" : "Delécluse Étude 9"
+    },
+    {
+      "focusPoints" : [
+        "Count the two bars of rest out loud every time",
+        "Dynamics at letter C, it is marked piano",
+        "Play it with the recording once"
+      ],
+      "id" : "assignment-2",
+      "isOptional" : false,
+      "opensInWeek" : 0,
+      "section" : "the shed at letter C",
+      "targetAmount" : 4,
+      "targetKind" : "sessions",
+      "title" : "Show Opener"
+    }
+  ],
+  "countIns" : [
+    {
+      "detail" : "Starts the moment you tap. Best when you're re-recording one short passage.",
+      "isStandard" : false,
+      "label" : "None",
+      "seconds" : 0
+    },
+    {
+      "detail" : "Enough to get your hands back on the instrument.",
+      "isStandard" : true,
+      "label" : "3 seconds",
+      "seconds" : 3
+    },
+    {
+      "detail" : "Room to pick an instrument up, or sit down at it.",
+      "isStandard" : false,
+      "label" : "5 seconds",
+      "seconds" : 5
+    },
+    {
+      "detail" : "For when the phone is across the room from you.",
+      "isStandard" : false,
+      "label" : "10 seconds",
+      "seconds" : 10
+    }
+  ],
+  "focusMarks" : [
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 0,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 1,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 2,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 3,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 0,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 1,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 2,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 3,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 0,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 1,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 2,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-0",
+      "pointIndex" : 3,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-0",
+      "pointIndex" : 0,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-0",
+      "pointIndex" : 1,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-0",
+      "pointIndex" : 0,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-0",
+      "pointIndex" : 1,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-0",
+      "pointIndex" : 0,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-0",
+      "pointIndex" : 1,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-2",
+      "pointIndex" : 0,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-2",
+      "pointIndex" : 1,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-2",
+      "pointIndex" : 2,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-2",
+      "pointIndex" : 3,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-2",
+      "pointIndex" : 0,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-2",
+      "pointIndex" : 0,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-2",
+      "pointIndex" : 1,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-2",
+      "pointIndex" : 2,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-2",
+      "pointIndex" : 0,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-2",
+      "pointIndex" : 1,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-2",
+      "pointIndex" : 0,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-2",
+      "pointIndex" : 0,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-2",
+      "pointIndex" : 1,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-3",
+      "pointIndex" : 0,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-3",
+      "pointIndex" : 1,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-3",
+      "pointIndex" : 0,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-3",
+      "pointIndex" : 1,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-3",
+      "pointIndex" : 2,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-3",
+      "pointIndex" : 3,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-3",
+      "pointIndex" : 0,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-3",
+      "pointIndex" : 1,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-3",
+      "pointIndex" : 2,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-3",
+      "pointIndex" : 3,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-3",
+      "pointIndex" : 0,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-3",
+      "pointIndex" : 0,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-3",
+      "pointIndex" : 1,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-3",
+      "pointIndex" : 0,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-3",
+      "pointIndex" : 1,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-4",
+      "pointIndex" : 0,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-4",
+      "pointIndex" : 1,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-4",
+      "pointIndex" : 2,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-4",
+      "pointIndex" : 3,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "performerID" : "performer-4",
+      "pointIndex" : 0,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-4",
+      "pointIndex" : 0,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "performerID" : "performer-4",
+      "pointIndex" : 1,
+      "week" : 0
+    }
+  ],
+  "help" : {
+    "instructor" : [
+      {
+        "body" : "\"Practice 120 minutes\" gets you a part played start to finish nine times. Give them the instruction you would give in the room: hands separate, take it at 72, fix the release in bar 12. They have it on Tuesday night when you are not there.",
+        "title" : "Assign the work, not the minutes"
+      },
+      {
+        "body" : "Performers record a short take with their own click playing out loud, so you hear whether they stayed with it. They mark the moments worth hearing, which turns a four-minute take into a ten-second listen.",
+        "title" : "Hear it, don't take their word for it"
+      },
+      {
+        "body" : "Your dashboard puts whoever needs you first, and the performers who are doing fine stay out of the way. Listen to a take and send one line back. That is the whole job, and it is what keeps them recording.",
+        "title" : "Thirty seconds on a Monday"
+      }
+    ],
+    "instructorQuestions" : [
+      {
+        "answer" : "Everything you assigned that week, finished. Time rounds down: 44 minutes of a 45-minute target is not met, because crediting a minute somebody did not practice is the one error that discredits every other number.",
+        "question" : "What counts as a week being met?"
+      },
+      {
+        "answer" : "A week you assigned nothing in is not a week anybody failed. If your program has real breaks, set them under Terms and weeks outside them stop counting against anybody. A summer break used to reset every streak in the studio.",
+        "question" : "Why did somebody's streak not break over the holidays?"
+      },
+      {
+        "answer" : "Yes, and the performer can mark the moments worth hearing. Listen to all works down the queue one clip at a time, one performer at a time, so nobody's fourth take is heard before somebody else's first.",
+        "question" : "Can I see how long a recording is before I play it?"
+      },
+      {
+        "answer" : "Practice is saved on their own device before it is sent, so it survives a basement. It appears for you when their app next has a connection. If a session says it could not be added to the studio, the assignment it belonged to was probably deleted.",
+        "question" : "Somebody says they practiced and it is not here."
+      },
+      {
+        "answer" : "Settings → Scoring → No points. The standings disappear entirely rather than sitting there empty, and assignments, practice and recordings work exactly the same. Plenty of programs run better without a leaderboard.",
+        "question" : "Can I turn the points off?"
+      }
+    ],
+    "instructorQuestionsNoPoints" : [
+      {
+        "answer" : "Everything you assigned that week, finished. Time rounds down: 44 minutes of a 45-minute target is not met, because crediting a minute somebody did not practice is the one error that discredits every other number.",
+        "question" : "What counts as a week being met?"
+      },
+      {
+        "answer" : "A week you assigned nothing in is not a week anybody failed. If your program has real breaks, set them under Terms and weeks outside them stop counting against anybody. A summer break used to reset every streak in the studio.",
+        "question" : "Why did somebody's streak not break over the holidays?"
+      },
+      {
+        "answer" : "Yes, and the performer can mark the moments worth hearing. Listen to all works down the queue one clip at a time, one performer at a time, so nobody's fourth take is heard before somebody else's first.",
+        "question" : "Can I see how long a recording is before I play it?"
+      },
+      {
+        "answer" : "Practice is saved on their own device before it is sent, so it survives a basement. It appears for you when their app next has a connection. If a session says it could not be added to the studio, the assignment it belonged to was probably deleted.",
+        "question" : "Somebody says they practiced and it is not here."
+      },
+      {
+        "answer" : "This studio is set to No points, so there is no leaderboard and no scores anywhere. Settings → Scoring turns them back on.",
+        "question" : "Where did the standings go?"
+      }
+    ],
+    "performer" : [
+      {
+        "body" : "Start a session before you play and stop it when you are done. It counts the time so you do not have to remember it, and what your instructor asked for is on the screen while you work.",
+        "title" : "Practice with the app running"
+      },
+      {
+        "body" : "Play your own click out loud in the room, and the recording catches your playing and the click together. While it is rolling, Mark this spot flags the moment you want heard, so your instructor goes straight to it.",
+        "title" : "Record a take, mark the good bit"
+      },
+      {
+        "body" : "Your instructor hears what you sent and can send one line back. Nobody else in the studio can hear your recordings or read your notes. They only see that you practiced.",
+        "title" : "Somebody listens"
+      }
+    ],
+    "performerQuestions" : [
+      {
+        "answer" : "Your instructors, and nobody else. The rest of the studio can see that you practiced and for how long, but never your recordings, and never the notes you write.",
+        "question" : "Who can hear my recordings?"
+      },
+      {
+        "answer" : "Anything under two minutes is thrown away, and the app tells you when that happens. Otherwise starting and stopping four times would finish a week's work.",
+        "question" : "Does a really short session count?"
+      },
+      {
+        "answer" : "It is safe. Sessions are saved on this device before they go anywhere, so nothing is lost in a room with no signal. It goes out by itself the next time you have a connection.",
+        "question" : "My practice says it is waiting to send."
+      },
+      {
+        "answer" : "Minutes always round down, so 44 minutes of a 45-minute target is not met. It works the same way for everybody, which is the only reason the standings mean anything.",
+        "question" : "Why did my time round down?"
+      },
+      {
+        "answer" : "No. Recording is how your instructor hears whether you stayed with the click, and it is the part they can actually respond to. A session still counts without one.",
+        "question" : "Do I have to record something?"
+      }
+    ],
+    "performerQuestionsNoPoints" : [
+      {
+        "answer" : "Your instructors, and nobody else. The rest of the studio can see that you practiced and for how long, but never your recordings, and never the notes you write.",
+        "question" : "Who can hear my recordings?"
+      },
+      {
+        "answer" : "Anything under two minutes is thrown away, and the app tells you when that happens. Otherwise starting and stopping four times would finish a week's work.",
+        "question" : "Does a really short session count?"
+      },
+      {
+        "answer" : "It is safe. Sessions are saved on this device before they go anywhere, so nothing is lost in a room with no signal. It goes out by itself the next time you have a connection.",
+        "question" : "My practice says it is waiting to send."
+      },
+      {
+        "answer" : "Minutes always round down, so 44 minutes of a 45-minute target is not met. It works the same way for everybody, which is the only reason the standings mean anything.",
+        "question" : "Why did my time round down?"
+      },
+      {
+        "answer" : "No. Recording is how your instructor hears whether you stayed with the click, and it is the part they can actually respond to. A session still counts without one.",
+        "question" : "Do I have to record something?"
+      },
+      {
+        "answer" : "Not in this studio. Your instructor has turned scoring off. Everything else works the same.",
+        "question" : "Are there points?"
+      }
+    ]
+  },
+  "instructorName" : "Dana Whitfield",
+  "joinCode" : "RUDMNT",
+  "notificationVolumes" : [
+    {
+      "instructorDetail" : "Nothing at all. Nothing is scheduled and nothing is delivered.",
+      "instructorExpectation" : "0 a week",
+      "label" : "Off",
+      "name" : "off",
+      "performerDetail" : "Nothing at all. Nothing is scheduled and nothing is delivered.",
+      "performerExpectation" : "0 a week"
+    },
+    {
+      "instructorDetail" : "One summary at the end of the practice week, and a nudge when takes have been waiting to be heard.",
+      "instructorExpectation" : "up to 4 a week",
+      "label" : "Essential only",
+      "name" : "essential",
+      "performerDetail" : "When your instructor listens to a take, a streak about to break, and the last day of the week with a target still open.",
+      "performerExpectation" : "0–3 a week"
+    },
+    {
+      "instructorDetail" : "One digest a day of who submitted, the weekly summary, and a nudge when takes have been waiting.",
+      "instructorExpectation" : "up to 11 a week",
+      "label" : "Balanced",
+      "name" : "balanced",
+      "performerDetail" : "The above, plus a daily nudge on days you're behind and a wrap-up when the week closes.",
+      "performerExpectation" : "up to 7 a week"
+    },
+    {
+      "instructorDetail" : "A note each time a performer submits, plus the digests.",
+      "instructorExpectation" : "one per submission",
+      "label" : "Everything",
+      "name" : "everything",
+      "performerDetail" : "A reminder every day, whether or not you're behind.",
+      "performerExpectation" : "8–10 a week"
+    }
+  ],
+  "nudgeSuggestions" : [
+    "Checking in. Anything getting in the way this week?",
+    "Still time to get this week's target in.",
+    "Would love to hear a clip of this one.",
+    "Nice work last week. Keep it going."
+  ],
+  "offer" : {
+    "checkoutBase" : "https://buy.stripe.com/00w28s2GXgbM0Kx6NF3Ru00",
+    "isBuyable" : true,
+    "line" : "$4.99 once. Instructors and performers, every feature, on every device you sign in on.",
+    "priceCents" : 499,
+    "priceText" : "$4.99",
+    "reassurance" : "No subscription, no renewal, and no per-student pricing."
+  },
+  "performerSeatID" : "performer-0",
+  "performers" : [
+    {
+      "displayName" : "Ana Reyes",
+      "id" : "performer-0",
+      "instrument" : "Marimba 1",
+      "paint" : "plum"
+    },
+    {
+      "displayName" : "Jonah Park",
+      "id" : "performer-1",
+      "instrument" : "Snare",
+      "paint" : "indigo"
+    },
+    {
+      "displayName" : "Marcus Webb",
+      "id" : "performer-2",
+      "instrument" : "Snare",
+      "paint" : "teal"
+    },
+    {
+      "displayName" : "Priya Nair",
+      "id" : "performer-3",
+      "instrument" : "Vibraphone",
+      "paint" : "moss"
+    },
+    {
+      "displayName" : "Theo Lindqvist",
+      "id" : "performer-4",
+      "instrument" : "Bass 3",
+      "paint" : "clay"
+    }
+  ],
+  "playbackRates" : [
+    {
+      "isStandard" : true,
+      "label" : "1×",
+      "spokenLabel" : "Normal speed",
+      "value" : 1
+    },
+    {
+      "isStandard" : false,
+      "label" : "1.25×",
+      "spokenLabel" : "1.25 times speed",
+      "value" : 1.25
+    },
+    {
+      "isStandard" : false,
+      "label" : "1.5×",
+      "spokenLabel" : "1.5 times speed",
+      "value" : 1.5
+    },
+    {
+      "isStandard" : false,
+      "label" : "2×",
+      "spokenLabel" : "Double speed",
+      "value" : 2
+    }
+  ],
+  "privacyPolicyURL" : "https://iptmusic.com/privacy",
+  "scoringPresets" : [
+    {
+      "detail" : "Finishing the week's assignment is worth the most. Minutes are worth almost nothing.",
+      "name" : "completionFirst",
+      "rules" : {
+        "clipBonus" : 10,
+        "clipBonusWeeklyCap" : 30,
+        "completionPoints" : 100,
+        "keepsScore" : true,
+        "minimumCountableSession" : 120,
+        "minutePointsPerBlock" : 1,
+        "minutePointsWeeklyCap" : 10,
+        "minutesPerBlock" : 15,
+        "streakBonusCap" : 100,
+        "streakBonusPerWeek" : 25
+      },
+      "title" : "Completion first"
+    },
+    {
+      "detail" : "Coming back week after week pays the most. Best for a program building the habit.",
+      "name" : "consistencyFirst",
+      "rules" : {
+        "clipBonus" : 10,
+        "clipBonusWeeklyCap" : 30,
+        "completionPoints" : 100,
+        "keepsScore" : true,
+        "minimumCountableSession" : 120,
+        "minutePointsPerBlock" : 1,
+        "minutePointsWeeklyCap" : 10,
+        "minutesPerBlock" : 15,
+        "streakBonusCap" : 300,
+        "streakBonusPerWeek" : 60
+      },
+      "title" : "Consistency first"
+    },
+    {
+      "detail" : "Recording proof pays more and targets pay less. Gentler on beginners.",
+      "name" : "effortFriendly",
+      "rules" : {
+        "clipBonus" : 20,
+        "clipBonusWeeklyCap" : 59,
+        "completionPoints" : 60,
+        "keepsScore" : true,
+        "minimumCountableSession" : 120,
+        "minutePointsPerBlock" : 1,
+        "minutePointsWeeklyCap" : 10,
+        "minutesPerBlock" : 15,
+        "streakBonusCap" : 60,
+        "streakBonusPerWeek" : 15
+      },
+      "title" : "Effort friendly"
+    },
+    {
+      "detail" : "No score and no standings. Assignments, practice and recordings work exactly the same.",
+      "name" : "none",
+      "rules" : {
+        "clipBonus" : 10,
+        "clipBonusWeeklyCap" : 30,
+        "completionPoints" : 100,
+        "keepsScore" : false,
+        "minimumCountableSession" : 120,
+        "minutePointsPerBlock" : 1,
+        "minutePointsWeeklyCap" : 10,
+        "minutesPerBlock" : 15,
+        "streakBonusCap" : 100,
+        "streakBonusPerWeek" : 25
+      },
+      "title" : "No points"
+    }
+  ],
+  "selfReportMark" : "Added afterwards",
+  "sessions" : [
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+        6.5,
+        14
+      ],
+      "clipSeconds" : 22,
+      "duration" : 2400,
+      "offsetSeconds" : 61200,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 68400,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 154800,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 234000,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 327600,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 406800,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 500400,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+        6.5,
+        14
+      ],
+      "clipSeconds" : 22,
+      "duration" : 2400,
+      "heardOffsetSeconds" : 623600,
+      "instructorNote" : "That's it. The roll speaks now.",
+      "offsetSeconds" : 61200,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : true,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 68400,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 154800,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 234000,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 327600,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 406800,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 500400,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 3300,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 5400,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 6600,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 9900,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 10800,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 13200,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+        6.5,
+        14
+      ],
+      "clipSeconds" : 22,
+      "duration" : 2400,
+      "note" : "Left hand still drags coming out of the roll.",
+      "offsetSeconds" : 16200,
+      "performerID" : "performer-0",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+        9
+      ],
+      "clipSeconds" : 22,
+      "duration" : 2400,
+      "offsetSeconds" : 61620,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 68820,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 155220,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 234420,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 328020,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 407220,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 500820,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+        9
+      ],
+      "clipSeconds" : 22,
+      "duration" : 960,
+      "offsetSeconds" : 61620,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-0",
+      "clipMarkers" : [
+        9
+      ],
+      "clipSeconds" : 22,
+      "duration" : 480,
+      "offsetSeconds" : 61620,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 68820,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 960,
+      "offsetSeconds" : 234420,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-0",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 480,
+      "offsetSeconds" : 234420,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 328020,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 960,
+      "offsetSeconds" : 407220,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-0",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 480,
+      "offsetSeconds" : 407220,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 2880,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1800,
+      "offsetSeconds" : 4980,
+      "performerID" : "performer-2",
+      "selfReported" : true,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-0",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 900,
+      "offsetSeconds" : 4980,
+      "performerID" : "performer-2",
+      "selfReported" : true,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 6180,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 9480,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1800,
+      "offsetSeconds" : 10380,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-0",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 900,
+      "offsetSeconds" : 10380,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+        9
+      ],
+      "clipSeconds" : 22,
+      "duration" : 1800,
+      "note" : "Left hand still drags coming out of the roll.",
+      "offsetSeconds" : 15780,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-0",
+      "clipMarkers" : [
+        9
+      ],
+      "clipSeconds" : 22,
+      "duration" : 900,
+      "note" : "Left hand still drags coming out of the roll.",
+      "offsetSeconds" : 15780,
+      "performerID" : "performer-2",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "clipSeconds" : 22,
+      "duration" : 1200,
+      "offsetSeconds" : 62040,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 69240,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1200,
+      "offsetSeconds" : 234840,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 328440,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1200,
+      "offsetSeconds" : 407640,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "clipSeconds" : 22,
+      "duration" : 2400,
+      "offsetSeconds" : 62040,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 69240,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 155640,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 234840,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 328440,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 407640,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 501240,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 1
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 2460,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 4560,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 5760,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 9060,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 9960,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 12360,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "clipSeconds" : 22,
+      "duration" : 2400,
+      "note" : "Left hand still drags coming out of the roll.",
+      "offsetSeconds" : 15360,
+      "performerID" : "performer-3",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+        6.5,
+        14
+      ],
+      "clipSeconds" : 22,
+      "duration" : 2400,
+      "offsetSeconds" : 62460,
+      "performerID" : "performer-4",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 69660,
+      "performerID" : "performer-4",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 156060,
+      "performerID" : "performer-4",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 235260,
+      "performerID" : "performer-4",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 328860,
+      "performerID" : "performer-4",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 2400,
+      "offsetSeconds" : 408060,
+      "performerID" : "performer-4",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 501660,
+      "performerID" : "performer-4",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 0
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 720,
+      "offsetSeconds" : 4140,
+      "performerID" : "performer-4",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 720,
+      "offsetSeconds" : 9540,
+      "performerID" : "performer-4",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-1",
+      "clipMarkers" : [
+        6.5,
+        14
+      ],
+      "clipSeconds" : 22,
+      "duration" : 720,
+      "note" : "Left hand still drags coming out of the roll.",
+      "offsetSeconds" : 14940,
+      "performerID" : "performer-4",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    },
+    {
+      "assignmentID" : "assignment-2",
+      "clipMarkers" : [
+
+      ],
+      "duration" : 1500,
+      "offsetSeconds" : 103940,
+      "performerID" : "performer-4",
+      "selfReported" : false,
+      "wasHeard" : false,
+      "week" : 2
+    }
+  ],
+  "standings" : [
+    {
+      "assignmentsAssigned" : 6,
+      "assignmentsMet" : 6,
+      "bestStreak" : 3,
+      "clipCount" : 3,
+      "currentStreak" : 3,
+      "performerID" : "performer-0",
+      "points" : 735,
+      "practiceSeconds" : 39600,
+      "rank" : 1,
+      "weeksMet" : 3,
+      "weeksWithWork" : 3
+    },
+    {
+      "assignmentsAssigned" : 6,
+      "assignmentsMet" : 4,
+      "bestStreak" : 2,
+      "clipCount" : 3,
+      "currentStreak" : 2,
+      "performerID" : "performer-3",
+      "points" : 482,
+      "practiceSeconds" : 33000,
+      "rank" : 2,
+      "weeksMet" : 2,
+      "weeksWithWork" : 3
+    },
+    {
+      "assignmentsAssigned" : 8,
+      "assignmentsMet" : 2,
+      "bestStreak" : 1,
+      "clipCount" : 5,
+      "currentStreak" : 0,
+      "performerID" : "performer-2",
+      "points" : 278,
+      "practiceSeconds" : 33120,
+      "rank" : 3,
+      "weeksMet" : 1,
+      "weeksWithWork" : 3
+    },
+    {
+      "assignmentsAssigned" : 6,
+      "assignmentsMet" : 2,
+      "bestStreak" : 1,
+      "clipCount" : 2,
+      "currentStreak" : 0,
+      "performerID" : "performer-4",
+      "points" : 234,
+      "practiceSeconds" : 16860,
+      "rank" : 4,
+      "weeksMet" : 1,
+      "weeksWithWork" : 3
+    },
+    {
+      "assignmentsAssigned" : 8,
+      "assignmentsMet" : 0,
+      "bestStreak" : 0,
+      "clipCount" : 0,
+      "currentStreak" : 0,
+      "performerID" : "performer-1",
+      "points" : 0,
+      "practiceSeconds" : 0,
+      "rank" : 5,
+      "weeksMet" : 0,
+      "weeksWithWork" : 3
+    }
+  ],
+  "studioName" : "Fall Percussion Studio",
+  "weekCount" : 3,
+  "weekStartsOn" : 2
+}
