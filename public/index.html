@@ -115,6 +115,12 @@
   .card p { margin: 0; color: var(--muted); }
   .offer { font-weight: 700; margin: 22px 0 16px; }
   .offer-detail { color: var(--muted); margin: 0 0 16px; }
+  .cta-button {
+    display: inline-block; background: var(--accent); color: #17130c;
+    padding: 14px 28px; border-radius: 999px; font-weight: 700; font-size: 17px;
+    text-decoration: none; min-height: 44px; line-height: 1.2;
+  }
+  .cta-note { color: var(--muted); font-size: 15px; margin: 12px 0 0; }
   .cta { margin: 0; }
   .cta a { color: var(--accent); font-weight: 700; }
   .support {
@@ -151,8 +157,19 @@
          two different readers arriving two different ways. "No per-student pricing" is not a
          first-impression line, it is the question a school administrator arrives at `#pricing`
          already holding. -->
-    <p class="cta"><a href="https://app.iptmusic.com">See it working</a> — a real studio, free to
-       look around, no account needed.</p>
+    <!-- Two readers, one door, and it has to name the door. This said "See it working", which
+         is right for somebody who has never heard of IPT and useless to the person who already has
+         an account and is trying to get back in — and `iptmusic.com` is what they will type. A
+         front door that does not say *open* or *sign in* sends them looking for a subdomain nobody
+         told them about.
+
+         The apex stays the website rather than redirecting to the app, and that is not a
+         preference: Apple's organization enrolment requires a publicly available, functional
+         website, and Stripe reads the pricing, terms and refund policy here before it will
+         activate the account. A redirect to a sign-in screen would leave both reviews with nothing
+         to read at all. So the split is right, and the button is what has to carry it. -->
+    <p class="cta"><a class="cta-button" href="https://app.iptmusic.com">Open IPT</a></p>
+    <p class="cta-note">Sign in, or look around a real studio first. The demo needs no account.</p>
   </section>
 
   <section class="support" id="pricing">
