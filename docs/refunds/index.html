@@ -200,22 +200,33 @@
      Two columns puts the empty width to work and brings both screens fully above the fold. No
      markup changes: the copy is placed in column one by selector and `.shots` spans the rows
      beside it, so the reading order a screen reader follows is exactly the order in the source. */
-  @media (min-width: 900px) {
+  @media (min-width: 1120px) {
+    /* `main` caps everything at 46rem, and that cap is the dead space. Two columns inside
+       736px gave the headline 356px, so "Assign the practice." broke over four lines while the
+       screenshots were squeezed to the width they had on a phone. Prose wants a narrow measure;
+       a hero does not. So the hero alone breaks the cap, by exactly the amount two phones and a
+       readable column need, and every section below it keeps the 46rem it is written for. */
+    .hero-head, .hero {
+      width: min(1080px, calc(100vw - 96px));
+      margin-left: calc((min(1080px, 100vw - 96px) - 100%) / -2);
+      margin-right: calc((min(1080px, 100vw - 96px) - 100%) / -2);
+    }
+    /* Smaller than the single-column clamp, because the headline no longer has the page — it has
+       a column beside two phones. At 58px "Assign the practice." needs about 550px and the column
+       is 528, so it broke over three lines at exactly the width where this layout turns on. */
+    .hero h1 { font-size: clamp(34px, 4vw, 52px); }
     .hero {
       display: grid;
       grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-      column-gap: 40px; align-items: center; text-align: left;
+      column-gap: 48px; align-items: center; text-align: left;
       padding: 24px 0 32px;
     }
-    .hero > h1, .hero > .hero-sub, .hero > .cta-row, .hero > .cta-note { grid-column: 1; }
-    .hero > h1 { margin-top: 0; }
+    .hero h1 { margin-top: 0; }
     .hero-sub { margin-left: 0; margin-right: 0; max-width: 30rem; }
     .cta-row { justify-content: flex-start; }
-    /* `1 / -1` rather than a row count: the column has four items today and this should not
-       become wrong the next time a line is added to it. */
-    .hero > .shots { grid-column: 2; grid-row: 1 / -1; margin: 0; align-self: center; }
+    .hero > .shots { margin: 0; }
     /* Bigger, because they finally have a column of their own — and they are the product. */
-    .shot { width: min(258px, 21vw); }
+    .shot { width: min(248px, 20vw); }
   }
 
   /* The performer's block, set apart so it does not read as more buyer copy. */
