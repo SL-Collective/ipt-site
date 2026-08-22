@@ -521,7 +521,7 @@
         "question" : "Can I see how long a recording is before I play it?"
       },
       {
-        "answer" : "Practice is saved on their own device before it is sent, so it survives a basement. It appears for you when their app next has a connection. If a session says it could not be added to the studio, the assignment it belonged to was probably deleted.",
+        "answer" : "Practice is saved on their own device before it is sent, so a room with no signal does not lose it. It appears for you when their app next has a connection. If a session says it could not be added to the studio, the assignment it belonged to was probably deleted.",
         "question" : "Somebody says they practiced and it is not here."
       },
       {
@@ -543,7 +543,7 @@
         "question" : "Can I see how long a recording is before I play it?"
       },
       {
-        "answer" : "Practice is saved on their own device before it is sent, so it survives a basement. It appears for you when their app next has a connection. If a session says it could not be added to the studio, the assignment it belonged to was probably deleted.",
+        "answer" : "Practice is saved on their own device before it is sent, so a room with no signal does not lose it. It appears for you when their app next has a connection. If a session says it could not be added to the studio, the assignment it belonged to was probably deleted.",
         "question" : "Somebody says they practiced and it is not here."
       },
       {
@@ -571,7 +571,7 @@
         "question" : "Who can hear my recordings?"
       },
       {
-        "answer" : "Anything under two minutes is thrown away, and the app tells you when that happens. Otherwise starting and stopping four times would finish a week's work.",
+        "answer" : "Anything under two minutes is not counted, and the app tells you when that happens, so a start you did not mean does not turn into a session. Two minutes is a low bar on purpose, and any real run at something clears it.",
         "question" : "Does a really short session count?"
       },
       {
@@ -593,7 +593,7 @@
         "question" : "Who can hear my recordings?"
       },
       {
-        "answer" : "Anything under two minutes is thrown away, and the app tells you when that happens. Otherwise starting and stopping four times would finish a week's work.",
+        "answer" : "Anything under two minutes is not counted, and the app tells you when that happens, so a start you did not mean does not turn into a session. Two minutes is a low bar on purpose, and any real run at something clears it.",
         "question" : "Does a really short session count?"
       },
       {

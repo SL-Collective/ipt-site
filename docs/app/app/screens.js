@@ -755,12 +755,17 @@ export function assignmentsScreen(store, { onPrompt, onNew, onEdit, onDuplicate,
             text: assignment.title,
           }))
           : el("h3", { text: assignment.title }),
-        assignment.is_optional ? pill("Optional") : pill(`${metCount}/${audience.length} met`, metCount === audience.length ? "met" : undefined),
+        assignment.is_optional
+          ? pill("Optional")
+          : audience.length
+          ? pill(`${metCount}/${audience.length} met`, metCount === audience.length ? "met" : undefined)
+          : pill(performers.length ? "No one assigned" : "No performers yet"),
       ),
       assignment.section && el("p", { class: "caption", text: assignment.section }),
       el("p", { class: "caption", text: targetPhrase(assignment.target) }),
-      !assignment.whole_studio &&
-        el("p", { class: "caption", text: `For ${audience.map((p) => p.display_name).join(", ")}` }),
+      !assignment.whole_studio && (audience.length
+        ? el("p", { class: "caption", text: `For ${audience.map((p) => p.display_name).join(", ")}` })
+        : el("p", { class: "caption", text: "The performers this was for have left the studio. Edit it to choose who it is for now." })),
       planCoverage(
         assignment,
         focusCoverage({
@@ -902,7 +907,9 @@ export function performerScreen(store, {
       ? el(
         "div",
         { class: "stat-grid" },
-        stat(`${metCount}/${required.length}`, `met ${weekWord}`),
+        required.length
+          ? stat(`${metCount}/${required.length}`, `met ${weekWord}`)
+          : stat("—", `nothing set ${weekWord}`),
         stat(compactDuration(Object.values(progress).reduce((n, p) => n + p.countedSeconds, 0)), "practiced"),
         stat(String(standing?.currentStreak ?? 0), `${noun(standing?.currentStreak ?? 0, "week")} of streak`),
         stat(String(theirs.filter((l) => l.hasClip).length), `${noun(theirs.filter((l) => l.hasClip).length, "clip")} ${weekWord}`),
@@ -3004,14 +3011,16 @@ export function scoringScreen(store, { presets, onChoose, onBack, busy = false, 
       el("p", {
         class: "caption",
         text: "Finishing the assigned work always counts for more than time on the clock. " +
-          "Practice already logged is never rescored, so changing this affects the weeks ahead, " +
-          "not the ones behind.",
+          "One set of rules covers the whole season, so changing this restates the weeks already " +
+          "practiced as well as the ones ahead. Nobody's practice is lost or changed, only what " +
+          "it is worth.",
       }),
       el("p", {
         class: "caption",
         text: "Ticking a focus point earns no points, on purpose. It is there to help somebody " +
-          "keep their place in the work, not to be scored. Points come from practice the app " +
-          "timed, so nobody has to be believed and nobody has to prove anything.",
+          "keep their place in the work, not to be scored. Points come from minutes practiced, " +
+          "and a session somebody added afterwards is marked as such wherever it appears, so you " +
+          "can always see what the app timed.",
       }),
     ),
     onBack && el("button", {

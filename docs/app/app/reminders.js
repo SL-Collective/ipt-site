@@ -455,7 +455,9 @@ function listeningNudge({ now, studioName, preferences, backlog, timeZone }) {
   if (!backlog || !backlog.waiting || !backlog.oldestRecordedAt) return null;
 
   const oldest = new Date(backlog.oldestRecordedAt);
-  for (let step = 1; step <= 30; step += 1) {
+  const elapsed = daysApart(oldest, now, timeZone);
+  const firstAhead = Math.max(1, Math.floor(elapsed / PATIENCE_DAYS) + 1);
+  for (let step = firstAhead; step <= firstAhead + 4; step += 1) {
     const day = new Date(oldest.getTime() + step * PATIENCE_DAYS * 86_400_000);
     const fire = fireDate(day, preferences.dailyTime, preferences.quietHours, timeZone);
     if (!fire || !(fire > now)) continue;

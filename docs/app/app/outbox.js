@@ -76,8 +76,29 @@ export function decideAfterFailure(item, error) {
   return { ...next, action: "retryLater" };
 }
 
-/** What to do when the *clip* fails but the practice itself is fine. */
-export function decideAfterClipFailure(item) {
+/**
+ * What to do when the *clip* fails but the practice itself is fine.
+ *
+ * **This charged a dropped connection to the clip ceiling.** `decideAfterFailure`, directly above,
+ * checks `kind === "network"` and refuses to spend a budget on a basement; this function did not
+ * take the error at all and counted every failure the same way. So a performer who recorded a take
+ * on school wi-fi lost the recording after five attempts — and five is nothing, because a flush
+ * runs on every foreground, every load, every submit and the "Try now" button. Riding the bus home
+ * with the tab open was enough to reach it.
+ *
+ * The clip is the one artifact this app exists to move. Losing it because the signal was bad, and
+ * saying only that it "couldn't be sent", is the failure the whole queue is built to prevent,
+ * arriving through the one path that had not been checked for it.
+ *
+ * The ceiling still exists and still means what it says: a recording the server will not take — a
+ * file past the bucket's size limit, a policy refusal — must not cost somebody the forty minutes
+ * it was attached to. That is a fact about the recording. A dropped connection is not, so it costs
+ * nothing and waits, exactly as the session itself does.
+ */
+export function decideAfterClipFailure(item, error) {
+  if (error?.kind === "network") {
+    return { ...item, attempts: item.attempts + 1, lastError: error.message, action: "retryLater" };
+  }
   const next = { ...item, clipAttempts: item.clipAttempts + 1 };
   if (next.clipAttempts >= CLIP_ATTEMPT_LIMIT) {
     return {
@@ -311,7 +332,7 @@ async function deliver(item) {
       clipPath = clipObjectPath(draft.studioId, item.performerId, item.id);
       await uploadClip(clipPath, draft.clip);
     } catch (err) {
-      const { action, ...next } = decideAfterClipFailure(item);
+      const { action, ...next } = decideAfterClipFailure(item, err);
       Object.assign(item, next);
       await update(item);
       if (action === "deliverWithoutClip") {
