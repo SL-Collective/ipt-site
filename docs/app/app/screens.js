@@ -2155,6 +2155,7 @@ export function sessionScreen(store, {
     return field("Count-in before recording", select);
   })();
 
+
   const recordButton = el("button", {
     type: "button",
     style: "width:100%",
@@ -3419,6 +3420,75 @@ export function seasonScreen(store, { onCopy, onShare, canShare = false, said = 
  * @param help the exported block. Null until it has loaded — the screen draws the cards it has and
  *   never a heading over nothing, the same way the reminders dial waits for its words.
  */
+/**
+ * The three cards the app gets to say for itself, once.
+ *
+ * **iOS presented this to every new instructor and every new performer, and the web only ever
+ * showed it to somebody who went looking in Help.** The client a school is most likely to hand a
+ * student was the one that never explained itself: a director who buys on a Chromebook, makes a
+ * studio and lands on a setup checklist gets the *what to do* and none of the *why it works this
+ * way* — which is the whole of the argument the landing page makes to get them there.
+ *
+ * The same objections the iOS version was built against apply here and are answered the same way:
+ *
+ *   · **Skippable from the first frame**, in the corner, in plain words. A tour you have to escape
+ *     is worse than no tour.
+ *   · **Three cards and a dot for each**, so the whole thing is a known quantity before it starts
+ *     and nobody is deciding whether to bail out of an unknown number of screens.
+ *   · **Nothing here names a control or a screen**, so moving a button never turns it into a lie.
+ *   · **It is not the only copy of itself** — every word is also under Help, which serves the
+ *     person who skipped it and the person who has forgotten.
+ *
+ * Every sentence comes from the export, including the word on the closing button, because two
+ * clients typing the same idea separately is the drift `check_labels.py` exists to catch.
+ */
+export function welcomeScreen(store, { help = null, page = 0, onPage, onFinish } = {}) {
+  const isInstructor = store?.isInstructor ?? false;
+  const pages = (isInstructor ? help?.instructor : help?.performer) ?? [];
+  const finish = (isInstructor ? help?.instructorFinish : help?.performerFinish) ?? "Get started";
+
+  if (pages.length === 0) return el("main", { id: "main", class: "page" });
+
+  const index = Math.min(Math.max(page, 0), pages.length - 1);
+  const item = pages[index];
+  const isLast = index >= pages.length - 1;
+
+  return el(
+    "main",
+    { id: "main", class: "page welcome" },
+    el(
+      "div",
+      { class: "row-between" },
+      el("span", {}),
+      el("button", {
+        class: "button--quiet", type: "button", text: "Skip",
+        onClick: () => onFinish?.(),
+      }),
+    ),
+    card(
+      { class: "stack welcome-card" },
+      el("h1", { text: item.title }),
+      el("p", { class: "welcome-body", text: item.body }),
+    ),
+    el(
+      "div",
+      {
+        class: "welcome-dots",
+        role: "img",
+        "aria-label": `Page ${index + 1} of ${pages.length}`,
+      },
+      ...pages.map((_, n) =>
+        el("span", { class: n === index ? "welcome-dot welcome-dot--on" : "welcome-dot" })
+      ),
+    ),
+    el("button", {
+      class: "button button--primary", style: "width:100%", type: "button",
+      text: isLast ? finish : "Next",
+      onClick: () => (isLast ? onFinish?.() : onPage?.(index + 1)),
+    }),
+  );
+}
+
 export function helpScreen(store, { help = null, onBack } = {}) {
   const isInstructor = store?.isInstructor ?? false;
   const keepsScore = store?.rules?.().keepsScore ?? true;

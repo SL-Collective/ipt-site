@@ -507,6 +507,7 @@
         "title" : "Thirty seconds on a Monday"
       }
     ],
+    "instructorFinish" : "Set up my studio",
     "instructorQuestions" : [
       {
         "answer" : "Everything you assigned that week, finished. Time rounds down: 44 minutes of a 45-minute target is not met, because crediting a minute somebody did not practice is the one error that discredits every other number.",
@@ -565,6 +566,7 @@
         "title" : "Somebody listens"
       }
     ],
+    "performerFinish" : "Start practicing",
     "performerQuestions" : [
       {
         "answer" : "Your instructors, and nobody else. The rest of the studio can see that you practiced and for how long, but never your recordings, and never the notes you write.",

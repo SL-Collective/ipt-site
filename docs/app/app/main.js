@@ -81,6 +81,7 @@ import {
   studioSetupScreen,
   termProblems,
   termsScreen,
+  welcomeScreen,
   youScreen,
 } from "./screens.js";
 
@@ -97,6 +98,10 @@ const state = {
   auth: { mode: "signIn", problem: null, message: null, busy: false, email: "" },
   /** The running practice session, if there is one. Never a route: a reload would lose the clock. */
   session: null,
+  /** Which card of the welcome tour is showing, or null when it is not. */
+  welcome: null,
+  /** Seats already shown the tour inside this demo. In memory, like iOS's `welcomedDemoRoles`. */
+  demoWelcomedSeats: new Set(),
   /** The assignment being written or edited: `{ assignment | null }`, or null for neither. */
   editing: null,
   /** The performer being looked at, if any. A state and not a route, like the editor. */
@@ -1055,6 +1060,66 @@ function spanFor(store) {
   };
 }
 
+/**
+ * Whether this person, in this seat, has been shown the tour.
+ *
+ * **Per profile and per seat**, which is `NotificationPreferences.hasSeenWelcome(asInstructor:for:)`
+ * on iOS and is the shape it has for two reasons: a director who has seen the instructor's cards
+ * still has not seen the performer's, and a shared school laptop must not tell the next person they
+ * have already been introduced to an app they have never opened.
+ *
+ * `localStorage` rather than the account, deliberately. It is a fact about a screen having been
+ * drawn on a device, not about the person, and a round trip to decide whether to draw a tour would
+ * delay the first paint of every launch to serve the first launch only.
+ */
+const WELCOME_SEEN = "ipt.welcome.seen";
+
+function welcomeKey() {
+  const who = state.store?.profile?.()?.id ?? "anon";
+  return `${who}:${state.store?.isInstructor ? "instructor" : "performer"}`;
+}
+
+function hasSeenWelcome() {
+  try {
+    return (JSON.parse(localStorage.getItem(WELCOME_SEEN) ?? "[]")).includes(welcomeKey());
+  } catch {
+    return false;
+  }
+}
+
+function markWelcomeSeen() {
+  try {
+    const seen = new Set(JSON.parse(localStorage.getItem(WELCOME_SEEN) ?? "[]"));
+    seen.add(welcomeKey());
+    localStorage.setItem(WELCOME_SEEN, JSON.stringify([...seen]));
+  } catch {
+  }
+}
+
+/**
+ * Opens the tour if this person, in this seat, has not been shown it.
+ *
+ * Called from every path that reaches a studio rather than from `boot`, because there are three of
+ * them and only one goes through a sign-in: a studio just created, a studio already there at
+ * launch, and the demo. Missing one is how a new director never sees this at all.
+ *
+ * **The demo remembers in memory only**, matching `welcomedDemoRoles` on iOS. Somebody evaluating
+ * the product should see the instructor's cards and then the performer's when they change seat,
+ * and should not have that decided by whether they happened to look at a demo months ago.
+ */
+function openWelcomeIfNew() {
+  if (state.welcome !== null) return;
+  const seat = state.store?.isInstructor ? "instructor" : "performer";
+  if (state.inDemo) {
+    if (state.demoWelcomedSeats.has(seat)) return;
+    state.demoWelcomedSeats.add(seat);
+  } else {
+    if (hasSeenWelcome()) return;
+    markWelcomeSeen();
+  }
+  state.welcome = 0;
+}
+
 function currentRoute() {
   const hash = location.hash || "#/";
   if (state.mode !== "studio") return "#/";
@@ -1132,6 +1197,17 @@ function render() {
 
 function paintScreen() {
   const isDemo = state.inDemo;
+
+  if (state.welcome !== null && state.mode === "studio") {
+    show(welcomeScreen(state.store, {
+      help: state.vocabulary?.help ?? null,
+      page: state.welcome,
+      onPage: (n) => { state.welcome = n; render(); },
+      onFinish: () => { state.welcome = null; markWelcomeSeen(); render(); },
+    }));
+    document.title = titleFor("Welcome");
+    return;
+  }
 
   if (state.resettingPassword) {
     show(resetPasswordScreen({
@@ -1558,6 +1634,7 @@ async function switchStudio(id) {
 async function afterStudioChange(message) {
   state.auth = { ...state.auth, busy: false, problem: null };
   state.mode = "studio";
+  openWelcomeIfNew();
   location.hash = tabsFor(state.store)[0].href;
   await refreshOutbox();
   push.syncPlan(state.store);
@@ -1588,6 +1665,7 @@ async function enterStudio() {
   }
 
   state.mode = "studio";
+  openWelcomeIfNew();
   await state.store.applyPending();
   await refreshOutbox();
   push.syncPlan(state.store);
@@ -2170,6 +2248,7 @@ async function enterDemo() {
   state.inDemo = true;
   state.mode = "studio";
   state.store.viewAs("instructor");
+  openWelcomeIfNew();
   location.hash = "#/studio";
   render();
   announce("Demo studio, viewing as instructor");
@@ -2336,6 +2415,13 @@ function saveNewPassword(password) {
 
 async function boot() {
   restoreSession();
+
+  if (location.hash === "#/demo") {
+    location.hash = "#/studio";
+    await enterDemo();
+    return;
+  }
+
   try {
     await consumeAuthRedirect();
   } catch (error) {

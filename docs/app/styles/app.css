@@ -236,6 +236,21 @@ input.check {
   border-radius: 6px;
 }
 
+/* **The one exception, and it is not a removed focus ring.** Every screen change moves focus to
+   the new screen's `h1` so a screen reader is told where it landed — see `render()`, and the
+   measurement behind it: without this, activating a tab drops focus to `<body>` and a keyboard user
+   tabs from the top of the document again to reach what they just asked for.
+
+   That heading is `tabindex="-1"`, so it is reachable by script and by nothing else. A ring on it
+   is therefore never orientation for a keyboard user, because no keyboard user can arrive there.
+   It is a box drawn around a word nobody selected — reported from the live site as "an orange box
+   around IPT" after tapping Forgot your password, where the door's heading is the wordmark itself.
+
+   Scoped to the heading, and to the heading only. Every control keeps its ring. */
+h1[tabindex="-1"]:focus, h1[tabindex="-1"]:focus-visible {
+  outline: none;
+}
+
 a { color: var(--accent); }
 
 .skip-link {

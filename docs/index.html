@@ -142,7 +142,9 @@
      visual product was giving them prose. This is a headline with one idea, two doors, and two
      real screens — the scale jump from 17px body to a clamped display size is what makes a page
      read as designed rather than as a document. */
-  .hero-head { text-align: center; padding: 56px 0 0; }
+  /* 56px of nothing sat above the wordmark and pushed everything after it down a screen that had
+     no room to spare. A masthead needs to be off the edge, not a third of a fold below it. */
+  .hero-head { text-align: center; padding: 22px 0 0; }
   .hero { text-align: center; padding: 8px 0 12px; }
   .hero h1 {
     font-size: clamp(34px, 7vw, 58px); line-height: 1.06; letter-spacing: -0.03em;
@@ -287,8 +289,11 @@
          actually is. On a phone the wrapper is an ordinary div and changes nothing. -->
     <div class="hero-copy">
       <h1>Assign the practice.<br><span class="hero-em">Hear the playing.</span></h1>
-      <p class="hero-sub">Built for the ensemble, not the soloist. One studio, one shared board, and
-         short recordings the instructor actually listens to.</p>
+      <!-- "One shared board" was our word for it and nobody else's, and "actually listens to" put a
+           dig in a sentence that had nobody to aim it at. This is written for a band director, not
+           for somebody who already knows what the app does. -->
+      <p class="hero-sub">Built for a whole ensemble, not one soloist. Everybody's practice in one
+         place, and short recordings their instructor listens to.</p>
 
       <!-- Two doors, on the page people are actually given. Sending somebody to a subdomain nobody
            told them about is friction at the moment they have decided to try it. -->
@@ -296,8 +301,13 @@
         <a class="cta-button" href="https://app.iptmusic.com">Sign in</a>
         <a class="cta-ghost" href="https://app.iptmusic.com">Create an account</a>
       </p>
-      <p class="cta-note">Or <a href="https://app.iptmusic.com">look around a real studio</a> first.
-         The demo is the whole app with a seeded band in it, and needs no account.</p>
+      <!-- "A seeded band" is a developer's word for test data, and "a real studio" reads as though
+           it might be somebody's actual one. What a director wants to know is what they will find
+           when they click and what it will cost them, so it says that. Same description the app's
+           own door uses, so the two places agree. -->
+      <p class="cta-note">Or <a href="https://app.iptmusic.com/#/demo">look around a demo studio</a> first.
+         It has three weeks of practice already in it: a roster, assigned work, standings, and
+         recordings. Nothing to set up, and no account needed.</p>
     </div>
 
     <!-- Real pixels, not a mockup: what `make shots` photographs, so this cannot advertise a
