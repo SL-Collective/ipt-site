@@ -47,7 +47,7 @@ function milestone(kind, value) {
       return {
         id: `streak-${value}`,
         title: `${value} weeks in a row`,
-        detail: `You've finished everything assigned ${value} weeks running.`,
+        detail: "Everything assigned, finished, week after week.",
       };
     case "best-week":
       return {
@@ -65,7 +65,7 @@ function milestone(kind, value) {
       return {
         id: `hours-${value}`,
         title: `${value} hours practiced`,
-        detail: `${value} hours in this studio since you joined.`,
+        detail: "In this studio alone, since you joined.",
       };
   }
 }
