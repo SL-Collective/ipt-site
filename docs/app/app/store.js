@@ -320,10 +320,10 @@ export class SupabaseStore {
         studio_id: `eq.${id}`,
         select: "role,joined_at,profiles(id,display_name,role,instrument,paint)",
       })),
-      select("assignments", query({
+      selectAll("assignments", query({
         studio_id: `eq.${id}`,
         select: "*,assignment_targets(profile_id),assignment_focus_points(id,body,tempo,position)",
-        order: "created_at.desc",
+        order: "created_at.desc,id",
       })),
       selectAll("practice_logs", query({
         studio_id: `eq.${id}`, started_at: `gte.${since}`, select: "*", order: "started_at.desc,id",
@@ -534,14 +534,19 @@ export class SupabaseStore {
     rememberStudio(null);
   }
 
-  async updateProfile({ displayName, instrument = null, paint = null }) {
+  async updateProfile({ displayName, instrument = null, paint }) {
     const rows = await patch("profiles", query({ id: `eq.${uuid(this.#profile.id)}` }), {
       display_name: displayName,
       instrument,
-      paint,
+      ...(paint !== undefined && { paint }),
     });
     if (!rows?.[0]) throw StoreError.notPermitted();
-    this.#profile = { ...this.#profile, display_name: rows[0].display_name, instrument: rows[0].instrument };
+    this.#profile = {
+      ...this.#profile,
+      display_name: rows[0].display_name,
+      instrument: rows[0].instrument,
+      paint: rows[0].paint,
+    };
     return this.#profile;
   }
 
@@ -726,7 +731,7 @@ export class SupabaseStore {
       section: draft.section?.trim() || null,
       target_kind: draft.target.kind,
       target_amount: draft.target.amount,
-      closes_at: draft.closesAt ? iso(draft.closesAt) : null,
+      ...(draft.closesAt !== undefined && { closes_at: draft.closesAt ? iso(draft.closesAt) : null }),
       whole_studio: wholeStudio,
       is_optional: !!draft.isOptional,
       take_minutes: draft.takeMinutes ?? null,

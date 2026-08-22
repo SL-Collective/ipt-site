@@ -499,8 +499,8 @@
         "title" : "Assign the work, not the minutes"
       },
       {
-        "body" : "Performers record a short take with their own click playing out loud, so you hear whether they stayed with it. They mark the moments worth hearing, which turns a four-minute take into a ten-second listen.",
-        "title" : "Hear it, don't take their word for it"
+        "body" : "Performers record a short take with their own click playing out loud, so you can hear how the playing and the click line up. They mark the moments worth hearing, which turns a four-minute take into a ten-second listen.",
+        "title" : "Hear how it went, not just how long"
       },
       {
         "body" : "Your dashboard puts whoever needs you first, and the performers who are doing fine stay out of the way. Listen to a take and send one line back. That is the whole job, and it is what keeps them recording.",
@@ -760,7 +760,7 @@
       "title" : "Consistency first"
     },
     {
-      "detail" : "Recording proof pays more and targets pay less. Gentler on beginners.",
+      "detail" : "Recordings pay more and targets pay less. Gentler on beginners.",
       "name" : "effortFriendly",
       "rules" : {
         "clipBonus" : 20,

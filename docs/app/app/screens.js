@@ -3041,6 +3041,7 @@ export function rosterScreen(store, { onSetRole, onRemove, onBack, busy = false,
         ...roster.map((member) => rosterRow(member, {
           isMe: member.id === me,
           isLastInstructor: member.role === "instructor" && instructors <= 1,
+          isOwner: member.id === store.studio()?.owner_id,
           busy,
           onSetRole,
           onRemove,
@@ -3074,7 +3075,7 @@ export function rosterScreen(store, { onSetRole, onRemove, onBack, busy = false,
  * "Remove" knows the practice history survives it, and nobody reading "Make instructor" knows it
  * hands over every performer's recordings and every note ever written to them.
  */
-function rosterRow(member, { isMe, isLastInstructor, busy, onSetRole, onRemove }) {
+function rosterRow(member, { isMe, isLastInstructor, isOwner, busy, onSetRole, onRemove }) {
   const isInstructor = member.role === "instructor";
 
   const identity = el(
@@ -3095,7 +3096,7 @@ function rosterRow(member, { isMe, isLastInstructor, busy, onSetRole, onRemove }
     ),
   );
 
-  if (isMe || isLastInstructor) {
+  if (isMe || isLastInstructor || isOwner) {
     return el(
       "div",
       { class: "stack", style: "gap:0.25rem" },
@@ -3104,6 +3105,11 @@ function rosterRow(member, { isMe, isLastInstructor, busy, onSetRole, onRemove }
         class: "caption",
         text: "The only instructor. Someone has to be able to assign work, so this one can't be " +
           "changed or removed.",
+      }),
+      !isMe && !isLastInstructor && isOwner && el("p", {
+        class: "caption",
+        text: "This studio's owner. They can't be removed or made a performer. Transferring the " +
+          "studio is how it changes hands.",
       }),
     );
   }

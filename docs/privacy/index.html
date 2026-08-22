@@ -14,6 +14,7 @@
     --muted: #5F5F64;
     --accent: #8F5300;
     --accent-fill: #F59300;
+    --surface: #FFFFFF;
     --on-accent-fill: #000000;
     --rule: rgba(0,0,0,.10);
     --card: rgba(0,0,0,.03);
@@ -25,6 +26,7 @@
       --muted: #9C9CA6;
       --accent: #FF9F0A;
       --accent-fill: #FF9F0A;
+      --surface: #141417;
       --on-accent-fill: #000000;
       --rule: rgba(255,255,255,.12);
       --card: rgba(255,255,255,.04);
@@ -106,14 +108,30 @@
   table { border-collapse: collapse; width: 100%; font-size: 15px; }
   th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
   th { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
-  .landing { margin: 8px 0 34px; }
+  /* Three abreast on anything wide enough. Stacked full-width, three 151px cards ran 476px down
+     a 1100px page with 400px of empty column either side — which is the "dead space" a landing
+     page is judged on. They are one idea each and read as a set, so they should sit as one. */
+  .landing {
+    margin: 40px 0 34px; display: grid; gap: 14px;
+    /* 210px, not 260: the page's own max-width leaves about 736px here, and 260 fitted only two
+       — which orphans the third on a row of its own and looks more broken than a plain stack.
+       Three across, or one; never two and a straggler. */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  }
   .thesis { font-size: 24px; font-weight: 700; line-height: 1.25; margin: 0 0 6px; }
   .thesis-detail { color: var(--muted); margin: 0 0 22px; }
   .card {
-    /* Opaque `--canvas`, same reasoning as `.support` below: the contrast floor was measured
-       against it, and a translucent panel over the photograph is where that quietly stops. */
-    background: var(--canvas); border: 1px solid var(--rule); border-radius: 14px;
-    padding: 16px 18px; margin: 0 0 12px;
+    /* `--surface`, not `--canvas`. These were the *same colour as the page* — `rgb(8,9,10)` on
+       `rgb(8,9,10)` — held apart by a 12%-white hairline, so three cards read as three outlined
+       boxes on a flat black field rather than as anything lifted off it. The app itself has always
+       used a surface for a card; the site declared the token and never used it.
+
+       The old comment argued for `--canvas` on contrast grounds, and that reasoning survives
+       intact: this is still opaque, never translucent over the photograph, and the floor is
+       measured rather than assumed — ink on surface is 16.89:1 dark and 19.93:1 light, muted is
+       6.76:1 and 6.35:1. `check_site_current.py` measures the published bytes. */
+    background: var(--surface); border: 1px solid var(--rule); border-radius: 16px;
+    padding: 20px; margin: 0;
   }
   .card h3 { margin: 0 0 6px; font-size: 16px; }
   .card p { margin: 0; color: var(--muted); }
