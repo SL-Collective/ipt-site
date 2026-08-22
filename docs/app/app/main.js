@@ -1397,6 +1397,7 @@ function paintScreen() {
       if (!state.selfReportMark) loadSessionMark();
       screen = practiceScreen(store, {
         onPrompt,
+        onClipURL: (path) => store.clipURL(path),
         ...spanControls(store),
         seenMilestoneKeys: isDemo ? state.demoMilestonesSeen : seenMilestones(),
         onMilestoneSeen: (milestone) => {

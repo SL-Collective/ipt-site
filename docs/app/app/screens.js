@@ -1612,6 +1612,7 @@ export function listeningScreen(store, {
 export function practiceScreen(store, {
   onPrompt, onPractice, onFocusPoint, onNudgeSeen, onDeleteSession,
   onAddSession = null, selfReportMark = "",
+  onClipURL = null,
   span = null, onStepSpan = null, onPickSpan = null, onApplyCustom = null,
   seenMilestoneKeys = null, onMilestoneSeen = null,
 } = {}) {
@@ -1865,7 +1866,29 @@ export function practiceScreen(store, {
               "div",
               { class: "row", style: "gap:0.5rem" },
               s.isSetAside ? pill("Not accepted") : s.isPending && pill("Waiting to send"),
-              s.hasClip && pill("Clip", "accent"),
+              s.hasClip && (onClipURL
+                ? el("button", {
+                  class: "button--plain",
+                  type: "button",
+                  "aria-label": "Play your recording",
+                  text: "\u25B6 Clip",
+                  onClick: async (event) => {
+                    const button = event.currentTarget;
+                    button.disabled = true;
+                    try {
+                      const audio = el("audio", { controls: "", preload: "none", style: "max-width:100%" });
+                      audio.src = await onClipURL(s.clip.path);
+                      button.replaceWith(audio);
+                      const first = (s.clip.markers ?? [])[0];
+                      if (first) audio.currentTime = first;
+                      audio.play().catch(() => {});
+                    } catch {
+                      button.disabled = false;
+                      button.textContent = "Wouldn't load";
+                    }
+                  },
+                })
+                : pill("Clip", "accent")),
               el("span", { class: "caption numeral", text: compactDuration(s.duration) }),
               onDeleteSession && el("button", {
                 class: "button--plain", type: "button",

@@ -495,7 +495,7 @@
   "help" : {
     "instructor" : [
       {
-        "body" : "\"Practice 120 minutes\" gets you a part played start to finish nine times. Give them the instruction you would give in the room: hands separate, take it at 72, fix the release in bar 12. They have it on Tuesday night when you are not there.",
+        "body" : "A time target says how long, not what to work on. Give them the instruction you would give in the room: hands separate, take it at 72, fix the release in bar 12. They have it on Tuesday night when you are not there.",
         "title" : "Assign the work, not the minutes"
       },
       {
@@ -503,7 +503,7 @@
         "title" : "Hear how it went, not just how long"
       },
       {
-        "body" : "Your dashboard puts whoever needs you first, and the performers who are doing fine stay out of the way. Listen to a take and send one line back. That is the whole job, and it is what keeps them recording.",
+        "body" : "Your dashboard puts whoever needs you first, and folds everybody who is doing fine out of the way. Listen to a take and send one line back. That is what keeps them recording.",
         "title" : "Thirty seconds on a Monday"
       }
     ],
