@@ -10,11 +10,16 @@
 // There is no build step and there is nothing to inject: four static pages, no credential, and the
 // photograph is embedded. That is deliberate, so the pages Apple and Stripe read cannot be held
 // offline by whether a build machine happens to have the right tools.
+// `docs/` rather than `public/` because GitHub Pages accepts only `/` or `/docs` as a source, and
+// Pages is already switched on for this repository. That gives the same four pages a second live
+// address — `sl-collective.github.io/ipt-site/` — which is not the product's front door and is not
+// meant to be: it is somewhere the owner can look at what is about to ship without waiting on a
+// deployment nobody in this repository can trigger.
 {
   "name": "ipt-site",
   "compatibility_date": "2026-08-21",
   "assets": {
-    "directory": "./public",
+    "directory": "./docs",
     // `/privacy`, `/terms` and `/refunds` are directories holding an `index.html`, and Apple and
     // Stripe have each stored one of those bare paths. Explicit because two external reviews
     // depend on it, and a default is not a decision anybody wrote down.
