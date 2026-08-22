@@ -1,0 +1,23 @@
+// `iptmusic.com` — the four marketing and legal pages.
+//
+// **This repository exists only to be deployed.** The pages are generated in
+// `SL-Collective/ipt` by `make site`, from `docs/privacy-policy.md`, `docs/terms.md` and
+// `docs/refund-policy.md`, and checked there by `Tools/check_site_current.py`. Editing them here
+// puts the published page out of step with the documents the product is written against — and the
+// privacy policy is the one App Store Connect stores a URL for, so the copy strangers read would
+// no longer be the copy this project checks.
+//
+// There is no build step and there is nothing to inject: four static pages, no credential, and the
+// photograph is embedded. That is deliberate, so the pages Apple and Stripe read cannot be held
+// offline by whether a build machine happens to have the right tools.
+{
+  "name": "ipt-site",
+  "compatibility_date": "2026-08-21",
+  "assets": {
+    "directory": "./public",
+    // `/privacy`, `/terms` and `/refunds` are directories holding an `index.html`, and Apple and
+    // Stripe have each stored one of those bare paths. Explicit because two external reviews
+    // depend on it, and a default is not a decision anybody wrote down.
+    "html_handling": "auto-trailing-slash"
+  }
+}
