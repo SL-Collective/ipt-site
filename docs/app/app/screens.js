@@ -251,7 +251,12 @@ export function doorScreen({
     el(
       "div",
       { style: "text-align:center; display:grid; gap:0.35rem; margin-bottom:0.5rem" },
-      el("h1", { style: "font-size:3rem; letter-spacing:0.04em", text: "IPT" }),
+      el(
+        "h1",
+        { class: "wordmark", style: "font-size:3rem; letter-spacing:0.04em" },
+        el("span", { text: "IP" }),
+        el("span", { class: "wordmark-t", text: "T" }),
+      ),
       el("p", { class: "caption", text: "Individual Practice Time" }),
     ),
     card({ class: "stack" }, form),
@@ -2423,7 +2428,7 @@ export function youScreen(store, {
         })
       ),
     ),
-    offer && card(
+    offer && store.isDemo && card(
       { class: "stack" },
       el("h2", { text: "Getting IPT" }),
       el("p", { class: "caption", text: offer.line }),
@@ -3455,7 +3460,11 @@ export function welcomeScreen(store, { help = null, page = 0, onPage, onFinish }
 
   return el(
     "main",
-    { id: "main", class: "page welcome" },
+    {
+      id: "main",
+      class: "page welcome",
+      "data-room": isInstructor ? "upright" : "snare",
+    },
     el(
       "div",
       { class: "row-between" },

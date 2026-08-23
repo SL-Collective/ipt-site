@@ -46,6 +46,7 @@ import { CONFIG, isConfigured, remindersConfigured } from "./config.js";
 import * as push from "./push.js";
 import {
   adoptSession,
+  authRedirectIntent,
   isSignedIn,
   requestPasswordReset,
   resendConfirmation,
@@ -1107,16 +1108,22 @@ function markWelcomeSeen() {
  * the product should see the instructor's cards and then the performer's when they change seat,
  * and should not have that decided by whether they happened to look at a demo months ago.
  */
-function openWelcomeIfNew() {
+async function openWelcomeIfNew() {
   if (state.welcome !== null) return;
   const seat = state.store?.isInstructor ? "instructor" : "performer";
   if (state.inDemo) {
     if (state.demoWelcomedSeats.has(seat)) return;
-    state.demoWelcomedSeats.add(seat);
   } else {
     if (hasSeenWelcome()) return;
-    markWelcomeSeen();
   }
+
+  if (!state.vocabulary) await loadExportedWords();
+
+  const pages = state.store?.isInstructor ? state.vocabulary?.help?.instructor : state.vocabulary?.help?.performer;
+  if (!pages?.length) return;
+
+  if (state.inDemo) state.demoWelcomedSeats.add(seat);
+  else markWelcomeSeen();
   state.welcome = 0;
 }
 
@@ -1634,7 +1641,7 @@ async function switchStudio(id) {
 async function afterStudioChange(message) {
   state.auth = { ...state.auth, busy: false, problem: null };
   state.mode = "studio";
-  openWelcomeIfNew();
+  await openWelcomeIfNew();
   location.hash = tabsFor(state.store)[0].href;
   await refreshOutbox();
   push.syncPlan(state.store);
@@ -1665,7 +1672,7 @@ async function enterStudio() {
   }
 
   state.mode = "studio";
-  openWelcomeIfNew();
+  await openWelcomeIfNew();
   await state.store.applyPending();
   await refreshOutbox();
   push.syncPlan(state.store);
@@ -2248,7 +2255,7 @@ async function enterDemo() {
   state.inDemo = true;
   state.mode = "studio";
   state.store.viewAs("instructor");
-  openWelcomeIfNew();
+  await openWelcomeIfNew();
   location.hash = "#/studio";
   render();
   announce("Demo studio, viewing as instructor");
@@ -2350,25 +2357,19 @@ observer.observe(root, { childList: true, subtree: true });
  * every screenshot of the address bar can still reach them.
  */
 async function consumeAuthRedirect() {
-  const raw = location.hash.startsWith("#") ? location.hash.slice(1) : location.hash;
-  if (!raw.includes("access_token=") && !raw.includes("error_description=")) return false;
+  const intent = authRedirectIntent(location.hash);
+  if (intent.kind === "none") return false;
 
-  const params = new URLSearchParams(raw);
   history.replaceState(null, "", `${location.pathname}${location.search}#/`);
 
-  const problem = params.get("error_description");
-  if (problem) {
-    state.auth = { ...state.auth, problem: problem.replace(/\+/g, " ") };
+  if (intent.kind === "error") {
+    state.auth = { ...state.auth, problem: intent.problem };
     return false;
   }
 
-  const isRecovery = params.get("type") === "recovery";
+  const isRecovery = intent.kind === "recovery";
   try {
-    await adoptSession({
-      access_token: params.get("access_token"),
-      refresh_token: params.get("refresh_token"),
-      expires_in: Number(params.get("expires_in")) || undefined,
-    });
+    await adoptSession(intent.tokens);
   } catch (error) {
     if (isRecovery) {
       await supabaseSignOut();

@@ -251,6 +251,32 @@ h1[tabindex="-1"]:focus, h1[tabindex="-1"]:focus-visible {
   outline: none;
 }
 
+/* --- the welcome tour ----------------------------------------------------------------
+   Shipped with markup and no rules: the dots were `<span>`s with no size, so the one thing the
+   iOS design note insists on — *three cards and a dot for each, so the whole thing is a known
+   quantity before it starts* — was invisible, and somebody was deciding whether to bail out of an
+   unknown number of screens after all. Centred rather than top-aligned for the same reason the
+   iOS card is: three short paragraphs pinned under the status bar with half a screen of nothing
+   below them reads as a page that failed to load. */
+.welcome {
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 18px; min-height: min(72vh, 560px); max-width: 34rem; margin: 0 auto;
+}
+.welcome-card { text-align: center; }
+.welcome-body { color: var(--muted); }
+.welcome-dots { display: flex; gap: 7px; justify-content: center; }
+/* The current one is a capsule rather than a bigger circle: at 7px a size change alone is not a
+   difference anybody can see, and colour alone would carry it for nobody who cannot see colour. */
+.welcome-dot {
+  width: 7px; height: 7px; border-radius: 999px;
+  background: color-mix(in srgb, var(--faint) 55%, transparent);
+}
+.welcome-dot--on { width: 20px; background: var(--accent); }
+
+/* The name, set the way `iptmusic.com` and `Wordmark` set it: the T in amber. Three surfaces drew
+   this and only the marketing page applied the brand to it. */
+.wordmark-t { color: var(--accent); }
+
 a { color: var(--accent); }
 
 .skip-link {
@@ -820,6 +846,8 @@ main[data-room]::before {
 main[data-room="percussion"]::before { background-image: url("../images/room-percussion.jpg"); }
 main[data-room="sax"]::before { background-image: url("../images/room-sax.jpg"); }
 main[data-room="kit"]::before { background-image: url("../images/room-kit.jpg"); }
+main[data-room="upright"]::before { background-image: url("../images/room-upright.jpg"); }
+main[data-room="snare"]::before { background-image: url("../images/room-snare.jpg"); }
 
 /* The scrim. `--canvas` rather than a hex, so it follows the generated palette in both
    appearances and there is no second, unmeasured colour in this file. */

@@ -348,6 +348,45 @@ export function resendConfirmation(email) {
 }
 
 /**
+ * What a fragment the browser arrived with is asking for.
+ *
+ * **This was tested by grepping `main.js` for the string `params.get("type") === "recovery"`.** That
+ * is a check on the presence of a line, not on what happens, and it is the shape this project has a
+ * section about: it passes for as long as the thing it tests is not real, and it cannot fail for any
+ * regression that keeps the text and changes the meaning. The reason it was written that way is
+ * plain enough — the decision lived inside a function that adopts sessions over the network, inside
+ * a module that runs `boot()` on import, and nothing could reach it.
+ *
+ * So the decision comes out and the network stays behind. Four kinds, and the distinction that
+ * matters most is the last one:
+ *
+ *   · `none`    — an ordinary route, or a fragment with nothing in it for us.
+ *   · `error`   — GoTrue said why, and its `+`-encoded spaces are undone here.
+ *   · `session` — a confirmation link. Adopt it and carry on.
+ *   · `recovery` — **a reset link is not a sign-in.** It proves control of an inbox, and the one
+ *     thing owed before anything else is a new password. Without this distinction the reset email
+ *     signed people in silently and left the forgotten password unchanged: a reset that resets
+ *     nothing, and somebody locked out of their own studio the next time they tried the old one.
+ */
+export function authRedirectIntent(hash) {
+  const raw = (hash ?? "").startsWith("#") ? hash.slice(1) : (hash ?? "");
+  if (!raw.includes("access_token=") && !raw.includes("error_description=")) return { kind: "none" };
+
+  const params = new URLSearchParams(raw);
+  const problem = params.get("error_description");
+  if (problem) return { kind: "error", problem: problem.replace(/\+/g, " ") };
+
+  return {
+    kind: params.get("type") === "recovery" ? "recovery" : "session",
+    tokens: {
+      access_token: params.get("access_token"),
+      refresh_token: params.get("refresh_token"),
+      expires_in: Number(params.get("expires_in")) || undefined,
+    },
+  };
+}
+
+/**
  * Sends the password-reset email. The link lands back on this origin, where
  * `consumeAuthRedirect` adopts the session and — because the fragment says `type=recovery` —
  * the shell asks for a new password before anything else happens. GoTrue deliberately answers

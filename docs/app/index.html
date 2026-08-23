@@ -10,6 +10,29 @@
   <!-- Dark-first, matching the app: the palette was designed dark and light was derived from it. -->
   <meta name="theme-color" content="#08090A" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#F2F2F0" media="(prefers-color-scheme: light)">
+
+  <!-- **The one inline stylesheet, and it exists because the real one is what is being waited on.**
+       The mark below stands in for the app during the 1.26s (school) to 3.85s (band hall) before
+       `styles/app.css` arrives — so it cannot be styled by it, and a `style` attribute cannot
+       carry the media query that keeps it legible in both appearances. Dark ink on a dark page,
+       swapped under `prefers-color-scheme: light`; without the swap the light case is #F5F5F7 on
+       the browser's default white, which is a mark nobody can see standing in for an app nobody
+       can see yet. Deleted from the DOM by the first render, not merely hidden. -->
+  <style>
+    #boot { min-height: 70vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 8px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    #boot b { font: 700 44px/1 inherit; letter-spacing: 0.04em; color: #F5F5F7; }
+    #boot span { color: #FF9F0A; }
+    #boot small { font: 400 13px/1.4 inherit; color: #9C9CA6; }
+    html { background: #08090A; }
+    @media (prefers-color-scheme: light) {
+      html { background: #F2F2F0; }
+      #boot b { color: #08090A; }
+      #boot span { color: #8F5300; }
+      #boot small { color: #5F5F64; }
+    }
+  </style>
   <title>IPT: Individual Practice Time</title>
   <meta name="description" content="A music educator assigns practice to their studio and hears proof it happened.">
   <link rel="manifest" href="manifest.webmanifest">
@@ -33,8 +56,26 @@
   <a class="skip-link" href="#main">Skip to content</a>
 
   <div id="app">
-    <!-- Replaced on first render. Static so the page says something before any JavaScript runs,
-         and so a browser that fails to load the modules is not a blank rectangle. -->
+    <!-- **Measured: this was a blank rectangle for 1.26s on school wi-fi and 3.85s in a band
+         hall.** The comment below said the page "says something before any JavaScript runs", and
+         it did not: `<noscript>` renders nothing at all when scripts are on, which is every real
+         visit. iOS shows its dial for exactly this window; the web showed the background colour.
+
+         Not a port of that dial. The iOS mark is 216 KB of bitmaps, so putting it here would make
+         the wait it covers *longer* — the one thing a loading state must never do. This is the
+         same wordmark as text: no request, no decode, no bytes on the critical path, painted with
+         the first frame of HTML.
+
+         Inline styles rather than a class, because `styles/app.css` is itself one of the requests
+         being waited on and a mark that arrives unstyled is worse than none. Replaced wholesale by
+         `replaceChildren` on first render, so it cannot outlive the thing it stands in for.
+
+         No spinner and no animation. A spinner claims progress this page cannot measure, and the
+         honest signal is simply that the right app is loading. -->
+    <div id="boot">
+      <b>IP<span>T</span></b>
+      <small>Individual Practice Time</small>
+    </div>
     <noscript>
       <p class="prose">IPT needs JavaScript to run. The iPhone app does not — it is on the App Store.</p>
     </noscript>

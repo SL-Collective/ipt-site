@@ -35,19 +35,24 @@
  */
 
 /**
- * Bumping this is the deploy.
+ * The cache name, and **nobody types it**.
  *
  * Every asset is fetched fresh when the name changes and the old cache is deleted on activate, so
  * there is no per-file versioning to keep in step and no possibility of a half-updated app — the
  * shape of bug where new JavaScript meets old CSS and only one screen is wrong.
  *
- * **The bump belongs in the same commit as the shell change**, never on a deploy checklist: v7
- * sat unchanged through a session that edited ten shell files, and the browser that had v7
- * cached demonstrated exactly what a deployed user would have gotten — the old app, forever,
- * with the demo door silently doing nothing. A deploy step somebody has to remember is the
- * "described control" failure wearing ops clothing.
+ * This used to say the bump "belongs in the same commit as the shell change, never on a deploy
+ * checklist", having watched v7 sit unchanged through a session that edited ten shell files. It
+ * then went unbumped through six commits on 22 August that rewrote `main.js`, `screens.js`,
+ * `supabase.js`, `app.css` and `tokens.css`, and every returning browser held the old app while
+ * the origin served new JavaScript for an hour. **A rule that depends on remembering is the
+ * "described control" failure wearing ops clothing, and writing that sentence in the comment did
+ * not stop it happening twice.**
+ *
+ * So the value below is a placeholder. `stage_webapp.py` replaces it with a hash of the files
+ * `SHELL` lists, which changes when and only when they do. What ships is never this string.
  */
-const CACHE = "ipt-shell-v46";
+const CACHE = "ipt-shell-e687921a";
 
 /**
  * The whole shell. Small enough to list, and listed rather than globbed on purpose: a glob would
