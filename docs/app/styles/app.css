@@ -573,8 +573,17 @@ dialog::backdrop { background: rgb(0 0 0 / 0.55); }
   .meter__fill { transition: width 0.5s ease-out; }
 }
 
-/* Wide enough for two columns of roster once there is room for them. */
-/* Wide enough for four across, and for two of the roster once there is room for them. */
+/* The four studio numbers, side by side once there is room for them.
+ *
+ * This said "and two columns of roster" — twice, in two near-identical comments left over from an
+ * edit — and there is no roster rule here or anywhere else in this file. The roster is one column
+ * at every width. A comment describing a rule the stylesheet does not have is the same fault as a
+ * sentence in the app claiming a mechanism the code does not have, and this project has removed
+ * three of those; it is worse in a stylesheet, where the next person reads the promise and goes
+ * looking for the bug that is stopping it.
+ *
+ * `.page` caps at 46rem, so this is the only layout change between a phone and a desktop: the four
+ * numbers stop being a 2×2 block and become a row. */
 @media (min-width: 44rem) {
   .stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
@@ -848,6 +857,8 @@ main[data-room="sax"]::before { background-image: url("../images/room-sax.jpg");
 main[data-room="kit"]::before { background-image: url("../images/room-kit.jpg"); }
 main[data-room="upright"]::before { background-image: url("../images/room-upright.jpg"); }
 main[data-room="snare"]::before { background-image: url("../images/room-snare.jpg"); }
+main[data-room="window"]::before { background-image: url("../images/room-window.jpg"); }
+main[data-room="door"]::before { background-image: url("../images/room-door.jpg"); }
 
 /* The scrim. `--canvas` rather than a hex, so it follows the generated palette in both
    appearances and there is no second, unmeasured colour in this file. */

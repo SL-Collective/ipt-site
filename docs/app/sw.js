@@ -52,7 +52,7 @@
  * So the value below is a placeholder. `stage_webapp.py` replaces it with a hash of the files
  * `SHELL` lists, which changes when and only when they do. What ships is never this string.
  */
-const CACHE = "ipt-shell-f381becd";
+const CACHE = "ipt-shell-9e3926c7";
 
 /**
  * The whole shell. Small enough to list, and listed rather than globbed on purpose: a glob would
@@ -70,6 +70,7 @@ const SHELL = [
   "./app/ui.js",
   "./app/screens.js",
   "./app/judgement.js",
+  "./app/bylines.js",
   "./app/listening.js",
   "./app/trend.js",
   "./app/milestones.js",

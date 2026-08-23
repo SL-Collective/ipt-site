@@ -99,6 +99,8 @@ const state = {
   auth: { mode: "signIn", problem: null, message: null, busy: false, email: "" },
   /** The running practice session, if there is one. Never a route: a reload would lose the clock. */
   session: null,
+  /** Whether the browser agreed to keep the practice queue. Null until asked. */
+  durableStorage: null,
   /** Which card of the welcome tour is showing, or null when it is not. */
   welcome: null,
   /** Seats already shown the tour inside this demo. In memory, like iOS's `welcomedDemoRoles`. */
@@ -1465,6 +1467,8 @@ function paintScreen() {
         offer: isDemo ? store.offer() : null,
         outbox: state.outbox,
         onSwitchStudio: switchStudio,
+        durable: state.durableStorage,
+        onInstall: installEvent ? offerInstall : null,
         onAnotherStudio: () => {
           state.mode = "setup";
           state.auth = { ...state.auth, problem: null, message: null };
@@ -1671,7 +1675,13 @@ async function enterStudio() {
   state.session = null;
   state.auth = { ...state.auth, busy: false, problem: null, message: null };
 
-  requestDurableStorage().catch(() => {});
+  requestDurableStorage()
+    .then((result) => {
+      if (state.durableStorage?.granted === result.granted) return;
+      state.durableStorage = result;
+      render();
+    })
+    .catch(() => {});
 
   if (!state.store.hasStudio) {
     state.mode = "setup";

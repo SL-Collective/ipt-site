@@ -14,6 +14,7 @@
  */
 
 import { el, replace } from "./dom.js";
+import { assignmentBylines } from "./bylines.js";
 import {
   weekTitle,
   assignmentProgress,
@@ -327,7 +328,7 @@ export function resetPasswordScreen({ onSave, busy = false, problem = null } = {
   });
   return el(
     "main",
-    { id: "main", class: "page", "data-room": "percussion" },
+    { id: "main", class: "page", "data-room": "door" },
     el("h1", { text: "Choose a new password" }),
     card(
       { class: "stack" },
@@ -354,7 +355,7 @@ export function resetPasswordScreen({ onSave, busy = false, problem = null } = {
 export function confirmScreen({ email, onBack, onResend, busy = false, message = null }) {
   return el(
     "main",
-    { id: "main", class: "page", "data-room": "percussion", style: "place-content:center; min-height:70vh" },
+    { id: "main", class: "page", "data-room": "window", style: "place-content:center; min-height:70vh" },
     el("h1", { text: "Check your email" }),
     card(
       { class: "stack" },
@@ -738,6 +739,8 @@ export function assignmentsScreen(store, { onPrompt, onNew, onEdit, onDuplicate,
     facts: store.facts(),
   });
 
+  const bylines = assignmentBylines(assignments, store.roster(), store.profile()?.id);
+
   const rows = assignments.map((assignment) => {
     const audience = performers.filter((p) => audienceIncludes(assignment, p.id));
     const metCount = audience.filter((p) => {
@@ -769,6 +772,7 @@ export function assignmentsScreen(store, { onPrompt, onNew, onEdit, onDuplicate,
           : pill(performers.length ? "No one assigned" : "No performers yet"),
       ),
       assignment.section && el("p", { class: "caption", text: assignment.section }),
+      bylines.line(assignment) && el("p", { class: "caption", text: bylines.line(assignment) }),
       el("p", { class: "caption", text: targetPhrase(assignment.target) }),
       !assignment.whole_studio && (audience.length
         ? el("p", { class: "caption", text: `For ${audience.map((p) => p.display_name).join(", ")}` })
@@ -889,6 +893,7 @@ export function performerScreen(store, {
       && audienceIncludes(a, performer.id)
       && viewed.weeks.some((w) => isActiveDuring(a, w)))
     .map((a) => [a.id, progress[a.id] ?? assignmentProgress([], a.target, store.rules())]);
+  const detailBylines = assignmentBylines(store.assignments(), store.roster(), store.profile()?.id);
   const assignmentOf = (id) => byId[id] ?? store.assignments().find((a) => a.id === id);
   const sent = store.nudges().filter((n) => n.toPerformerId === performer.id);
 
@@ -966,6 +971,8 @@ export function performerScreen(store, {
               el("h3", { text: assignmentOf(id).title }),
               p.isMet ? pill("Met", "met") : pill(amountPhrase(p)),
             ),
+            detailBylines.line(assignmentOf(id)) &&
+              el("p", { class: "caption", text: detailBylines.line(assignmentOf(id)) }),
             meter(progressFraction(p), {
               met: p.isMet,
               label: `${assignmentOf(id).title}, ${performer.display_name}`,
@@ -1651,6 +1658,7 @@ export function practiceScreen(store, {
   const standing = store.standings().find((s) => s.performerId === me.id);
 
   const required = Object.entries(progress).filter(([id]) => !byId[id].is_optional);
+  const mineBylines = assignmentBylines(store.assignments(), store.roster(), store.profile()?.id);
   const metCount = required.filter(([, p]) => p.isMet).length;
   const isMet = weekMet(progress, byId);
 
@@ -1797,6 +1805,8 @@ export function practiceScreen(store, {
               p.isMet ? pill("Met", "met") : pill(amountPhrase(p)),
             ),
             assignment.section && el("p", { class: "caption", text: assignment.section }),
+            mineBylines.line(assignment) &&
+              el("p", { class: "caption", text: mineBylines.line(assignment) }),
             meter(progressFraction(p), {
               met: p.isMet,
               label: `${assignment.title} progress`,
@@ -2376,6 +2386,7 @@ export function standingsScreen(store, { onDisplay } = {}) {
 export function youScreen(store, {
   onHelp,
   onLeave, offer, onSignOut, outbox = null, onSwitchStudio, onAnotherStudio = null, onDeleteAccount, onReminders,
+  durable = null, onInstall = null,
   onTerms, onScoring, onRoster, onSeason, onLeaveStudio, onSaveProfile, onDeleteStudio,
 }) {
   const me = store.profile();
@@ -2402,8 +2413,17 @@ export function youScreen(store, {
       el("h2", { text: "Practice waiting to send" }),
       outbox.waiting > 0 && el("p", {
         class: "caption",
-        text: `${count(outbox.waiting, "session")} on this device, waiting for a connection. ` +
-          `It counts toward your week already, and it is not going anywhere.`,
+        text: durable && !durable.granted
+          ? `${count(outbox.waiting, "session")} on this device, waiting for a connection. ` +
+            `It counts toward your week already. Adding IPT to your home screen keeps it safe if ` +
+            `you are away from the app for a while.`
+          : `${count(outbox.waiting, "session")} on this device, waiting for a connection. ` +
+            `It counts toward your week already, and it is not going anywhere.`,
+      }),
+      outbox.waiting > 0 && durable && !durable.granted && onInstall && el("button", {
+        class: "button--quiet", type: "button", style: "width:100%",
+        onClick: onInstall,
+        text: "Add IPT to your home screen",
       }),
       outbox.setAside > 0 && notice(
         `${count(outbox.setAside, "session")} the server wouldn't accept. The work it was against ` +

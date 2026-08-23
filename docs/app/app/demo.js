@@ -93,6 +93,7 @@ export async function buildDemoStudio({
     closes_at: null,
     whole_studio: a.audience == null,
     audience: a.audience ?? [],
+    created_by: "instructor-0",
   }));
 
   const sessions = data.sessions

@@ -102,6 +102,7 @@ function assignmentFrom(row) {
     closes_at: row.closes_at ?? null,
     whole_studio: row.whole_studio,
     audience: (row.assignment_targets ?? []).map((t) => t.profile_id),
+    created_by: row.created_by ?? null,
     created_at: row.created_at,
   };
 }
