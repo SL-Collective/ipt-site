@@ -302,9 +302,10 @@
 <p><strong>In a web browser</strong>, that is not possible, because a browser cannot schedule anything for later. So if you turn reminders on there, two things are stored until they are delivered:</p>
 <div class=table-wrap><table><thead><tr><th>What</th><th>What it is</th><th>How long</th></tr></thead><tbody>
 <tr><td>A <strong>subscription</strong></td><td>An address your browser generates, plus two keys it generates with it. It is not a device identifier: it says nothing about you, your browser or your device, and it stops working the moment you turn reminders off.</td><td>Until you turn reminders off</td></tr>
-<tr><td>The <strong>reminder itself</strong></td><td>The words you would see: "35 min to go on Étude 9", and which day it is for. Written by your own device, from your own assignments.</td><td>Deleted the moment it is sent</td></tr>
+<tr><td>A <strong>one-off reminder</strong></td><td>The words you would see: "35 min to go on Étude 9", and which day it is for. Written by your own device, from your own assignments.</td><td>Deleted the moment it is sent</td></tr>
+<tr><td>The <strong>weekly one</strong></td><td>The same, for the reminder that repeats. It is not deleted when it is sent, because it is the row that survives a week where you never opened IPT: sending it moves it on seven days rather than removing it.</td><td>Until you turn reminders off, or change them</td></tr>
 </tbody></table></div>
-<p>Two things about that are worth being exact about, because they are the parts that would matter:</p>
+<p>That distinction used to be one line reading "deleted the moment it is sent", which was true of the one-offs and not of the weekly one. Three things are worth being exact about, because they are the parts that would matter:</p>
 <ul>
 <li><strong>Nobody else can read either one.</strong> Not other performers, and <strong>not your instructors</strong>. A reminder is more private than a leaderboard, and the database refuses it rather than the app hiding it.
 <li><strong>The delivery service cannot read it.</strong> Sending a notification to a browser means handing it to the service your browser belongs to: Google for Chrome, Mozilla for Firefox, Apple for Safari. The words are encrypted first, to a key only your own browser holds, so what passes through them is unreadable to them.
