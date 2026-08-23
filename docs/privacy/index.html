@@ -285,6 +285,8 @@
 <tr><td><strong>Notes</strong> you write on a session, and notes an instructor writes back</td><td>Feedback.</td><td>The two of you.</td></tr>
 <tr><td><strong>Which focus points you ticked</strong></td><td>So your instructor knows what was worked on.</td><td>You and your instructors.</td></tr>
 <tr><td><strong>Your color</strong> (optional)</td><td>Which of eight colors you picked for your avatar. Most people never pick one, and a color is derived from your account when nobody has.</td><td>Everyone in your studio.</td></tr>
+<tr><td><strong>That you bought IPT</strong></td><td>The fact of a purchase, what it cost, and Stripe's id for it. Not your card: IPT never sees a card number. Kept because it is what tells the app you have an account, and because a refund has to be able to find the payment.</td><td>You. Nobody else in the app is ever shown it.</td></tr>
+<tr><td><strong>A nudge, and when you saw it</strong></td><td>A short message an instructor sends to ask somebody to practice, and whether it has been seen. Capped at 280 characters, one direction, no reply.</td><td>The two of you.</td></tr>
 <tr><td><strong>Whether a session was added afterwards</strong></td><td>A session you write down later, rather than timing it while you practice, is marked as one. It counts the same. The mark is there so the number means the same thing for everybody, not as a judgement about you.</td><td>You and your instructors.</td></tr>
 </tbody></table></div>
 <p>That is the whole list. There is no location, no contacts, no photographs, no device identifier and no usage analytics.</p>
@@ -318,6 +320,7 @@
 <p>Nobody, with these unavoidable exceptions:</p>
 <ul>
 <li><strong>Your studio.</strong> Your name, your section, and your practice totals are visible to the other people in your studio. That is what a leaderboard is. Your recordings, your notes and the notes your instructor writes back are <strong>not</strong>.
+<li><strong>Stripe</strong>, and only when you buy. Payment happens on a page Stripe hosts, so your card details go to them and never to IPT: what comes back here is that a payment succeeded, what it cost, and an id for it. Stripe is the payment processor and handles that under their own privacy policy.
 <li><strong>Our hosting provider</strong> (Supabase), which stores the database and the audio on our behalf and is not permitted to use it for anything else.
 <li><strong>Your browser's notification service</strong>, and only if you turn reminders on in a browser: Google, Mozilla or Apple, depending on which browser you use. They carry the notification to your device and <strong>cannot read it</strong>: it is encrypted to a key only your browser holds. Nothing else about you is sent to them. This does not apply in the iPhone app, where reminders never leave the device.
 </ul>
