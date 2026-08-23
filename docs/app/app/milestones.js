@@ -130,11 +130,47 @@ export function seenMilestones() {
  * because it is a fact about where this device sits when somebody practices rather than a record
  * of what a person did.
  */
+/**
+ * The welcome tour's ledger, and **the second place a deleted account's profile id was left on a
+ * shared device.**
+ *
+ * It lives beside the milestone ledger rather than in `main.js` because it is the same thing: a
+ * list, keyed by profile, of what this browser has already shown somebody. `forgetPerson` clears
+ * both, which is what `Preferences.forgetPerson()` has always done on iOS — it removes
+ * `Key.welcomed` alongside `Key.milestones` in one call.
+ *
+ * The web had only half of that. Deleting your account cleared the milestones and left
+ * `ipt.welcome.seen` holding your profile id, on the school Chromebook that is exactly the device
+ * this client exists for. The same bug, found and fixed once, sitting in a second list nobody
+ * checked — and absent from `docs/privacy-policy.md`, whose table claims to be the whole answer to
+ * *"what does this put on a student's Chromebook"*.
+ */
+export const WELCOME_KEY = "ipt.welcome.seen";
+
+export function seenWelcomes() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(WELCOME_KEY) ?? "[]"));
+  } catch {
+    return new Set();
+  }
+}
+
+export function markWelcomeSeen(entry) {
+  const seen = seenWelcomes();
+  seen.add(entry);
+  try {
+    localStorage.setItem(WELCOME_KEY, JSON.stringify([...seen]));
+  } catch {
+  }
+}
+
 export function forgetPerson(profileId) {
   if (!profileId) return;
   const kept = [...seenMilestones()].filter((entry) => !entry.startsWith(`${profileId}-`));
+  const keptWelcomes = [...seenWelcomes()].filter((entry) => !entry.startsWith(`${profileId}:`));
   try {
     localStorage.setItem(LEDGER_KEY, JSON.stringify(kept));
+    localStorage.setItem(WELCOME_KEY, JSON.stringify(keptWelcomes));
   } catch {
   }
 }

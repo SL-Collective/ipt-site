@@ -15,6 +15,7 @@
 
 import { el, replace } from "./dom.js";
 import { assignmentBylines } from "./bylines.js";
+import { helpAudience, scoringSummary, termsSummary } from "./settings-summary.js";
 import {
   weekTitle,
   assignmentProgress,
@@ -2388,6 +2389,7 @@ export function youScreen(store, {
   onLeave, offer, onSignOut, outbox = null, onSwitchStudio, onAnotherStudio = null, onDeleteAccount, onReminders,
   durable = null, onInstall = null,
   onTerms, onScoring, onRoster, onSeason, onLeaveStudio, onSaveProfile, onDeleteStudio,
+  scoringPresets = [],
 }) {
   const me = store.profile();
   const studio = store.studio();
@@ -2484,12 +2486,12 @@ export function youScreen(store, {
       onRoster && el("button", {
         type: "button", style: "width:100%", onClick: onRoster, text: "Roster",
       }),
-      onScoring && el("button", {
-        type: "button", style: "width:100%", onClick: onScoring, text: "Scoring",
-      }),
-      onTerms && el("button", {
-        type: "button", style: "width:100%", onClick: onTerms, text: "Terms",
-      }),
+      onScoring && settingButton(
+        "Scoring",
+        scoringSummary(store.rules(), store.rules().keepsScore !== false, scoringPresets),
+        onScoring,
+      ),
+      onTerms && settingButton("Terms", termsSummary(termsFrom(store.terms())), onTerms),
       el("p", {
         class: "caption",
         text: "Who is in the studio, how it is scored, and when it is running.",
@@ -2525,7 +2527,7 @@ export function youScreen(store, {
         text: "The idea, and the questions people actually ask: what counts as a week being met, "
           + "who can hear your recordings, why a number rounded the way it did.",
       }),
-      el("button", { type: "button", style: "width:100%", onClick: onHelp, text: "How IPT works" }),
+      settingButton("How IPT works", helpAudience(store.isInstructor), onHelp),
       el("a", {
         href: "https://iptmusic.com/privacy",
         target: "_blank",
@@ -3065,6 +3067,27 @@ export function scoringScreen(store, { presets, onChoose, onBack, busy = false, 
 }
 
 /** Whether two rule sets are the same scoring. Compared key by key, over the keys a preset sets. */
+/**
+ * A settings row that carries its current value, the way `SettingsView`'s rows do.
+ *
+ * These shipped as bare labels while iOS showed `Scoring · Completion first` beside the same
+ * control, under a comment saying why: *"Each row says what the studio is on now, so neither has to
+ * be opened to find out."* An instructor on a Chromebook had to push a screen and come back to
+ * learn what a phone told them in place.
+ *
+ * `value` may be null — the scoring presets arrive with the vocabulary export and are briefly
+ * absent — and the row then renders exactly as it did before, rather than saying something wrong
+ * while it waits.
+ */
+function settingButton(label, value, onClick) {
+  return el("button", {
+    type: "button",
+    class: "row-between",
+    style: "width:100%",
+    onClick,
+  }, el("span", { text: label }), value ? el("span", { class: "caption", text: value }) : null);
+}
+
 function sameRules(a, b) {
   return Object.keys(b).every((key) => a[key] === b[key]);
 }

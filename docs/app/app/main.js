@@ -34,7 +34,7 @@
 import { el, replace } from "./dom.js";
 import { field } from "./ui.js";
 import { assignmentCost, deletionCost, removalCost } from "./listening.js";
-import { markMilestoneSeen, seenMilestones } from "./milestones.js";
+import { markMilestoneSeen, seenMilestones, markWelcomeSeen, seenWelcomes } from "./milestones.js";
 import { civilDate, instantAtCivilMidnight } from "./judgement.js";
 import { customWeeks, pastTermWeeks, monthWeeks, seasonWeeks, spanSubtitle, spanTitle } from "./spans.js";
 import { DemoBlocked, checkoutURLFor, vocabulary } from "./words.js";
@@ -1075,28 +1075,17 @@ function spanFor(store) {
  * drawn on a device, not about the person, and a round trip to decide whether to draw a tour would
  * delay the first paint of every launch to serve the first launch only.
  */
-const WELCOME_SEEN = "ipt.welcome.seen";
-
 function welcomeKey() {
   const who = state.store?.profile?.()?.id ?? "anon";
   return `${who}:${state.store?.isInstructor ? "instructor" : "performer"}`;
 }
 
 function hasSeenWelcome() {
-  try {
-    return (JSON.parse(localStorage.getItem(WELCOME_SEEN) ?? "[]")).includes(welcomeKey());
-  } catch {
-    return false;
-  }
+  return seenWelcomes().has(welcomeKey());
 }
 
-function markWelcomeSeen() {
-  try {
-    const seen = new Set(JSON.parse(localStorage.getItem(WELCOME_SEEN) ?? "[]"));
-    seen.add(welcomeKey());
-    localStorage.setItem(WELCOME_SEEN, JSON.stringify([...seen]));
-  } catch {
-  }
+function markWelcome() {
+  markWelcomeSeen(welcomeKey());
 }
 
 /**
@@ -1125,7 +1114,7 @@ async function openWelcomeIfNew() {
   if (!pages?.length) return;
 
   if (state.inDemo) state.demoWelcomedSeats.add(seat);
-  else markWelcomeSeen();
+  else markWelcome();
   state.welcome = 0;
 }
 
@@ -1212,7 +1201,7 @@ function paintScreen() {
       help: state.vocabulary?.help ?? null,
       page: state.welcome,
       onPage: (n) => { state.welcome = n; render(); },
-      onFinish: () => { state.welcome = null; markWelcomeSeen(); render(); },
+      onFinish: () => { state.welcome = null; markWelcome(); render(); },
     }));
     document.title = titleFor("Welcome");
     return;
@@ -1453,6 +1442,7 @@ function paintScreen() {
       break;
     case "#/you":
       screen = youScreen(store, {
+        scoringPresets: state.vocabulary?.scoringPresets ?? [],
         onHelp: () => { location.hash = "#/help"; },
         onLeave: isDemo ? leaveDemo : null,
         onLeaveStudio: store.studio()?.owner_id && store.studio().owner_id !== store.profile().id
