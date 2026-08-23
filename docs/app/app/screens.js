@@ -391,7 +391,7 @@ export function confirmScreen({ email, onBack, onResend, busy = false, message =
  * your join code" and gave no way to see one — so both doors are on this screen, and which one
  * somebody wants is decided by a sentence about what they do rather than by a word for a role.
  */
-export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, problem = null, busy = false }) {
+export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCancel = null, problem = null, busy = false }) {
   const studioName = el("input", { type: "text", required: true, id: "studio-name" });
   const code = el("input", {
     type: "text",
@@ -439,7 +439,9 @@ export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, proble
         el("button", { style: "width:100%", type: "submit", disabled: busy, text: "Create studio" }),
       ),
     ),
-    el("button", { class: "button--quiet", style: "width:100%", type: "button", onClick: onSignOut, text: "Sign out" }),
+    onCancel
+      ? el("button", { class: "button--quiet", style: "width:100%", type: "button", onClick: onCancel, text: "Back to my studio" })
+      : el("button", { class: "button--quiet", style: "width:100%", type: "button", onClick: onSignOut, text: "Sign out" }),
   );
 }
 
@@ -808,7 +810,7 @@ export function assignmentsScreen(store, { onPrompt, onNew, onEdit, onDuplicate,
     el(
       "p",
       { class: "caption" },
-      "The instruction you would give in the room, on the stand when you are not there.",
+      "The instruction you would give in the room, on the stand while they practice.",
     ),
     heading("Open work", count(assignments.length, "assignment")),
     el("div", { class: "stack" }, rows),
@@ -1310,7 +1312,7 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
         el("h2", { text: "What to work on" }),
         el("p", {
           class: "caption",
-          text: "The instruction you would give in the room, on the stand when you are not there.",
+          text: "The instruction you would give in the room, on the stand while they practice.",
         }),
         points,
         addLine,
@@ -2373,12 +2375,12 @@ export function standingsScreen(store, { onDisplay } = {}) {
 
 export function youScreen(store, {
   onHelp,
-  onLeave, offer, onSignOut, outbox = null, onSwitchStudio, onDeleteAccount, onReminders,
+  onLeave, offer, onSignOut, outbox = null, onSwitchStudio, onAnotherStudio = null, onDeleteAccount, onReminders,
   onTerms, onScoring, onRoster, onSeason, onLeaveStudio, onSaveProfile, onDeleteStudio,
 }) {
   const me = store.profile();
   const studio = store.studio();
-  const others = store.joinedStudios?.() ?? [];
+  const others = store.joinedStudios?.() ?? (store.studio() ? [store.studio()] : []);
   const buyerLink = checkoutURLFor(offer, store.isDemo ? null : me?.id);
 
   return el(
@@ -2415,7 +2417,7 @@ export function youScreen(store, {
       el("p", { class: "numeral", style: "font-size:1.6rem; font-weight:700; letter-spacing:0.12em", text: groupedCode(studio.join_code) }),
       el("p", { class: "caption", text: "Performers choose “Join a studio” and type this. It never uses characters that sound alike, so it is safe to read out across a rehearsal room. Everyone joins as a performer. To add another instructor, open the roster and make them one." }),
     ),
-    others.length > 1 && card(
+    others.length > 0 && card(
       { class: "stack" },
       el("h2", { text: "Your studios" }),
       ...others.map((s) =>
@@ -2427,6 +2429,12 @@ export function youScreen(store, {
           text: s.id === studio?.id ? `${s.name} · open` : s.name,
         })
       ),
+      onAnotherStudio && el("p", { class: "caption", text: "An instructor running two programs keeps them separate: each studio has its own roster, its own assignments and its own standings." }),
+      onAnotherStudio && el("button", {
+        class: "button--quiet", type: "button", style: "width:100%",
+        onClick: onAnotherStudio,
+        text: "Start or join another studio",
+      }),
     ),
     offer && store.isDemo && card(
       { class: "stack" },

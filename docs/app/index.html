@@ -19,15 +19,22 @@
        the browser's default white, which is a mark nobody can see standing in for an app nobody
        can see yet. Deleted from the DOM by the first render, not merely hidden. -->
   <style>
-    #boot { min-height: 70vh; display: flex; flex-direction: column;
+    /* **The background goes on this element and never on `html`.** It did, for one commit, and it
+       took every practice-room backdrop on the web with it: the rooms are `position: fixed;
+       z-index: -1` pseudo-elements, and a background on the root stops `body`'s propagating to the
+       canvas — so `body` starts painting an opaque box of its own, over anything behind it. The
+       door, the confirm step, the reset screen and studio setup all went flat, and the cause was a
+       rule added for the loading mark two screens away. `100vh` so this still covers the viewport
+       while it is the only thing on the page. */
+    #boot { min-height: 100vh; background: #08090A;
+            display: flex; flex-direction: column;
             align-items: center; justify-content: center; gap: 8px;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     #boot b { font: 700 44px/1 inherit; letter-spacing: 0.04em; color: #F5F5F7; }
     #boot span { color: #FF9F0A; }
     #boot small { font: 400 13px/1.4 inherit; color: #9C9CA6; }
-    html { background: #08090A; }
     @media (prefers-color-scheme: light) {
-      html { background: #F2F2F0; }
+      #boot { background: #F2F2F0; }
       #boot b { color: #08090A; }
       #boot span { color: #8F5300; }
       #boot small { color: #5F5F64; }

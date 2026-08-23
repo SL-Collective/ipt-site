@@ -1271,6 +1271,9 @@ function paintScreen() {
       onCreate: handleCreateStudio,
       onJoin: handleJoinStudio,
       onSignOut: handleSignOut,
+      onCancel: state.store.hasStudio
+        ? () => { state.mode = "studio"; state.auth = { ...state.auth, problem: null }; render(); }
+        : null,
     }));
     document.title = titleFor("Your studio");
     return;
@@ -1462,6 +1465,11 @@ function paintScreen() {
         offer: isDemo ? store.offer() : null,
         outbox: state.outbox,
         onSwitchStudio: switchStudio,
+        onAnotherStudio: () => {
+          state.mode = "setup";
+          state.auth = { ...state.auth, problem: null, message: null };
+          render();
+        },
         onTerms: store.isInstructor
           ? () => { location.hash = "#/terms"; }
           : null,

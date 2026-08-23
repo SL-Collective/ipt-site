@@ -495,7 +495,7 @@
   "help" : {
     "instructor" : [
       {
-        "body" : "A time target says how long, not what to work on. Give them the instruction you would give in the room: hands separate, take it at 72, fix the release in bar 12. They have it on Tuesday night when you are not there.",
+        "body" : "A time target says how long, not what to work on. Give them the instruction you would give in the room: hands separate, take it at 72, fix the release in bar 12. It is on the stand while they practice, so nobody has to remember it.",
         "title" : "Assign the work, not the minutes"
       },
       {
@@ -503,7 +503,7 @@
         "title" : "Hear how it went, not just how long"
       },
       {
-        "body" : "Your dashboard puts whoever needs you first, and folds everybody who is doing fine out of the way. Listen to a take and send one line back. That is what keeps them recording.",
+        "body" : "Your dashboard puts whoever needs you first, and folds everybody who is doing fine out of the way. Listen to a take and send one line back. That is the part only you can do.",
         "title" : "Thirty seconds on a Monday"
       }
     ],
