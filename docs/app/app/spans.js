@@ -1,23 +1,8 @@
-/**
- * `PracticeSpan`, transcribed — the month and season the web dashboard could not look at.
- *
- * *A span is whole practice weeks.* A month means the weeks that **begin** in it — a week
- * starting 28 September and running into October belongs to September, and counting it in both
- * would double somebody's total — so a month can never disagree with the weeks inside it. No span
- * extends past `now`, and a month whose first week has not begun yet answers the current week
- * rather than an empty screen. Every one of those edges is a case in `Fixtures/spans/cases.json`,
- * answered by Swift.
- *
- * The season is the studio's current term once it has declared one, under the instructor's own
- * name for it, clamped to the studio's own birth — `seasonWindow` is the shared construction and
- * this only turns its window into whole weeks.
- */
 
 import { civilDate, instantAtCivilMidnight, weekContaining, weeksBetween, weekTitle } from "./judgement.js";
 import { seasonWindow, termsFrom } from "./terms.js";
 import { weekPhrase } from "./format.js";
 
-/** The civil month containing `anchor`, as half-open instants in the studio zone. */
 function monthInterval(anchor, timeZone) {
   const { year, month } = civilDate(anchor, timeZone);
   return {
@@ -26,9 +11,6 @@ function monthInterval(anchor, timeZone) {
   };
 }
 
-/**
- * The weeks that begin inside `anchor`'s month, clamped at `now` — `WeekCalendar.weeks(in: .month)`.
- */
 export function monthWeeks(anchor, now, weekStartsOn, timeZone) {
   const { start, end } = monthInterval(anchor, timeZone);
   const through = Math.min(end.getTime() - 1, now.getTime());
@@ -42,11 +24,6 @@ export function monthWeeks(anchor, now, weekStartsOn, timeZone) {
     : [weekContaining(new Date(Math.min(anchor.getTime(), now.getTime())), weekStartsOn, timeZone)];
 }
 
-/**
- * The weeks a hand-picked stretch covers — `WeekCalendar.weeks(in: .custom)`. Reversed bounds are
- * somebody dragging the second picker first, not an error; the future is clamped at `now`; and a
- * stretch that has not happened yet answers the current week, never nothing.
- */
 export function customWeeks(from, to, now, weekStartsOn, timeZone) {
   const lower = new Date(Math.min(from.getTime(), to.getTime()));
   const upper = new Date(Math.min(Math.max(from.getTime(), to.getTime()), now.getTime()));
@@ -55,12 +32,6 @@ export function customWeeks(from, to, now, weekStartsOn, timeZone) {
   return weeks.length ? weeks : [weekContaining(now, weekStartsOn, timeZone)];
 }
 
-/**
- * A finished term's weeks — `WeekCalendar.weeks(in: .pastTerm)`. The same construction the
- * current season uses, aimed at a chosen era: clamped to the studio's own birth, stopped at the
- * term's end or at `now`, whichever is first — a spring viewed in July is the spring that
- * finished, not one padded with summer.
- */
 export function pastTermWeeks({ startsOn, endsOn, studioCreatedAt, now, weekStartsOn, timeZone }) {
   const seasonStart = new Date(studioCreatedAt);
   const start = new Date(Math.max(new Date(startsOn).getTime(), seasonStart.getTime()));
@@ -71,17 +42,12 @@ export function pastTermWeeks({ startsOn, endsOn, studioCreatedAt, now, weekStar
     : [weekContaining(new Date(Math.min(new Date(startsOn).getTime(), now.getTime())), weekStartsOn, timeZone)];
 }
 
-/** Whether `anchor` falls in the same civil month as `now`, for the "This month" title. */
 export function isThisMonth(anchor, now, timeZone) {
   const a = civilDate(anchor, timeZone);
   const b = civilDate(now, timeZone);
   return a.year === b.year && a.month === b.month;
 }
 
-/**
- * The season's weeks — `seasonWindow`'s answer, as whole weeks, with `PracticeSpan.season`'s own
- * fallback: a term that contains no whole week is still the current week, never nothing.
- */
 export function seasonWeeks({ terms, studioCreatedAt, now, weekStartsOn, timeZone }) {
   const window = seasonWindow(termsFrom(terms ?? []), { studioCreatedAt, now });
   const from = Math.min(window.from.getTime(), window.to.getTime());
@@ -92,10 +58,6 @@ export function seasonWeeks({ terms, studioCreatedAt, now, weekStartsOn, timeZon
   };
 }
 
-/**
- * The words over a span — locale-free where Swift's are, the runtime's own month names and dates
- * where they are not, exactly as `WeekCalendar.title/subtitle` renders them.
- */
 export function spanTitle(kind, { anchor = null, now, weeks, timeZone, weekStartsOn, termName = null }) {
   switch (kind) {
     case "week": {
@@ -116,7 +78,6 @@ export function spanTitle(kind, { anchor = null, now, weeks, timeZone, weekStart
   }
 }
 
-/** "Aug 3 – Sep 6 · 5 weeks" under a multi-week title; a single week is its dates alone. */
 export function spanSubtitle(weeks, timeZone) {
   if (!weeks.length) return "—";
   if (weeks.length === 1) return weekPhrase(weeks[0], timeZone);
@@ -125,14 +86,6 @@ export function spanSubtitle(weeks, timeZone) {
   return `${fmt.format(weeks[0].start)} – ${fmt.format(lastDay)} · ${weeks.length} weeks`;
 }
 
-/**
- * One performer across a span — `PerformerSpanSummary`'s numbers, summed from the same weekly
- * rows the single-week dashboard draws, so a month can never disagree with the weeks inside it.
- *
- * `rowsForWeek` is the dashboard's own pass (`studioWeekRows`), injected so this file stays pure
- * arithmetic over gated pieces. A performer who was not a member for an early week simply
- * contributes fewer weeks — the late-joiner rule lives inside the pass.
- */
 export function spanRows(weeks, rowsForWeek) {
   const byPerson = new Map();
   let members = 0;

@@ -148,25 +148,25 @@
   ],
   "countIns" : [
     {
-      "detail" : "Starts the moment you tap. Best when you're re-recording one short passage.",
+      "detail" : "Starts the second you tap. Good when you're redoing one short passage.",
       "isStandard" : false,
       "label" : "None",
       "seconds" : 0
     },
     {
-      "detail" : "Enough to get your hands back on the instrument.",
+      "detail" : "A moment to get set.",
       "isStandard" : true,
       "label" : "3 seconds",
       "seconds" : 3
     },
     {
-      "detail" : "Room to pick an instrument up, or sit down at it.",
+      "detail" : "Time to pick your instrument up, or get to the bench.",
       "isStandard" : false,
       "label" : "5 seconds",
       "seconds" : 5
     },
     {
-      "detail" : "For when the phone is across the room from you.",
+      "detail" : "For when your phone is across the room.",
       "isStandard" : false,
       "label" : "10 seconds",
       "seconds" : 10
@@ -503,8 +503,8 @@
         "title" : "Hear how it went, not just how long"
       },
       {
-        "body" : "Your dashboard puts whoever needs you first, and folds everybody who is doing fine out of the way. Listen to a take and send one line back. That is the part only you can do.",
-        "title" : "Thirty seconds on a Monday"
+        "body" : "The dashboard leads with the performers who need you, and keeps everyone who is doing fine a tap away. Listen to a take and send one line back. That is the part only you can do.",
+        "title" : "See who needs you first"
       }
     ],
     "instructorFinish" : "Set up my studio",
@@ -523,7 +523,7 @@
       },
       {
         "answer" : "Practice is saved on their own device before it is sent, so a room with no signal does not lose it. It appears for you when their app next has a connection. If a session says it could not be added to the studio, the assignment it belonged to was probably deleted.",
-        "question" : "Somebody says they practiced and it is not here."
+        "question" : "A performer's practice isn't showing up."
       },
       {
         "answer" : "Settings → Scoring → No points. The standings disappear entirely rather than sitting there empty, and assignments, practice and recordings work exactly the same. Plenty of programs run better without a leaderboard.",
@@ -545,7 +545,7 @@
       },
       {
         "answer" : "Practice is saved on their own device before it is sent, so a room with no signal does not lose it. It appears for you when their app next has a connection. If a session says it could not be added to the studio, the assignment it belonged to was probably deleted.",
-        "question" : "Somebody says they practiced and it is not here."
+        "question" : "A performer's practice isn't showing up."
       },
       {
         "answer" : "This studio is set to No points, so there is no leaderboard and no scores anywhere. Settings → Scoring turns them back on.",
@@ -562,8 +562,8 @@
         "title" : "Record a take, mark the good bit"
       },
       {
-        "body" : "Your instructor hears what you sent and can send one line back. Nobody else in the studio can hear your recordings or read your notes. They only see that you practiced.",
-        "title" : "Somebody listens"
+        "body" : "They listen to what you send and can write a line back. Nobody else in the studio can hear your recordings or read your notes. They only see that you practiced.",
+        "title" : "Your instructor hears it"
       }
     ],
     "performerFinish" : "Start practicing",
@@ -1794,5 +1794,49 @@
   "studioName" : "Fall Percussion Studio",
   "supportEmail" : "support@iptmusic.com",
   "weekCount" : 3,
+  "weekStarts" : [
+    {
+      "isStandard" : false,
+      "label" : "Sunday",
+      "runsPhrase" : "A week runs Sunday to Saturday.",
+      "value" : 1
+    },
+    {
+      "isStandard" : true,
+      "label" : "Monday",
+      "runsPhrase" : "A week runs Monday to Sunday.",
+      "value" : 2
+    },
+    {
+      "isStandard" : false,
+      "label" : "Tuesday",
+      "runsPhrase" : "A week runs Tuesday to Monday.",
+      "value" : 3
+    },
+    {
+      "isStandard" : false,
+      "label" : "Wednesday",
+      "runsPhrase" : "A week runs Wednesday to Tuesday.",
+      "value" : 4
+    },
+    {
+      "isStandard" : false,
+      "label" : "Thursday",
+      "runsPhrase" : "A week runs Thursday to Wednesday.",
+      "value" : 5
+    },
+    {
+      "isStandard" : false,
+      "label" : "Friday",
+      "runsPhrase" : "A week runs Friday to Thursday.",
+      "value" : 6
+    },
+    {
+      "isStandard" : false,
+      "label" : "Saturday",
+      "runsPhrase" : "A week runs Saturday to Friday.",
+      "value" : 7
+    }
+  ],
   "weekStartsOn" : 2
 }

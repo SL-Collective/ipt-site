@@ -1,44 +1,13 @@
-/**
- * `StudioTrend`, transcribed — and the one data pass every dashboard figure comes out of.
- *
- * ## Why the pass lives here
- *
- * The trend compares two weeks of the same summaries the dashboard's tiles and rows are drawn
- * from, and *the tiles and the rows disagreeing about the same week is a bug that has to be made
- * impossible rather than avoided by care.* So `studioWeekRows` is the single construction:
- * `screens.js` draws this week's rows from it, and `weekTrend` runs it twice — the viewed week
- * and the one before — and hands both to the same comparison Swift makes. A second pass written
- * for the trend alone would be the two-constructions failure wearing a new coat.
- *
- * ## What the trend is allowed to say
- *
- * `StudioTrend`'s two rules, kept to the word and held by the parity fixture
- * (`Fixtures/trend/cases.json`, Swift's own answers):
- *
- *   · **It says nothing rather than something uncertain.** A first week has nothing behind it and
- *     the answer is silence, not a confident 0%.
- *   · **It does not flatter.** A drop is reported in the same voice as a rise, the difference is
- *     floored toward zero so an improvement is never overstated, and movement under the noise
- *     floor is noise — a studio is thirty teenagers, and one being ill moves the total.
- */
 
 import { assignmentProgress, audienceIncludes, isActiveDuring, progressFraction, weekMet } from "./judgement.js";
 import { memberSinceDates } from "./coverage.js";
 import { longDuration } from "./format.js";
 
-/** The week everything is judged against: the last one in the studio's grid. */
 export function currentWeek(store) {
   const weeks = store.weeks();
   return weeks[weeks.length - 1];
 }
 
-/**
- * One performer's progress in one week, per assignment.
- *
- * Facts are narrowed to this person, this assignment and this week *before* being handed to
- * `assignmentProgress` — narrowing inside it would re-filter the whole studio once per assignment,
- * which is what made the instructor dashboard quadratic in Swift before it was fixed.
- */
 export function weekProgress(store, performerId, week = currentWeek(store), facts = store.facts()) {
   const byId = {};
   const progress = {};
@@ -57,18 +26,6 @@ export function weekProgress(store, performerId, week = currentWeek(store), fact
   return { week, progress, byId };
 }
 
-/**
- * Every member's week, in one pass — the dashboard's figures and the trend's inputs.
- *
- * **A week that ended before somebody joined is not a week they failed**: the roster for a past
- * week counts only people who were members during it, through the same fail-safe resolution the
- * coverage denominator uses, and `joinedLater` says exactly how many rows that removed so the
- * screen can say so. For the current week the two rosters are identical.
- *
- * Each row carries the four fields `StudioTrend.between` reads (`hasWork`, `isMet`,
- * `countedSeconds` as `seconds`, `clipCount` as `clips`) plus the pair the roster rows draw
- * (`met`, `assigned`) — one shape, so nothing downstream can pick a different construction.
- */
 export function studioWeekRows(store, week = currentWeek(store)) {
   const all = store.performers();
   const memberSince = memberSinceDates({
@@ -94,14 +51,6 @@ export function studioWeekRows(store, week = currentWeek(store)) {
   return { rows, joinedLater: all.length - members.length };
 }
 
-/**
- * One judged week, from one `weekProgress` bundle — the row shape every reader shares.
- *
- * `hasWork` and `isMet` are about *required* work — optional practice counts its minutes and
- * casts no vote, which the fixture pins with an optional-only week. `fraction` is the mean
- * progress fraction across everything in the week, the number iOS's `WeekStrip` sizes its bars
- * by — carried here so the strip cannot grow its own arithmetic.
- */
 function judgedWeek({ progress, byId }) {
   const required = Object.entries(progress).filter(([id]) => !byId[id].is_optional);
   const values = Object.values(progress);
@@ -118,11 +67,6 @@ function judgedWeek({ progress, byId }) {
   };
 }
 
-/**
- * One performer's judged weeks, oldest first — `PerformerSpanSummary.weeks` for the person whose
- * screen it is. The same construction as `studioWeekRows`, one person at a time, with the facts
- * pre-narrowed once so a whole season is a single pass rather than one scan per week.
- */
 export function performerWeekRows(store, performerId, weeks) {
   const mine = store.facts().filter((f) => f.performerId === performerId);
   return weeks.map((week) => ({
@@ -131,14 +75,8 @@ export function performerWeekRows(store, performerId, weeks) {
   }));
 }
 
-/** Movement smaller than this is noise, not news — one ill teenager moves a studio's total. */
 const NOISE_FLOOR = 0.10;
 
-/**
- * `StudioTrend.between` + `headline` + `detail`, in one call, because the web has no reason to
- * hold the intermediate struct. Returns null where Swift returns a nil headline: nothing is
- * claimed unless there is a real stretch to compare against.
- */
 export function weekTrend({ now, before, periodName }) {
   const seconds = (rows) => rows.reduce((n, r) => n + r.seconds, 0);
   const clips = (rows) => rows.reduce((n, r) => n + r.clips, 0);

@@ -54,17 +54,21 @@
   }
   body::after { background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--canvas) 45%, transparent) 0%,
+    color-mix(in srgb, var(--canvas) 88%, transparent) 0%,
+    color-mix(in srgb, var(--canvas) 72%, transparent) 11%,
+    color-mix(in srgb, var(--canvas) 45%, transparent) 26%,
     color-mix(in srgb, var(--canvas) 65%, transparent) 45%,
     color-mix(in srgb, var(--canvas) 97%, transparent) 82%,
     var(--canvas) 100%
   ); }
   @media (prefers-color-scheme: dark) {
-    body::before { opacity: 0.34; }
+    body::before { opacity: 0.48; }
     body::after { background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--canvas) 34%, transparent) 0%,
-    color-mix(in srgb, var(--canvas) 54%, transparent) 45%,
+    color-mix(in srgb, var(--canvas) 92%, transparent) 0%,
+    color-mix(in srgb, var(--canvas) 74%, transparent) 11%,
+    color-mix(in srgb, var(--canvas) 30%, transparent) 26%,
+    color-mix(in srgb, var(--canvas) 48%, transparent) 45%,
     color-mix(in srgb, var(--canvas) 97%, transparent) 82%,
     var(--canvas) 100%
   ); }
@@ -208,11 +212,24 @@
        screenshots were squeezed to the width they had on a phone. Prose wants a narrow measure;
        a hero does not. So the hero alone breaks the cap, by exactly the amount two phones and a
        readable column need, and every section below it keeps the 46rem it is written for. */
-    .hero-head, .hero {
+    /* The cards come with it, and that is a correction rather than an extension. The hero was the
+       only thing on the page allowed past 46rem, so the widest element sat above a column two
+       thirds its width and the page read as though the layout had given up below the fold. The
+       reasoning above is about prose versus not-prose, and three feature cards are not prose
+       either: at 736px they were 236px each, which broke "Assign the work, not the minutes" over
+       two lines and left the third card visibly shorter than its neighbours. At 1080 they are
+       ~350 and the headings sit on one line.
+
+       The sections *below* them keep 46rem on purpose. Those are sentences somebody reads, and a
+       long measure is what makes a paragraph hard to track back. Wide, wide, narrow is a rhythm;
+       wide, narrow, narrow was an accident. */
+    .hero-head, .hero, .landing {
       width: min(1080px, calc(100vw - 96px));
       margin-left: calc((min(1080px, 100vw - 96px) - 100%) / -2);
       margin-right: calc((min(1080px, 100vw - 96px) - 100%) / -2);
     }
+    .landing { gap: 18px; }
+    .card h3 { font-size: 17px; }
     /* Smaller than the single-column clamp, because the headline no longer has the page — it has
        a column beside two phones. At 58px "Assign the practice." needs about 550px and the column
        is 528, so it broke over three lines at exactly the width where this layout turns on. */
@@ -259,9 +276,111 @@
   .support h2 { margin-top: 0; }
   .updated { color: var(--muted); font-size: 15px; margin: 0 0 8px; }
   footer { color: var(--muted); font-size: 14px; margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); }
+
+  /* ======================================================================================
+     Depth, light and motion, with nothing fetched
+     ======================================================================================
+
+     The page was correct and read as a document: a flat canvas, hard rules, screenshots sitting
+     on the background like clip art, and no light anywhere. The brand colour appeared only as
+     ink — never as a source of light — which is the single biggest reason a dark page looks
+     unfinished rather than deliberate.
+
+     Everything below is CSS. This page promises, in its own footer, that it loads no scripts, no
+     fonts and nothing from anywhere else, and that promise is worth more than any effect it
+     forbids. Scroll reveals use `animation-timeline: view()`, which needs no JavaScript at all;
+     browsers without it simply see the finished state, which is why the keyframes end where the
+     element already is.
+
+     Two rules the rest of this file already lives by are kept: nothing here changes a text
+     colour or the surface a measured contrast pair was taken against, and every motion is off
+     for anybody who asked for less of it. */
+
+  /* The bloom. Two very soft radial washes of the accent, sitting behind everything, no edges.
+     Fixed rather than scrolled so it behaves like light in the room rather than an object on the
+     page. `pointer-events: none` because it covers the whole viewport. */
+  body { position: relative; }
+  .glow {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(58vw 42vh at 50% -6%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 68%),
+      radial-gradient(40vw 34vh at 88% 12%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%);
+  }
+  @media (prefers-color-scheme: light) {
+    /* A wash that reads as light on black reads as a stain on white, so it is barely there. */
+    .glow {
+      background:
+        radial-gradient(58vw 40vh at 50% -8%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%);
+    }
+  }
+  @media print { .glow { display: none; } }
+
+  /* The masthead rule was a full-width hairline, which is the most document-like thing a page can
+     do. Faded at both ends it reads as a horizon instead. */
+  header {
+    border-bottom: 0;
+    background-image: linear-gradient(90deg, transparent, var(--rule) 18%, var(--rule) 82%, transparent);
+    background-size: 100% 1px; background-position: 0 100%; background-repeat: no-repeat;
+  }
+
+  /* Cards, lit from above. A 1px top edge that catches the light is what separates a panel from a
+     rectangle, and it costs one pseudo-element. The border stays for anybody whose browser has no
+     `color-mix`. */
+  .card { position: relative; overflow: hidden; }
+  .card::before {
+    content: ""; position: absolute; inset: 0 0 auto; height: 1px;
+    background: linear-gradient(90deg, transparent,
+      color-mix(in srgb, var(--ink) 22%, transparent) 30%,
+      color-mix(in srgb, var(--ink) 22%, transparent) 70%, transparent);
+  }
+
+  /* The phones sat on the background with a shadow and nothing else. A glow *under* them is what
+     makes a screen look like it is emitting rather than printed, and a little perspective is what
+     stops two flat rectangles reading as a slide. */
+  .shots { position: relative; perspective: 1400px; }
+  .shots::before {
+    content: ""; position: absolute; left: 50%; bottom: 2%; transform: translateX(-50%);
+    width: min(560px, 82%); height: 46%; border-radius: 50%; z-index: -1;
+    background: radial-gradient(ellipse at center,
+      color-mix(in srgb, var(--accent) 22%, transparent), transparent 72%);
+    filter: blur(38px);
+  }
+  .shot {
+    box-shadow:
+      0 32px 78px rgba(0,0,0,.52),
+      0 6px 16px rgba(0,0,0,.3),
+      0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+  .shot-back { transform: perspective(1400px) rotateY(9deg) rotate(-4deg) translateY(14px); }
+  .shot:not(.shot-back) { transform: perspective(1400px) rotateY(-6deg) rotate(3deg); }
+
+  /* The primary door, given the light the rest of the page now has. */
+  .cta-button {
+    box-shadow:
+      0 10px 30px color-mix(in srgb, var(--accent) 30%, transparent),
+      0 2px 6px rgba(0,0,0,.28);
+  }
+
+  /* Scroll reveal, in CSS, and written so that a browser without it shows the finished state.
+     `animation-range` ends well before the element is centred, or a reader who scrolls quickly
+     watches text catch up with them. */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .landing .card, .band, .support {
+        animation: rise linear both;
+        animation-timeline: view();
+        animation-range: entry 6% cover 26%;
+      }
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: none; }
+      }
+    }
+  }
 </style>
 </head>
 <body>
+<div class="glow" aria-hidden="true"></div>
 <main>
   <header>
     <div class="wordmark"><a href="/" style="text-decoration:none;color:inherit">IP<span>T</span></a></div>
@@ -270,14 +389,29 @@
 
   <section class="doc">
   <h1>Refunds</h1>
-  <p class="updated">Last updated: August 21, 2026</p>
+  <p class="updated">Last updated: August 24, 2026</p>
 <h2>What you are buying</h2>
-<p>One IPT account, for one person, for <strong>$4.99 once</strong>.</p>
-<p>It does not renew. There is no subscription, no monthly charge, no per-student pricing, and no second invoice ever. You will be charged once, and the charge will appear on your statement as <strong>IPT PRACTICE APP</strong>.</p>
+<p>One IPT account, for one person.</p>
+<p>It does not renew. There is no subscription, no monthly charge, no per-student pricing, and no second invoice ever. You will be charged once. Where you bought it decides two things, and nothing else about your account:</p>
+<div class=table-wrap><table><thead><tr><th></th><th>what it costs</th><th>what the charge says</th></tr></thead><tbody>
+<tr><td><strong>On the web</strong>, at iptmusic.com</td><td><strong>$4.99 once</strong></td><td><strong>IPT PRACTICE APP</strong></td></tr>
+<tr><td><strong>In the iPhone app</strong>, through the App Store</td><td>the same price in your own currency, set by Apple for your country</td><td>Apple's own wording, usually naming Apple rather than IPT</td></tr>
+</tbody></table></div>
+<p>The account is identical either way, on every device you sign in on.</p>
 <h2>Refunds</h2>
-<p><strong>Ask and you get your money back.</strong> Write to <a href="mailto:support@iptmusic.com">support@iptmusic.com</a> from the address on the account, say you want a refund, and we will issue one.</p>
-<p>There is no time limit written here on purpose. A director who buys IPT in August and finds in September that their program cannot use it is exactly who a refund is for, and a thirty-day rule would have already expired by the time they knew. If you do not want the account, you should not be holding a charge for it.</p>
-<p>There is no form, no ticket number and no retention offer. A refund request is answered by a person, usually the same day.</p>
+<p><strong>If something is wrong, write to us and we will sort it out.</strong> Most of what people write in about turns out to be something we can fix, and a working app is usually what they actually wanted. Where we cannot make it right, we refund. How you ask depends on which of the two tills you used, because only one of them is ours.</p>
+<h3>If you bought on the web</h3>
+<p>Write to <a href="mailto:support@iptmusic.com">support@iptmusic.com</a> from the address on the account and say what went wrong. A person reads it, usually the same day. There is no form, no ticket number and no retention offer.</p>
+<p>If it is something we cannot fix, we refund the purchase. We do not put a clock on that: a director who buys IPT in August and finds in September that their program cannot use it is exactly the case a thirty-day rule would have already shut out.</p>
+<p>Nothing here takes away a right you have by law. If the country you bought from gives you a statutory right to cancel, that right stands whatever this page says.</p>
+<h3>If you bought in the iPhone app</h3>
+<p><strong>Apple holds that money and Apple issues that refund.</strong> IPT cannot do it, and saying otherwise would be a promise about somebody else's system. Ask Apple at <a href="https://reportaproblem.apple.com">reportaproblem.apple.com</a>, or in Settings on your device, under your name, then Media and Purchases. Apple decides, and Apple sometimes says no.</p>
+<p>Two things we can tell you honestly:</p>
+<ul>
+<li><strong>Write to us anyway if you want to.</strong> We will tell you what we can see and we will not argue with you about whether you should have it. What we cannot do is move the money, because it never reached us.
+<li><strong>Your account follows Apple's decision automatically.</strong> When Apple refunds a purchase it tells IPT, and the account stops entitling you to start or join a studio from that moment, in exactly the way a refunded card payment does. Nothing about that is done by hand, and nothing below changes.
+</ul>
+<p>We would rather you had bought on the web, where the promise above is ours to keep. That is not a reason to buy there: the App Store is the right place to buy an iPhone app, and the price is the same.</p>
 <h2>What happens to your practice when you refund</h2>
 <p><strong>Nothing is deleted, and nothing is taken away from anybody else.</strong></p>
 <p>A refunded account can no longer start a new studio or join another one. That is the whole of the change. Specifically:</p>
@@ -289,11 +423,17 @@
 </ul>
 <p>This is deliberate. Practice already done is a record of somebody's work, and it is not collateral in a billing dispute. If you want your data deleted as well, that is a separate request and a different document (see the <a href="/privacy">privacy policy</a>), and deleting your account removes it.</p>
 <h2>Chargebacks</h2>
-<p>If something has gone wrong, please write to us before disputing the charge with your bank. A refund is faster, and it is not conditional on anything: there is no argument to have.</p>
+<p>This one is about a card, so it is about a web purchase. If something has gone wrong, please write to us before disputing the charge with your bank. A refund is faster, and it is not conditional on anything: there is no argument to have.</p>
+<p>An App Store purchase has no chargeback step of ours to skip. Apple's refund request is the whole of it.</p>
 <h2>Partial refunds</h2>
 <p>There are none, because there is nothing to refund part of. IPT is one purchase of one thing at one price.</p>
 <h2>Payment problems</h2>
-<p>If you were charged and no account appeared, write to <a href="mailto:support@iptmusic.com">support@iptmusic.com</a> with the date and the last four digits of the card. That is enough to find the payment. This is a real failure mode with a real cause: a payment that reaches Stripe but cannot be matched to an account is held rather than guessed at. It is fixed by hand, quickly, by somebody who can see both sides.</p>
+<p>If you were charged and no account appeared, write to <a href="mailto:support@iptmusic.com">support@iptmusic.com</a>. This is a real failure mode with a real cause: a payment that arrives but cannot be matched to an account is held rather than guessed at, and it is fixed by hand, quickly, by somebody who can see both sides.</p>
+<p>What to send depends on where you bought, because the two payments are found in different systems:</p>
+<ul>
+<li><strong>On the web</strong>: the date and the last four digits of the card. That is enough to find it.
+<li><strong>In the iPhone app</strong>: the receipt Apple emailed you, or the order number on it. IPT never sees your card and cannot search on one, so a card number would not find an App Store purchase.
+</ul>
   </section>
 
   <footer>

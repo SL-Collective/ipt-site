@@ -84,10 +84,30 @@ p { margin: 0; }
 
 /* ------------------------------------------------------------------ layout */
 
+/* **Text scales with the reader's preference; the gutters do not.**
+ *
+ * These were `1.25rem`, and a rem gutter grows with the root font — so somebody who turns text up
+ * to 200% on a 320px phone was spending **80px of 320 on page gutters alone**, and another 70 on
+ * card padding: 47% of the screen given to whitespace, leaving 170px for content. That is the
+ * opposite of what the setting asks for. Somebody who enlarges text wants bigger *text*, on the
+ * screen where margins are already the scarcest thing they have.
+ *
+ * Measured on the instructor's dashboard at 320px / 200%: the roster's name column was squeezed to
+ * 104px, which is where "3-week streak" — a pill that must not wrap, because a broken number reads
+ * as a different number — ran 14px past the edge of the phone and the page scrolled sideways.
+ * `web/README.md`'s console script checks exactly that and had never been run at this text size.
+ *
+ * `min()` caps the growth without touching the ordinary case: at 320px `6vw` is 19.2px against the
+ * 20px it was, and at 375px and wider the rem still wins outright. Only the enlarged-text case
+ * changes, which is the only case that was broken. Page: 334px wide against a 320px viewport
+ * before, 320 after; the card goes 240 → 288 and the pill fits without wrapping.
+ *
+ * `gap` is left in rem on purpose — vertical rhythm should breathe with the text, and vertical
+ * space is not the scarce axis on a phone. */
 .page {
   max-width: 46rem;
   margin: 0 auto;
-  padding: 1rem 1.25rem 2rem;
+  padding: 1rem min(1.25rem, 6vw) 2rem;
   display: grid;
   gap: 1.25rem;
 }
@@ -103,13 +123,33 @@ p { margin: 0; }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
 .grow { flex: 1 1 auto; min-width: 0; }
 
+/* A short action word beside a flexible block of text, which must not be the thing that gives way.
+ *
+ * **Measured at 375 x 812 with the root font doubled**, which is the shipping minimum width at the
+ * text size somebody who needs it actually uses: the demo bar's `Leave` was **37px wide across
+ * three line boxes**, and the roster header's `Manage` was **22px across six** — one letter per
+ * line, both of them, beside a paragraph that had taken the whole row. Nothing overflowed and
+ * nothing painted past the edge, which is why every sweep so far called this clean: the
+ * measurements asked about the document's width. And `targets_test.js` cannot see it either,
+ * because it asserts a 44px *height* floor and this failure makes a control **taller**.
+ *
+ * `flex-shrink: 0` is the whole fix and it is the same one this codebase already applies to
+ * numerals for the same reason — *without `flex-shrink: 0` the box shrinks below its content*.
+ * Applied by class rather than to every `.row-between` child, because a settings row's trailing
+ * value ("Completion first", "All year") is a phrase that *should* wrap rather than squeeze the
+ * label it sits beside. */
+.no-shrink { flex-shrink: 0; }
+
 /* ------------------------------------------------------------------ surfaces */
 
 .card {
   background: var(--surface);
   border: 1px solid var(--hairline);
   border-radius: 20px;
-  padding: 1.1rem;
+  /* Capped for the reason `.page`'s gutters are: a rem pad grows with the reader's text size, and
+     on a 320px phone at 200% this alone took 70px of the width the text needed. `5.5vw` is 17.6px
+     at 320 — exactly what the rem gave — so nothing moves until the text is enlarged. */
+  padding: min(1.1rem, 5.5vw);
 }
 .card--tinted { background: var(--accent-soft); color: var(--on-accent-soft); }
 .card--inset { background: var(--inset); border-radius: 14px; padding: 0.85rem 0.95rem; }
@@ -208,6 +248,17 @@ input.check {
   color: var(--muted);
 }
 .notice--error { background: var(--live-soft); color: var(--on-live-soft); }
+
+/* A condition that is **safe**, which is not the same as an error and must not be red.
+ *
+ * *Three colours, three jobs. Red needs a hand on it now — recording and destroying, and nothing
+ * else.* A session the server set aside needs no hand on it now: the practice is on the device,
+ * it counts toward the week already, and only the performer may throw it away. `SessionRow` on
+ * iOS draws exactly this state `Palette.accent` and says why in a comment — *"Amber either way:
+ * neither of these needs a hand on it now, and the practice is safe in both."* The web drew it in
+ * the **recording red**, which is the one colour in this product that means something is wrong
+ * right now, on the screen a fourteen-year-old opens after practising. */
+.notice--holding { background: var(--accent-soft); color: var(--on-accent-soft); }
 
 .offline-bar {
   background: var(--inset);
@@ -611,6 +662,40 @@ dialog::backdrop { background: rgb(0 0 0 / 0.55); }
  */
 body.no-chrome { padding-bottom: 0; }
 
+/*
+ * The roster, two-up once the screen can hold two phone-width rows side by side.
+ *
+ * **An iPad was reading as a tall phone.** Every screen is one 46rem column, which is the right
+ * measure for prose and for a form, and wrong for a list of forty people: in landscape an iPad
+ * spent 222px of dead space on each side while showing four performers at a time. A director
+ * scanning who needs them on Monday was paging through a list the device had room to show at once.
+ *
+ * The column is *not* widened to fix it. A roster row puts a name at one end and a percentage at
+ * the other, so a wider row moves them further apart and reads worse — the fix is more rows per
+ * screen, not longer ones. At 46rem two tracks are ~350px each, which is what a row already gets
+ * on a 375pt phone, so nothing is squeezed and nothing needed re-designing.
+ *
+ * `rem` rather than a pixel breakpoint, so the layout folds back to one column when somebody
+ * enlarges their text — the moment two columns stop being readable, and exactly when a pixel
+ * breakpoint would have kept them.
+ *
+ * 20rem, measured rather than reasoned. The first attempt was `35ch`, on the argument that what
+ * decides whether two rows fit is how wide a row's *text* is; `ch` turned out to be 10.7px in this
+ * font at 17px, so `35ch` is **375px** and two of them plus the gap need 762 of the 696 a 46rem
+ * page has. It silently stayed one column and looked exactly like the rule not applying. 20rem is
+ * 320px, a track comes out at 342, and that is wider than the 335px a row already gets on a 375pt
+ * phone.
+ *
+ * `align-items: start` because a roster row is read across, not down. Stretch makes both cards in a
+ * row the same height and centres the shorter one's content inside it, which drops its name 11px
+ * below its neighbour's; the eye scanning for a name then has two baselines per row instead of one.
+ * Ragged card bottoms are the cheaper cost.
+ */
+.roster-list {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  align-items: start;
+}
+
 /* ------------------------------------------------------------------ the band-room screen */
 
 /*
@@ -627,7 +712,26 @@ body.no-chrome { padding-bottom: 0; }
  * *colour is measured, not chosen.*
  */
 .display {
-  min-height: 100vh;
+  /* **`height`, not `min-height`, and the difference is the whole contract of this screen.**
+   *
+   * `min-height: 100vh` guarantees a floor and says nothing about a ceiling, so the content was
+   * free to grow past the viewport — and it did. A full board of ten at 1280x720, the resolution a
+   * band-room projector actually runs at, came to 728px against 720 and the totals under the board
+   * sat 8px below the fold, on the one screen in this product with *nobody standing at it to
+   * scroll*. `.display-board` already had `min-height: 0` from the last time this bit, but a flex
+   * child can only be made to shrink inside a parent that has a fixed budget, and this parent had
+   * none.
+   *
+   * Measured by cloning rows into the live page, which is how the same failure was found at 900px
+   * before: 10 rows at 720 was 728 and is 720; the board absorbs the 8px and a row goes 46px to
+   * 45.2, which is not a difference anybody reads from the back of a room.
+   *
+   * `dvh` because a browser's own chrome is part of the viewport it does not give you, and this
+   * screen is sometimes an iPad propped on a stand rather than a projector. `overflow: hidden` is
+   * the backstop: if some future row cannot be squeezed, clipping is the honest failure here — a
+   * scrollbar on a wall display is a control nobody can reach. */
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: clamp(0.5rem, 1.5vh, 1.5rem);
@@ -843,8 +947,26 @@ main[data-room]::before {
   background-size: cover;
   background-repeat: no-repeat;
   /* Dark photographs on a light page have to be nearly gone; on a dark page they can breathe, but
-     only as far as the measurement allows. */
-  opacity: 0.34;
+     only as far as the measurement allows.
+   *
+   * **0.34 with a 34% scrim over it meant the photograph contributed at most 22% of the visible
+   * pixel at the very top of the page, and about 1% below the 82% mark** — measured, in a browser,
+   * against `--canvas` at #08090A. What that renders is black with a suggestion of noise in it,
+   * which is what somebody looking at the deployed client reported as "black containers". A file
+   * shipped in order to render black is worse than no file: it costs bytes on a school Chromebook
+   * and buys nothing.
+   *
+   * It got there honestly. `make backdrop` measured **contrast** — it found `muted` at 2.9:1 over
+   * the bright part of three rooms and darkened until the text was legible — and never asked
+   * whether the subject of the measurement survived it. *A measurement can optimise one variable
+   * and destroy the thing being measured.*
+   *
+   * The scrim was also defending almost nothing. Reading the DOM back on the sign-in screen, only
+   * **four** elements sit directly on the backdrop: the wordmark, the tagline, and the privacy
+   * link. Everything else is inside an opaque card, whose contrast the photograph cannot touch.
+   * So the binding constraint was `muted` on two of those four, and the answer is to move those
+   * two rather than to keep flattening the picture — see `main[data-room] .tagline` below. */
+  opacity: 0.48;
   /* Enough to stop an edge in the photograph reading as an edge in the interface — a music stand
      that looks like a divider is worse than no photograph at all. Small, because
      `Tools/build_web_backdrops.py` already blurs before encoding: most of the softening is baked
@@ -867,20 +989,45 @@ main[data-room] {
      two things to keep in step, and nothing would report them drifting. Light mode begins more
      veiled because even a faint dark image over an off-white canvas costs contrast at the top of
      the page, where the headings are. */
+  /* The same vignette shape as the dark one, for the same reason: a fix applied to one appearance
+   * only is the fault this file already records once, where the light opacity was applied in dark
+   * mode and looked fine. Light mode fights the opposite problem — a dark photograph on a white
+   * page is a smudge, not a glare — so the masthead stop is what matters and the middle can stay
+   * near where it was. */
   --room-scrim-light: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--canvas) 45%, transparent) 0%,
+    color-mix(in srgb, var(--canvas) 88%, transparent) 0%,
+    color-mix(in srgb, var(--canvas) 72%, transparent) 11%,
+    color-mix(in srgb, var(--canvas) 45%, transparent) 26%,
     color-mix(in srgb, var(--canvas) 65%, transparent) 45%,
     color-mix(in srgb, var(--canvas) 97%, transparent) 82%,
     var(--canvas) 100%
   );
 }
 
+/* **The gradient used to run weak-to-strong down the page, and that is backwards.** It was
+ * 34% canvas at the top rising to 97% at 82% — so it protected the bottom of the screen, where
+ * every element sits inside an opaque card and needs no protection at all, and left the top
+ * barest, which is exactly where the four elements that stand *directly* on the photograph
+ * are: the wordmark, the tagline and the policy link.
+     *
+ * Measured across all seven rooms, the brightest pixel in the top band composited to 0.35
+ * luminance on `room-percussion`, which is **1.26:1** against the amber in the wordmark. It
+ * did not show as a fault because `background-size: cover` happens to crop that room's lamp
+ * away at a desktop aspect ratio — a contrast floor that holds because of the viewport is not
+ * a floor.
+     *
+ * So it is a vignette now: opaque enough at the masthead that no photograph can reach the
+ * text, thinnest through the middle band where the room is actually seen and nothing but a
+ * card sits, and closing again at the bottom as it always did. The picture is *more* visible
+ * than before, not less, because the darkness is spent where it buys something. */
 main[data-room]::after {
   background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--canvas) 34%, transparent) 0%,
-    color-mix(in srgb, var(--canvas) 54%, transparent) 45%,
+    color-mix(in srgb, var(--canvas) 92%, transparent) 0%,
+    color-mix(in srgb, var(--canvas) 74%, transparent) 11%,
+    color-mix(in srgb, var(--canvas) 30%, transparent) 26%,
+    color-mix(in srgb, var(--canvas) 48%, transparent) 45%,
     color-mix(in srgb, var(--canvas) 97%, transparent) 82%,
     var(--canvas) 100%
   );
@@ -967,3 +1114,98 @@ button:active:not(:disabled),
    "Remove". One row of extra height, and a layout with one shape rather than three. */
 .plan-row { flex-wrap: wrap; }
 .plan-row > .grow { flex: 1 0 100%; }
+
+/* ------------------------------------------------------------------ a take that is running
+ *
+ * **The whole of what recording looked like was a line of muted caption text.** A performer could
+ * not tell the app was recording — the caption tier is where hints live — and `--live`, the colour
+ * this product reserves for exactly this, was not on the screen. `Brand.swift` generates it,
+ * `tokens.css` has carried it since, and the recorder never used it.
+ *
+ * *Three colours, three jobs: red needs a hand on it now — recording and destroying, and nothing
+ * else.* A running take is the canonical case, and it was the one place the rule was not applied.
+ */
+.live-bar {
+  display: flex;
+  align-items: center;
+  /* **Wraps rather than squeezing.** At an accessibility text size the word, the clock and the
+     countdown do not fit one line on a 390px phone, and a flex row that cannot wrap resolves that
+     by shrinking its children — which is how a figure ends up broken across lines. Two lines is
+     the right answer; a split number never is. */
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 0 0 0.35rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 12px;
+  background: var(--live-soft);
+  color: var(--on-live-soft, var(--ink));
+}
+
+.live-dot {
+  flex-shrink: 0;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--live);
+  /* The one animation in this app that repeats forever, and it earns it: a still dot is a label,
+     a beating one is a state. Held to a gentle range so it reads at a glance without pulling the
+     eye off the music. */
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+
+.live-clock {
+  /* `font-variant-numeric` and `white-space` come from `.numeral`, which is where every figure in
+     this app gets them — restating them here would be a second construction of the same rule. */
+  flex-shrink: 0;
+  font-weight: 650;
+  font-size: 1.05rem;
+  /* A clock that changes width every second is a clock somebody watches instead of playing. */
+  letter-spacing: 0.01em;
+}
+
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.45; transform: scale(0.82); }
+}
+
+/* **Nothing moves for somebody who asked for nothing to move.** A recording indicator is exactly
+   the case where a still, high-contrast state has to remain readable, so the dot stays fully
+   opaque rather than losing its animation and its meaning together. */
+@media (prefers-reduced-motion: reduce) {
+  .live-dot { animation: none; opacity: 1; }
+}
+
+/* The mark landed. Silent on a repeat, because two taps a second apart are one slip of the thumb
+   and telling somebody off for it mid-take is worse than doing nothing. */
+.is-marked {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* The word, at the weight a label wants rather than the weight the clock wants. */
+.live-word {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+
+/* ------------------------------------------------------------- text standing on a photograph
+ *
+ * The four elements that are not inside a card. Raised off `--muted` because `--muted` is what
+ * held the whole backdrop down: at #9C9CA6 the 4.5:1 floor allows a background of only 3.6%
+ * luminance, and `--canvas` is 0.27% — so the photograph had a ceiling thirteen times lower than
+ * the one the ink tier gives it, and every version of this was spent flattening the picture to
+ * protect two lines of small text.
+ *
+ * Moving them is the cheaper trade in both directions: the tagline and the policy link are more
+ * readable, and the room behind them is finally a room. **This is not a third text tier** — it is
+ * these elements using `--ink`, which is the tier they should have been in the moment they stopped
+ * standing on a flat canvas.
+ */
+main[data-room] .tagline,
+main[data-room] .policy-link,
+main[data-room] > p > a {
+  color: var(--ink);
+}

@@ -1,61 +1,21 @@
-/**
- * The season artefact — `IPTCore.StudioReport`, transcribed.
- *
- * The thing an instructor forwards to a booster club, a principal or a parent, and the thing a
- * performer keeps when the season stops. Plain text on purpose: it pastes into an email, a message,
- * a shared document and a printed sheet without any of them needing to understand a format.
- *
- * ## Why a second copy exists at all
- *
- * iOS has had both halves behind `ShareLink` since v22. The web had neither, which matters more than
- * it sounds — the web client exists because districts hand out Chromebooks, and printing is
- * something people do from a laptop.
- *
- * `ReportParityTests` exports the inputs **and Swift's own answers** to
- * `Tests/IPTCoreTests/Fixtures/report/cases.json`, and `web/tests/report_test.js` compares the
- * finished text character for character. That is the only thing that makes this permissible: *a
- * duplicate is allowed when something that runs proves the copies agree.* And the failure being
- * defended against is not a crash — it is a booster club and a parent reading two different accounts
- * of the same season, each of which looks entirely correct.
- *
- * ## Three of these numbers cannot be computed here
- *
- * `weeksMet`, `weeksWithWork` and `bestStreak` are span totals about **other people**, and the
- * judgement split puts those in `0004_judgement.sql` alone. `0009` projects them out of
- * `studio_leaderboard`, which already had them one CTE away. Against a project without `0009` they
- * arrive as null, and every line that needs one is **omitted** rather than printed as a zero — "0 of
- * 0 weeks" and "Best run: 0 weeks in a row" are both sentences somebody would believe.
- *
- * @module
- */
 
 import { longDuration } from "./format.js";
 
-/** `PerformerSpanSummary.weeksPhrase`. */
 function weeksPhrase(summary) {
   if (!(summary.weeksWithWork > 0)) return "nothing assigned";
   return `${summary.weeksMet} of ${summary.weeksWithWork} ${summary.weeksWithWork === 1 ? "week" : "weeks"}`;
 }
 
-/** `PerformerSpanSummary.hasWork`. */
 function hasWork(summary) {
   return (summary?.weeksWithWork ?? 0) > 0;
 }
 
-/** Whether the span totals `0009` supplies are actually present. */
 function knowsWeeks(summary) {
   return summary != null
     && summary.weeksMet !== null && summary.weeksMet !== undefined
     && summary.weeksWithWork !== null && summary.weeksWithWork !== undefined;
 }
 
-/**
- * `StudioSection.group` — the roster in sections, by instrument.
- *
- * "Snare" and "snare" are one section and **the first spelling seen names it**, because
- * second-guessing an instructor's capitalisation is not this function's job. Anybody with no
- * instrument falls into a trailing "No section set" rather than disappearing.
- */
 export function groupBySection(performers) {
   const buckets = new Map();
   const unassigned = [];
@@ -91,15 +51,6 @@ export function groupBySection(performers) {
   return sections;
 }
 
-/**
- * `StudioReport.instructorSummary`.
- *
- * @param summaries a Map or plain object keyed by performer id.
- * @param uncovered instructions nobody in the studio has worked on, worst first. It is the only
- *   line in the report that tells the reader what to *do*: a head of department reading "3 of 4
- *   weeks" learns how hard somebody worked, and "nobody has touched the roll release" tells them
- *   what next week's rehearsal is for.
- */
 export function instructorSummary({
   studioName,
   range,
@@ -189,7 +140,6 @@ export function instructorSummary({
   return lines.join("\n");
 }
 
-/** `StudioReport.performerSummary`. Shorter, and written to be shown to somebody proud of them. */
 export function performerSummary({ name, studioName, range, summary }) {
   const lines = [`${name}, ${studioName}`, range, ""];
 
@@ -211,14 +161,6 @@ export function performerSummary({ name, studioName, range, summary }) {
   return lines.join("\n");
 }
 
-/**
- * A standings row as the report reads a span summary, or **null when the server has not told us**.
- *
- * The three span numbers arrive only from a project carrying `0009`. Returning null rather than a
- * zeroed object is what makes the omission happen at the top of the report instead of halfway
- * through a sentence: a caller with nulls in hand can decide not to offer the artefact at all,
- * which is honest, where "0 of 0 weeks finished in full" is a claim.
- */
 export function spanFrom(standing) {
   if (!knowsWeeks(standing)) return null;
   return {

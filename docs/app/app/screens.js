@@ -1,23 +1,11 @@
-/**
- * Every screen, as a function that returns an element.
- *
- * ## What these are allowed to compute
- *
- * The week in progress, and only that: "have I met this week's target, right now". That is the one
- * judgement a client cannot delegate, because the outbox means it holds practice the server has
- * never seen — see the opening of `judgement.js`.
- *
- * **Points, ranks and streak history are read, never derived.** On a real project they come from
- * `0004_judgement.sql`; in the demo they come from the export, computed by `ScoreEngine`. If a
- * number about *other people* is wanted here and is not in the data, the answer is to add it to the
- * server's projection — never to work it out in this file.
- */
 
 import { el, replace } from "./dom.js";
 import { assignmentBylines } from "./bylines.js";
 import { helpAudience, scoringSummary, termsSummary } from "./settings-summary.js";
+import { isAndroidApp } from "./android.js";
 import {
   weekTitle,
+  workHeading,
   assignmentProgress,
   audienceIncludes,
   isActiveDuring,
@@ -40,7 +28,7 @@ import {
   TEMPO_RANGE,
   uncoveredInstructions,
 } from "./coverage.js";
-import { countIn } from "./recording-prefs.js";
+import { countIn, marking } from "./recording-prefs.js";
 import { pastTerms, seasonWindow, termsFrom } from "./terms.js";
 import { isSetUp, nextStep, setupSteps, setupTitle } from "./setup.js";
 import { groupBySection, instructorSummary, performerSummary, spanFrom } from "./report.js";
@@ -53,18 +41,6 @@ import { checkoutURLFor } from "./words.js";
 import { deletionCost, finishedPhrase, heardPhrase, listeningOrder, positionPhrase, REMOVAL_UNDOABLE, savingPhrase, waitingPhrase } from "./listening.js";
 
 
-/**
- * The week on screen, and the way to move it — the week half of iOS's `SpanBar`.
- *
- * Without `onStepWeek` it is the same quiet caption it always was: the setup screen, and any
- * caller that has not wired a stepper, must not grow two dead chevrons. The forward chevron
- * disables at the current week — *next week has not happened and a dashboard for it would be a
- * claim about the future* — and the back chevron at the studio's first week, because the grid is
- * every week since the studio was created and there is nothing before it.
- *
- * The title is `weekTitle`'s word for the two weeks a person is actually looking at, and the
- * dates alone beyond that — *never a bare date range for this week and last.*
- */
 function spanLine(store, span, onStepSpan, onPickSpan) {
   const zone = store.studio().time_zone;
   const title = span.title ?? (weekTitle(span.weeks[0], store.weeks().at(-1).start,
@@ -127,7 +103,7 @@ function spanLine(store, span, onStepSpan, onPickSpan) {
       "div",
       {
         class: "row",
-        style: "align-items: center; justify-content: center; gap: 0.6rem; flex: 1 1 auto; flex-wrap: wrap",
+        style: "align-items: center; justify-content: center; gap: 0.6rem; flex: 1 1 0; min-width: 0; flex-wrap: wrap",
       },
       el("p", { class: "caption", style: "margin: 0; flex: 0 1 auto; min-width: 0" }, labelParts()),
       onPickSpan ? picker : null,
@@ -136,11 +112,6 @@ function spanLine(store, span, onStepSpan, onPickSpan) {
   );
 }
 
-/**
- * The hand-picked stretch's editor: two dates and an Apply, in the studio's own zone. Drawn only
- * for the custom kind — the other ranges must not grow dead chrome — and shared by both screens
- * that hold a span, because a form written twice is a form that drifts.
- */
 function customRangeEditor(viewed, onApplyCustom) {
   if (viewed.kind !== "custom" || !onApplyCustom) return null;
   const from = el("input", { type: "date", id: "custom-from" });
@@ -158,20 +129,6 @@ function customRangeEditor(viewed, onApplyCustom) {
 }
 
 
-/**
- * The sign-in screen, the sign-up screen, and the way into the demo.
- *
- * One screen with two modes rather than two routes, because the person who arrives here does not
- * know which one they need until they have read both labels, and a route change to find out loses
- * whatever they had typed.
- *
- * **It quotes no price**, and that is deliberate rather than an omission. The price lives in
- * `Entitlement` and reaches this client through the export, which is not loaded until somebody
- * opens the demo — so putting a figure here would mean typing one into JavaScript, which is the
- * second construction the export exists to prevent. A price that is merely *stale* is worse than
- * one you have to tap once to see. It appears in every purchase prompt and on the You screen, both
- * of which have the real value.
- */
 export function doorScreen({
   mode = "signIn",
   value = "",
@@ -308,20 +265,6 @@ export function doorScreen({
   );
 }
 
-/**
- * What a new account is waiting for.
- *
- * **Sign-up succeeding without a session is normal, not a failure** — with email confirmation on,
- * which is the correct production setting and the one this project runs, GoTrue creates the account
- * and returns no token until somebody clicks the link. Saying so is the whole screen. The iOS side
- * spent a debugging session on this exact shape, blaming a database trigger that had worked
- * perfectly, so it is named here rather than left as a silent nothing-happened.
- */
-/**
- * Where the reset email lands. The person holding this screen proved control of the inbox —
- * the recovery session in hand is the proof — so the only thing left to collect is the new
- * password, with the same floor the sign-up form states.
- */
 export function resetPasswordScreen({ onSave, busy = false, problem = null } = {}) {
   const password = el("input", {
     type: "password", id: "new-password", autocomplete: "new-password",
@@ -386,15 +329,9 @@ export function confirmScreen({ email, onBack, onResend, busy = false, message =
   );
 }
 
-/**
- * An account with no studio in it yet.
- *
- * *Empty states act; they do not describe.* The first screen a new instructor ever saw said "share
- * your join code" and gave no way to see one — so both doors are on this screen, and which one
- * somebody wants is decided by a sentence about what they do rather than by a word for a role.
- */
-export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCancel = null, problem = null, busy = false }) {
+export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCancel = null, problem = null, busy = false, weekStarts = [] }) {
   const studioName = el("input", { type: "text", required: true, id: "studio-name" });
+  const weekStart = { value: String(weekStarts.find((d) => d.isStandard)?.value ?? 2) };
   const code = el("input", {
     type: "text",
     required: true,
@@ -430,7 +367,10 @@ export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCanc
         "form",
         {
           class: "stack",
-          onSubmit: (e) => { e.preventDefault(); if (!busy) onCreate?.(studioName.value.trim()); },
+          onSubmit: (e) => {
+            e.preventDefault();
+            if (!busy) onCreate?.(studioName.value.trim(), Number(weekStart.value));
+          },
         },
         el("h2", { text: "Start a studio" }),
         el("p", {
@@ -438,6 +378,26 @@ export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCanc
           text: "A roster, the work you assign, and a code you hand out once. Everything else hangs off it.",
         }),
         field("Studio name", studioName, "What your performers will see: “Wind Ensemble”, “Studio of J. Reyes”."),
+        weekStarts.length > 0 && el(
+          "div",
+          { class: "stack", style: "gap:0.35rem" },
+          el("label", { class: "caption", for: "week-start", text: "Practice week starts" }),
+          el(
+            "select",
+            {
+              id: "week-start",
+              onChange: (event) => { weekStart.value = event.currentTarget.value; },
+            },
+            ...weekStarts.map((d) =>
+              el("option", { value: String(d.value), selected: d.isStandard || undefined, text: d.label })
+            ),
+          ),
+          el("p", {
+            class: "caption",
+            text: "Everyone's week, and the leaderboard, turns over on this day. "
+              + "It cannot be changed later, because it decides which week every past session counts in.",
+          }),
+        ),
         el("button", { style: "width:100%", type: "submit", disabled: busy, text: "Create studio" }),
       ),
     ),
@@ -448,16 +408,11 @@ export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCanc
 }
 
 
-/**
- * @param quiet a `QuietStretch` worth asking about, or null. **Offered, never done** — the app can
- *   see three silent weeks and cannot know whether the building was shut or the program fell
- *   apart, and naming it a break is the instructor's call.
- * @param onDeclareBreak accepts it. @param onDismissBreak declines, for good.
- */
 export function studioScreen(store, {
   onPrompt, onListen, onOpenPerformer, quiet = null, onDeclareBreak, onDismissBreak,
   span = null, onStepSpan = null, onPickSpan = null, onApplyCustom = null,
   onAssign = null,
+  rosterSearch = "", onRosterSearch = null,
 }) {
   const grid = store.weeks();
   const viewed = span ?? {
@@ -522,6 +477,16 @@ export function studioScreen(store, {
     const rate = (w) => (w.assigned ? w.met / w.assigned : 0);
     return rate(a) - rate(b) || a.seconds - b.seconds;
   });
+
+  const query = rosterSearch.trim().toLowerCase();
+  const shown = query
+    ? ordered.filter((w) =>
+      (w.person.display_name ?? "").toLowerCase().includes(query) ||
+      (w.person.instrument ?? "").toLowerCase().includes(query)
+    )
+    : ordered;
+
+  const searchable = !!onRosterSearch && performers.length > 0;
 
   const assignmentCount = store.assignments().length;
   const setupDone = isSetUp(assignmentCount, performers.length);
@@ -640,7 +605,7 @@ export function studioScreen(store, {
           { class: "row", style: "align-items: center; gap: 0.75rem" },
           el("span", { class: "caption numeral", text: count(performers.length, "performer") }),
           el("a", {
-            class: "caption",
+            class: "caption no-shrink",
             href: "#/roster",
             style: "min-height: 44px; display: inline-flex; align-items: center",
             text: "Manage",
@@ -648,10 +613,26 @@ export function studioScreen(store, {
         )
         : count(performers.length, "performer"),
     ),
-    hasPerformers && el(
+    hasPerformers && searchable && el(
       "div",
-      { class: "stack" },
-      ordered.map((w) =>
+      { class: "stack", style: "gap:0.35rem" },
+      el("label", { class: "caption", for: "roster-search", text: "Find a performer" }),
+      el("input", {
+        id: "roster-search",
+        type: "search",
+        value: rosterSearch,
+        autocomplete: "off",
+        onInput: (event) => onRosterSearch(event.currentTarget.value),
+      }),
+    ),
+    hasPerformers && searchable && query && shown.length === 0 && emptyState(
+      "Nobody matches that.",
+      `No performer in this studio has “${rosterSearch.trim()}” in their name or their instrument.`,
+    ),
+    hasPerformers && shown.length > 0 && el(
+      "div",
+      { class: "stack roster-list" },
+      shown.map((w) =>
         performerRow(w.person, w, {
           streak: byPerformer[w.person.id]?.currentStreak ?? 0,
           onOpen: onOpenPerformer,
@@ -665,26 +646,6 @@ export function studioScreen(store, {
   );
 }
 
-/**
- * What the studio has and has not worked on, for one assignment in the week being viewed.
- *
- * **The reason a focus point is worth building** rather than being a private checklist. "Met it this
- * week" tells an instructor who is behind; this tells them *what to teach on Monday* — and it
- * arrives a week earlier than a leaderboard could manage, because somebody can be at 100% of their
- * minutes and still have skipped the hard bar every single time.
- *
- * Two rules carried over from the iOS card, both of which were bugs there first:
- *
- *   · **The headline earns its line only when it says something the list cannot.** When everything
- *     has been touched by somebody but not by everybody, `headline` names the weakest line — which
- *     is the first row of the list, verbatim, with the same numbers. So it is not drawn there.
- *   · **Green is arrival, and nothing else.** A studio's weakest instruction is information, not
- *     good news; amber is a gap, and `met` is only ever everybody, done.
- *
- * No meter on the rows. "2 of 5" already carries the fraction, and the width a bar would take comes
- * straight out of the instructor's own words — which *are* their teaching, and are the last thing
- * on this card that should give up room.
- */
 function planCoverage(assignment, coverage) {
   if (!coverage.hasPlan) return null;
 
@@ -828,28 +789,6 @@ export function assignmentsScreen(store, { onPrompt, onNew, onEdit, onDuplicate,
   );
 }
 
-/**
- * One performer, and the one thing an instructor can do about them from here.
- *
- * ==========================================================================================
- * Why a nudge exists at all
- * ==========================================================================================
- *
- * The gap it closes is that an instructor could see somebody who had not logged anything all week
- * — the dashboard is built to show exactly that — and then **do nothing**, because doing something
- * meant leaving the app for a phone number they may not have, for a fourteen-year-old who does not
- * answer texts from teachers.
- *
- * It is still not chat: one direction, no threads, no reply field, and no history for the performer
- * to answer into. If it ever grows one, that is a new decision against §8 rather than an extension
- * of this one.
- *
- * The suggestions come from `Nudge.suggestions` through the export, and they are written **as an
- * opening rather than a telling-off**: an instructor reaching for this is looking at somebody who
- * is behind, and the difference between "you haven't logged anything" and "checking in — anything
- * getting in the way?" is whether the performer opens the app again.
- */
-/** A performer's first name, or "They" — `PerformerDetailView.firstName`, same fallback. */
 function firstNameOf(performer) {
   return String(performer?.display_name ?? "").split(" ")[0] || "They";
 }
@@ -950,7 +889,9 @@ export function performerScreen(store, {
         ),
       ),
     heading(
-      single ? "This week's work" : "Assignments",
+      single
+        ? workHeading(week, new Date(), store.studio().week_starts_on ?? 2, store.studio().time_zone)
+        : "Assignments",
       single
         ? weekPhrase(week, store.studio().time_zone)
         : `${rangeMet} of ${rangeWithWork.length} ${rangeWithWork.length === 1 ? "week" : "weeks"}`,
@@ -1054,30 +995,6 @@ export function performerScreen(store, {
   );
 }
 
-/**
- * Writing an assignment: the other half of the instructor's job, and the half a Chromebook could
- * not do until now.
- *
- * ==========================================================================================
- * Every problem at once, never one at a time
- * ==========================================================================================
- *
- * `AssignmentDraft.problems` returns them all, deliberately — *a form that reveals one error at a
- * time is a form people submit four times* — and the messages are its, word for word, so an
- * instructor who has used both clients is told the same thing by both.
- *
- * ==========================================================================================
- * What is missing from this form on purpose
- * ==========================================================================================
- *
- * **`opens_at` cannot be edited on an existing assignment.** Moving it would retroactively change
- * which sessions ever counted toward it, so somebody's met week could become unmet by an
- * instructor fixing a typo. `SupabaseStore` leaves it out of the update payload for the same
- * reason; here it simply is not drawn.
- *
- * A blank row at the bottom of the plan is dropped rather than rejected: an empty line is how
- * people stop typing, not an error.
- */
 export function assignmentEditorScreen(store, { assignment = null, onSave, onCancel, onDelete, busy = false, problem = null }) {
   const performers = store.performers();
   const isNew = !assignment?.id;
@@ -1125,15 +1042,6 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
   const addLine = el("button", { type: "button", text: "Add a line", onClick: () => addPoint()?.focus() });
   const atCap = el("p", { class: "caption", hidden: true, text: "Eight is the most. A longer list gets skimmed." });
 
-  /**
-   * Numbers every row and settles the button, after **every** add and remove.
-   *
-   * Both halves were wrong when this was written by hand at creation time. Removing the second of
-   * four left the rest labelled 1, 3, 4 — and a new line after that took a number one of them
-   * already had, so two fields announced themselves identically to a screen reader. And the button
-   * stayed pressable at the cap and silently did nothing, which is the same fault as a dead
-   * affordance anywhere else: *chrome that cannot succeed.*
-   */
   const renumber = () => {
     [...points.children].forEach((row, index) => {
       const input = row.querySelector("input");
@@ -1181,23 +1089,6 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
   wholeStudio.checked = assignment ? assignment.whole_studio : true;
   const chosen = new Set(assignment?.audience ?? []);
 
-  /**
-   * The audience, **grouped into sections, each with one control that takes the whole section**.
-   *
-   * This was a flat column of checkboxes: a forty-person studio meant forty ticks, every week, from
-   * the person who pays and quits first — while every profile already carries the instrument that
-   * says which of them belong together. iOS has had the grouped picker since v20; the web had the
-   * version the product review was complaining about.
-   *
-   * The heading **states the count rather than showing a checkbox**, which is iOS's reasoning and
-   * holds here: a section is three states — none, some, all — and a checkbox that renders "some" as
-   * unticked lies about what a tap will do. Tapping takes the whole section unless it is already
-   * whole, in which case it clears it.
-   *
-   * `groupBySection` is `StudioSection.group`, imported rather than rewritten — it already carries
-   * the rules that "Snare" and "snare" are one section named by the first spelling seen, and that
-   * anybody with no instrument falls into a trailing group rather than disappearing.
-   */
   const audience = el("div", { class: "stack", hidden: wholeStudio.checked });
 
   const settleSection = (section, countEl, actionEl) => {
@@ -1351,14 +1242,6 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
   );
 }
 
-/**
- * Every problem with a draft, in `AssignmentDraft.Problem`'s words.
- *
- * Copied deliberately and kept next to the form that shows them: these are product sentences, not
- * validation strings, and an instructor who uses both clients must not be told two different things
- * about the same mistake.
- */
-/** The bound Swift's `AssignmentDraft.Problem.takeTooLong` uses. Kept beside the copy it belongs to. */
 export const MAX_TAKE_MINUTES = 15;
 
 export function assignmentProblems(draft) {
@@ -1381,39 +1264,6 @@ export function assignmentProblems(draft) {
   return found;
 }
 
-/**
- * The instructor's listening queue.
- *
- * ==========================================================================================
- * This is the screen the product rests on
- * ==========================================================================================
- *
- * Assign → practice → record → **listen** → feel heard → record again. Every rival dies at the
- * fourth step, and a performer needs about two weeks of silence before they stop attaching clips.
- * A director with eighteen unheard takes could otherwise only reach them one performer at a time:
- * open the roster, tap a name, scroll, play, mark heard, go back. Eighteen times. That is not a
- * feature gap — it is the reason the loop quietly stops happening in week three.
- *
- * So this is one queue, in `listeningOrder`, and the reply is one line. **Not chat**: one
- * direction, no threads, no reply field for the performer. If it ever grows one, that is a new
- * decision, not an extension of this one.
- *
- * The clip is loaded **on demand** — a signed URL per playback, minted when somebody presses play
- * rather than for eighteen clips on arrival. They are short-lived by design, so a page that minted
- * them all up front would hand out URLs that expire while the instructor is still working down the
- * queue.
- */
-/**
- * One performer's plan for the take being listened to.
- *
- * Silent without a plan, exactly as `FocusProgress.phrase` is: an assignment with no plan is not an
- * assignment scoring zero, and a card headed "Their plan" over nothing is chrome that cannot say
- * anything.
- *
- * The week is the one the **take** belongs to, not today's. An instructor works down a queue, and
- * the clip at the bottom of it may be from a fortnight ago — showing this week's ticks against it
- * would be the right numbers about the wrong seven days.
- */
 function theirPlan(assignment, log, store) {
   if (!assignment || (assignment.focus_points ?? []).length === 0) return null;
 
@@ -1460,6 +1310,11 @@ function theirPlan(assignment, log, store) {
       ),
     ),
   );
+}
+
+function registerRateButton(into, button) {
+  into.push(button);
+  return button;
 }
 
 export function listeningScreen(store, {
@@ -1547,18 +1402,38 @@ export function listeningScreen(store, {
       player,
       status,
       theirPlan(assignments[log.assignmentId], log, store),
-      el(
-        "form",
-        {
-          class: "stack",
-          onSubmit: (event) => {
-            event.preventDefault();
-            onAcknowledge(log, note.value.trim() || null);
+      (() => {
+        const submit = el("button", { type: "submit", style: "width:100%", text: "Heard it" });
+        const noteField = field("Say one thing back (optional)", note);
+        const done = el("p", { class: "caption", hidden: true });
+        const form = el(
+          "form",
+          {
+            class: "stack",
+            onSubmit: async (event) => {
+              event.preventDefault();
+              submit.disabled = true;
+              submit.textContent = "Saving…";
+              try {
+                await onAcknowledge(log, note.value.trim() || null);
+                noteField.hidden = true;
+                submit.hidden = true;
+                done.hidden = false;
+                done.textContent = note.value.trim()
+                  ? `Heard, and you said “${note.value.trim()}”`
+                  : "Heard.";
+              } catch {
+                submit.disabled = false;
+                submit.textContent = "Heard it";
+              }
+            },
           },
-        },
-        field("Say one thing back (optional)", note),
-        el("button", { type: "submit", style: "width:100%", text: "Heard it" }),
-      ),
+          noteField,
+          submit,
+          done,
+        );
+        return form;
+      })(),
     );
   };
 
@@ -1566,7 +1441,22 @@ export function listeningScreen(store, {
     "main",
     { id: "main", class: "page" },
     el("h1", { text: "Listening" }),
-    queue.length > 0 && rates.length > 0 && onRateChange && el(
+    queue.length > 0 && rates.length > 0 && onRateChange && ((() => {
+      const buttons = [];
+      let savingLine = null;
+      const repaint = (value) => {
+        for (const [index, button] of buttons.entries()) {
+          const chosen = rates[index].value === value;
+          button.className = chosen ? "button--primary" : "button";
+          button.setAttribute("aria-pressed", chosen ? "true" : "false");
+        }
+        if (savingLine) {
+          const phrase = savingPhrase(value, secondsLeftToHear);
+          savingLine.textContent = phrase ?? "";
+          savingLine.hidden = !phrase;
+        }
+      };
+      return el(
       "div",
       { class: "row", style: "gap:0.5rem; align-items:center; flex-wrap:wrap" },
       el("span", { class: "caption", id: "rate-label", text: "Speed" }),
@@ -1574,7 +1464,7 @@ export function listeningScreen(store, {
         "div",
         { role: "group", "aria-labelledby": "rate-label", class: "row", style: "gap:0.35rem; flex-wrap:wrap" },
         ...rates.map((r) =>
-          el("button", {
+          registerRateButton(buttons, el("button", {
             type: "button",
             class: r.value === rate ? "button--primary" : "button",
             "aria-label": r.spokenLabel,
@@ -1583,16 +1473,19 @@ export function listeningScreen(store, {
             onClick: () => {
               applyRate?.(r.value);
               onRateChange(r.value);
+              repaint(r.value);
             },
-          })
+          }))
         ),
       ),
-      savingPhrase(rate, secondsLeftToHear) && el("p", {
+      (savingLine = el("p", {
         class: "caption",
         style: "margin: 0; flex-basis: 100%",
-        text: savingPhrase(rate, secondsLeftToHear),
-      }),
-    ),
+        hidden: savingPhrase(rate, secondsLeftToHear) ? undefined : true,
+        text: savingPhrase(rate, secondsLeftToHear) ?? "",
+      })),
+    );
+    })()),
     queue.length === 0
       ? card(
         { class: "stack", style: "text-align:center" },
@@ -1616,21 +1509,6 @@ export function listeningScreen(store, {
 }
 
 
-/**
- * The performer's own week.
- *
- * **The two actions are handed in rather than decided here**, which is what lets one screen serve
- * both stores without knowing which one answered. In the demo `onPractice` raises the purchase
- * prompt — *the blocked action is the walkthrough* — and against a real studio it starts a session.
- * `onFocusPoint` is optional for the same reason and is absent on a live studio, where ticking
- * happens inside the session screen, at the moment somebody actually worked on the instruction.
- */
-/**
- * @param onDeleteSession lets a performer throw away one of their own sessions. **Only theirs, and
- *   only they may do it** — *a take is the performer's before it is the instructor's*, and the same
- *   rule governs a session set aside by the outbox: it is still practice they actually did. iOS has
- *   offered this since v11; the web store had `deleteLog` and nothing ever called it.
- */
 export function practiceScreen(store, {
   onPrompt, onPractice, onFocusPoint, onNudgeSeen, onDeleteSession,
   onAddSession = null, selfReportMark = "",
@@ -1695,7 +1573,7 @@ export function practiceScreen(store, {
   const spanStart = viewed.weeks[0].start;
   const inRange = store.logs()
     .filter((l) => l.startedAt >= spanStart && l.startedAt < week.end);
-  const mySessions = inRange.slice(0, 8);
+  const mySessions = inRange;
 
   const myMarks = new Map();
   for (const mark of store.focusMarks()) {
@@ -1787,8 +1665,10 @@ export function practiceScreen(store, {
         ),
       ),
     heading(
-      single ? "This week's work" : "Assigned in this range",
-      single ? `${metCount} of ${required.length} done` : weeksPhrase,
+      single
+        ? workHeading(week, new Date(), store.studio().week_starts_on ?? 2, store.studio().time_zone)
+        : "Assigned in this range",
+      single ? (required.length ? `${metCount} of ${required.length} done` : null) : weeksPhrase,
     ),
     required.length === 0
       ? emptyState("Nothing assigned yet", "When your instructor assigns work, it appears here.")
@@ -1862,12 +1742,12 @@ export function practiceScreen(store, {
     mySessions.length === 0 && card(
       { class: "stack" },
       el("p", { class: "caption", text: isCurrentWeek ? "Nothing logged yet this week." : "Nothing logged in this range." }),
-      isCurrentWeek && onAddSession && el("button", {
-        class: "button", type: "button",
-        text: "Add practice you already did",
-        onClick: onAddSession,
-      }),
     ),
+    isCurrentWeek && Object.keys(byId).length > 0 && onAddSession && el("button", {
+      class: "button", type: "button",
+      text: "Add practice you already did",
+      onClick: onAddSession,
+    }),
     mySessions.length > 0 &&
       el(
         "div",
@@ -1890,7 +1770,9 @@ export function practiceScreen(store, {
             el(
               "div",
               { class: "row", style: "gap:0.5rem" },
-              s.isSetAside ? pill("Not accepted") : s.isPending && pill("Waiting to send"),
+              s.isSetAside
+                ? pill("Couldn't be added to the studio. It's still saved here.", "accent", { wraps: true })
+                : s.isPending && pill("Waiting to send"),
               s.hasClip && (onClipURL
                 ? el("button", {
                   class: "button--plain",
@@ -1929,70 +1811,12 @@ export function practiceScreen(store, {
   );
 }
 
-/**
- * One practice session, running.
- *
- * ==========================================================================================
- * The screen owns its clock, and hands back the same number it displayed
- * ==========================================================================================
- *
- * There is one elapsed time here, read from `Date.now()` at submit, and the ticking display is
- * derived from it. Two constructions of "how long has this been running" — a counter incremented
- * every second and a duration computed at the end — is how a display and a stored duration end up
- * disagreeing, and a tab that is backgrounded for twenty minutes is where they part company: a
- * browser throttles `setInterval` to once a minute in a hidden tab, so the counter would arrive at
- * the end tens of minutes short of the practice that actually happened.
- *
- * ==========================================================================================
- * Recording is optional, and refusing to record is not refusing to practice
- * ==========================================================================================
- *
- * The take is offered where the browser can make one an instructor's iPhone can play — that is
- * `capabilities()`'s single question, feature-tested rather than sniffed. Where it cannot, the
- * session still saves, because *practice is never lost; the clip is not practice.*
- *
- * `returns` an element carrying a `dispose` function: the shell calls it when the screen is
- * replaced, so a timer and a live microphone cannot outlive the screen that opened them.
- */
-/**
- * @param onBlocked non-null in the demo: raises the walkthrough for `action` instead of doing it.
- *   **Asked before the microphone, not after.** The prompt has to land at the moment of *intent* —
- *   spending a browser's one-time microphone offer on a studio that does not exist is the same
- *   mistake as the demo that would have spent a real person's notification permission on Ana Reyes.
- */
-/**
- * How long this assignment's take may run, said in the words the rest of the app uses.
- *
- * Falls silent rather than guessing when the capability did not report one — *say nothing rather
- * than something uncertain*, and a wrong number here is a performer planning a run of the show
- * around a limit that is not theirs.
- */
 function takeLengthPhrase(maxSeconds) {
   if (!Number.isFinite(maxSeconds) || maxSeconds <= 0) return "";
   const minutes = Math.round(maxSeconds / 60);
   return `Up to ${minutes} ${minutes === 1 ? "minute" : "minutes"}.`;
 }
 
-/**
- * @param countInSeconds the wait this performer chose. **Defaults to none**, which is the safe
- *   direction for a caller that forgets: a missing count-in is a working recorder, while a
- *   surprise pause is a screen that appears to have ignored a press. The shell reads the stored
- *   value and hands it over, the same way it hands over `push.preferences()` — a screen that
- *   reached into `localStorage` itself could not be built by a test without one.
- */
-/**
- * Writing down practice the app did not time.
- *
- * The performer's half of `SelfReport`, on the client a school hands out — which is the client
- * where this matters most, because the phone that would have run the timer is the thing the
- * district told them to put away.
- *
- * **Every refusal comes from `selfreport.js`**, which is Swift's rule transcribed and gated
- * against it. A validity check written inline here would be a second construction with nothing
- * proving the two agree, on a form where being wrong in either direction is silent: too strict
- * and real practice cannot be recorded, too loose and `0010`'s trigger rejects it *after* this
- * screen said it was fine.
- */
 export function addSessionScreen(store, { onSave, onCancel, busy = false, problem = null } = {}) {
   const me = store.profile();
   const { week, byId } = weekProgress(store, me.id);
@@ -2093,14 +1917,6 @@ export function addSessionScreen(store, { onSave, onCancel, busy = false, proble
   );
 }
 
-/**
- * An instant as a `datetime-local` control speaks it — local wall-clock, no zone, no seconds.
- *
- * In the **studio's** zone, not the browser's. A performer on a trip who typed 7 AM means 7 AM
- * where the studio is, and the week they land in belongs to the studio: that is the whole reason
- * `studios.time_zone` exists, and taking the device's zone here would put a session in a
- * different week from the one their instructor sees it in.
- */
 function localInput(instant, timeZone) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: timeZone || undefined,
@@ -2137,28 +1953,32 @@ export function sessionScreen(store, {
   });
 
   const takeState = el("p", { class: "caption", text: "No recording yet." });
+  const liveDot = el("span", { class: "live-dot", "aria-hidden": "true" });
+  const liveWord = el("span", { class: "live-word", text: "Recording" });
+  const liveClock = el("span", { class: "live-clock numeral", text: "" });
+  const liveLeft = el("span", { class: "live-left nobr", text: "" });
+  const liveBar = el("p", { class: "live-bar", hidden: true },
+                     liveDot, liveWord, " ", liveClock, " ", liveLeft);
+
+  let markers = [];
+  let elapsedInTake = 0;
+  const markButton = el("button", {
+    class: "button", type: "button", hidden: true,
+    text: "Mark this spot",
+    onClick: () => {
+      const before = markers.length;
+      markers = marking(elapsedInTake, markers);
+      if (markers.length > before) {
+        markButton.classList.add("is-marked");
+        setTimeout(() => markButton.classList.remove("is-marked"), 700);
+      }
+    },
+  });
+
   let take = null;
   let recording = null; // { stop() }
   let countingIn = null; // an AbortController while the count-in is running
 
-  /**
-   * The wait between "Record" and the first note, offered where the need is discovered.
-   *
-   * iOS puts this in the session rather than only in Settings, and its comment says why: *this is
-   * the moment somebody thinks about it — they are looking at Start, about to put the phone down
-   * and walk to an instrument*, and the pilot asked for it even while it existed in Settings, which
-   * is the only evidence about discoverability that counts.
-   *
-   * A native `<select>` rather than a hand-built radio group, deliberately. It is the web's
-   * equivalent of the `Menu` iOS uses — one tap, never leaves the session — and it comes with
-   * keyboard support, a screen-reader role and a touch picker that no reimplementation gets right
-   * for free. It also sidesteps the trap this repo has now documented twice: *a control that
-   * re-renders on change loses its own focus*, and a select changes nothing but itself.
-   *
-   * Drawn only when the words are here. The options are `CountIn`'s and they ride the export; a
-   * picker offering bare numbers with no sentence about who each is for is the thing that makes a
-   * choice unmakeable, which is the same rule the notification dial follows.
-   */
   const countInField = countIns.length > 0 && (() => {
     const select = el("select", {
       id: "count-in",
@@ -2204,12 +2024,16 @@ export function sessionScreen(store, {
         }
         recording = await capabilities.start({
           onTick: (seconds) => {
+            elapsedInTake = seconds;
             const left = capabilities.remaining?.(seconds) ?? null;
-            takeState.textContent = left == null
-              ? `Recording · ${clock(seconds)}`
-              : `Recording · ${clock(seconds)} · stops in ${left}s`;
+            liveClock.textContent = clock(seconds);
+            liveLeft.textContent = left == null ? "" : `· stops in ${left}s`;
+            liveBar.setAttribute("aria-live", left == null ? "off" : "polite");
+            takeState.textContent = "";
           },
         });
+        liveBar.hidden = false;
+        markButton.hidden = false;
         take = await recording.done;
         takeState.textContent = `Take attached · ${clock(take.duration)}`;
       } catch (error) {
@@ -2218,6 +2042,10 @@ export function sessionScreen(store, {
       } finally {
         recording = null;
         countingIn = null;
+        liveBar.hidden = true;
+        markButton.hidden = true;
+        liveClock.textContent = "";
+        liveLeft.textContent = "";
         recordButton.textContent = take ? "Record it again" : "Record a take";
         recordButton.className = "";
       }
@@ -2251,8 +2079,10 @@ export function sessionScreen(store, {
             + "together, so your instructor can hear how they line up. "
             + takeLengthPhrase(capabilities.maxSeconds),
         }),
+        liveBar,
         takeState,
         recordButton,
+        markButton,
         countInField,
       )
       : card(
@@ -2280,7 +2110,7 @@ export function sessionScreen(store, {
           note: note.value.trim() || null,
           clip: take?.blob ?? null,
           clipDuration: take?.duration ?? null,
-          markers: [],
+          markers,
           focusPointIds: [...ticked],
         });
       },
@@ -2430,7 +2260,7 @@ export function youScreen(store, {
       outbox.setAside > 0 && notice(
         `${count(outbox.setAside, "session")} the server wouldn't accept. The work it was against ` +
           `may have been removed. It is still yours; only you can throw it away.`,
-        { kind: "error" },
+        { kind: "holding" },
       ),
     ),
     studio && store.isInstructor && studio.join_code && card(
@@ -2458,7 +2288,7 @@ export function youScreen(store, {
         text: "Start or join another studio",
       }),
     ),
-    offer && store.isDemo && card(
+    offer && store.isDemo && !isAndroidApp() && card(
       { class: "stack" },
       el("h2", { text: "Getting IPT" }),
       el("p", { class: "caption", text: offer.line }),
@@ -2617,33 +2447,8 @@ export function youScreen(store, {
   );
 }
 
-/**
- * Reminders, and the honest sentence when there cannot be any.
- *
- * ## Why this screen says so much about what it cannot do
- *
- * A browser cannot schedule a notification, so the whole feature depends on Web Push — and Web Push
- * is *absent* on more devices than it is present on for this audience. On iOS Safari it works only
- * once the app is on the Home Screen; in the in-app browsers a managed Chromebook often runs it does
- * not work at all; and somebody who has said no once can only undo that in browser settings.
- *
- * Every one of those is a state where a button would do nothing. **Chrome that cannot succeed is
- * what makes a new app feel broken rather than new**, and the alternative to naming the reason is a
- * performer concluding the app is broken and an instructor concluding they are being ignored. So
- * each case gets its own sentence and no button it cannot honour.
- *
- * ## What the dial's words are, and where they come from
- *
- * `NotificationVolume`, exported through `demo-studio.json` with the rest of the product sentences.
- * "up to 6 a week" is a promise about how often this app interrupts a fourteen-year-old, and two
- * clients quietly promising different numbers is exactly the drift that export exists to prevent.
- */
 export function remindersScreen({
   capability,
-  /**
-   * Whether a subscription **actually exists**, which is a different question from whether
-   * permission was granted and is the only one worth drawing a state from. See `push.capability`.
-   */
   subscribed = false,
   configured,
   preferences,
@@ -2787,14 +2592,6 @@ export function remindersScreen({
   );
 }
 
-/**
- * The standings, where the server cannot answer for them.
- *
- * **Not an empty board**, which is the point. `0004_judgement.sql` is committed and not applied to
- * the production project, so `studio_leaderboard` is not there to ask — and a list of performers on
- * zero points is a claim about how much everybody practiced, made by a client that does not know.
- * *Say nothing rather than something uncertain*, and say which nothing it is.
- */
 export function standingsUnavailableScreen() {
   return el(
     "main",
@@ -2818,18 +2615,6 @@ export function standingsUnavailableScreen() {
 }
 
 
-/**
- * Terms — when the studio is actually running.
- *
- * The reason this screen exists at all is that **a break is not a miss.** Without terms, summer,
- * winter break and exam weeks all read as weeks somebody failed to practice, and a marching band's
- * guaranteed annual summer resets every streak in the studio. A number that punishes you for the
- * calendar teaches people the number is arbitrary.
- *
- * A studio with no terms is always in session, which is exactly how one behaved before terms
- * existed — so this must never read as a setup step standing between a new instructor and their
- * first assignment. Hence the empty state says "this is fine" rather than "you have not finished".
- */
 export function termsScreen(store, { onSave, onDelete, onBack, busy = false, problem = null }) {
   const terms = [...store.terms()].sort((a, b) => new Date(a.starts_on) - new Date(b.starts_on));
   const timeZone = store.studio()?.time_zone ?? undefined;
@@ -2917,29 +2702,6 @@ export function termsScreen(store, { onSave, onDelete, onBack, busy = false, pro
   );
 }
 
-/**
- * Last week's assignment, ready to be this week's — `AssignmentDraft.init(duplicating:)`.
- *
- * A second construction of a product rule, and licensed the way `ListeningQueue`'s was: **proved by
- * properties rather than by a copied expected list**, because the thing that must match is a set of
- * decisions rather than a set of bytes. `screens_test.js` asserts all three.
- *
- * The decisions:
- *
- *   · **No id.** That is what makes the editor treat it as new. Carrying the id over would make
- *     "set it again" overwrite last week's assignment — losing the record of what was asked for,
- *     and retroactively changing which sessions ever counted.
- *   · **No closing date.** Copying one that has already passed produces an assignment that is
- *     closed the moment it is made: invisible on every screen, counted by nothing, with no error to
- *     explain it.
- *   · **The title unchanged.** "Rudiment Ladder" in week 12 *is* "Rudiment Ladder"; "(copy)" would
- *     put a word on a performer's screen that means something only to whoever pressed the button.
- *
- * Focus-point identity needs no handling here and that is worth saying rather than leaving to be
- * rediscovered: this client's editor sends `{text, position}` and never an id, so a fresh identity
- * is a property of how it saves. Swift has to do it explicitly because its drafts carry `FocusPoint`
- * values, ids and all.
- */
 export function duplicateOf(assignment) {
   return {
     id: null,
@@ -2957,10 +2719,6 @@ export function duplicateOf(assignment) {
   };
 }
 
-/**
- * `TermDraft`'s rules, in its sentences. Every problem at once — *a form that reveals one error at
- * a time is a form people submit four times.*
- */
 export function termProblems(draft) {
   const problems = [];
   if (!draft.name?.trim()) problems.push("Give the term a name.");
@@ -2978,20 +2736,6 @@ function termRange(term, timeZone) {
   return term.ends_on ? `${day(term.starts_on)} – ${day(term.ends_on)}` : `From ${day(term.starts_on)}`;
 }
 
-/**
- * Scoring — presets before sliders.
- *
- * A wall of weights makes a director responsible for calibrating a system they did not want to
- * think about, and almost every studio is one of four. **Running a studio without a leaderboard is
- * a first-class choice, not a degraded one** — it is how this sells to the many educators who think
- * gamified practice is actively harmful — so "No points" is a preset beside the others rather than
- * a switch hidden underneath them.
- *
- * There is no slider here and that is deliberate rather than unfinished: the one thing an
- * instructor will do in complete good faith is crank raw minutes above finishing the work, which
- * turns IPT back into a practice card. `clamp_scoring()` in `0003` refuses it at the database, and
- * a screen that offered the slider would be offering a control the server silently overrules.
- */
 export function scoringScreen(store, { presets, onChoose, onBack, busy = false, problem = null }) {
   const rules = store.rules();
   const current = presets.find((p) => sameRules(rules, { ...rules, ...p.rules }));
@@ -3066,19 +2810,6 @@ export function scoringScreen(store, { presets, onChoose, onBack, busy = false, 
   );
 }
 
-/** Whether two rule sets are the same scoring. Compared key by key, over the keys a preset sets. */
-/**
- * A settings row that carries its current value, the way `SettingsView`'s rows do.
- *
- * These shipped as bare labels while iOS showed `Scoring · Completion first` beside the same
- * control, under a comment saying why: *"Each row says what the studio is on now, so neither has to
- * be opened to find out."* An instructor on a Chromebook had to push a screen and come back to
- * learn what a phone told them in place.
- *
- * `value` may be null — the scoring presets arrive with the vocabulary export and are briefly
- * absent — and the row then renders exactly as it did before, rather than saying something wrong
- * while it waits.
- */
 function settingButton(label, value, onClick) {
   return el("button", {
     type: "button",
@@ -3092,16 +2823,10 @@ function sameRules(a, b) {
   return Object.keys(b).every((key) => a[key] === b[key]);
 }
 
-/**
- * The roster — who is in the studio, and what they may do in it.
- *
- * Two destructive-ish actions, and the whole design is in what they say they cost. `DeletionCost`
- * exists on iOS because *"all associated data will be removed" tells somebody nothing*; the same
- * rule applies to a change that removes nobody's data at all, from the other direction — an
- * instructor who does not know that removing somebody keeps their practice will not do it, and one
- * who assumes it deletes everything will not do it either.
- */
-export function rosterScreen(store, { onSetRole, onRemove, onBack, busy = false, problem = null }) {
+export function rosterScreen(
+  store,
+  { onSetRole, onRemove, onHandOver, onBack, busy = false, problem = null },
+) {
   const me = store.profile()?.id;
   const roster = [...store.roster()].sort((a, b) => a.display_name.localeCompare(b.display_name));
   const instructors = roster.filter((m) => m.role === "instructor").length;
@@ -3131,9 +2856,11 @@ export function rosterScreen(store, { onSetRole, onRemove, onBack, busy = false,
           isMe: member.id === me,
           isLastInstructor: member.role === "instructor" && instructors <= 1,
           isOwner: member.id === store.studio()?.owner_id,
+          iAmTheOwner: !!me && me === store.studio()?.owner_id,
           busy,
           onSetRole,
           onRemove,
+          onHandOver,
         })),
       ),
     problem && notice(problem, { kind: "error", role: "alert" }),
@@ -3144,28 +2871,12 @@ export function rosterScreen(store, { onSetRole, onRemove, onBack, busy = false,
   );
 }
 
-/**
- * One person, with what can be done to them folded away.
- *
- * **Drawn as a disclosure rather than two buttons per row**, and that was decided by looking. Six
- * performers meant six red "Remove" buttons stacked down the screen, which reads as *a page for
- * removing people* rather than a roster — and red in this app means one thing, "a hand on it now",
- * which six of at once devalues. The buttons also took enough width at 375px that every name
- * wrapped: "Ana Reyes" over two lines, which is a person's name broken in half on the screen their
- * instructor manages them from.
- *
- * `<details>` is the control the account-deletion card already uses, and it is the accessible
- * default: one focus stop per person, announced as expandable, keyboard-operable and closed by
- * Escape — four things a hand-rolled toggle would each have to be taught, and would be taught
- * slightly wrong.
- *
- * The consequences are **visible text, not `title` tooltips**. A tooltip does not exist on a touch
- * device at all, and this is the one screen where the consequence *is* the decision: nobody reading
- * "Remove" knows the practice history survives it, and nobody reading "Make instructor" knows it
- * hands over every performer's recordings and every note ever written to them.
- */
-function rosterRow(member, { isMe, isLastInstructor, isOwner, busy, onSetRole, onRemove }) {
+function rosterRow(
+  member,
+  { isMe, isLastInstructor, isOwner, iAmTheOwner, busy, onSetRole, onRemove, onHandOver },
+) {
   const isInstructor = member.role === "instructor";
+  const canHandOver = !!onHandOver && iAmTheOwner && isInstructor && !isOwner && !isMe;
 
   const identity = el(
     "div",
@@ -3248,40 +2959,25 @@ function rosterRow(member, { isMe, isLastInstructor, isOwner, busy, onSetRole, o
         onClick: () => onRemove?.(member),
         text: "Remove from studio",
       }),
+      canHandOver && el("p", {
+        class: "caption",
+        text: "You'll stay an instructor here and keep everything you can do today, except owning "
+          + "it. They'll be able to delete the studio and everyone's practice in it, and to remove "
+          + "you. Only they can hand it back.",
+      }),
+      canHandOver && el("button", {
+        type: "button",
+        class: "button--quiet",
+        style: "width:100%",
+        disabled: busy || undefined,
+        "aria-label": `Hand this studio over to ${member.display_name}`,
+        onClick: () => onHandOver?.(member),
+        text: "Hand this studio over",
+      }),
     ),
   );
 }
 
-/**
- * The board on the band-room screen, for the ten minutes before rehearsal starts.
- *
- * ## Why this exists at all
- *
- * The marching arts are a small, tight world where directors copy each other constantly, and what
- * spreads is what one director **shows** another. This product's most showable moment is a studio
- * leaderboard up on the screen at the front of the room while everybody unpacks. It is the only
- * growth loop IPT has that is not "somebody tweets about it", and it costs almost nothing — the
- * board is `studio_leaderboard`, computed by the server, so there is **no second construction of
- * any rule here.** This is a presentation and nothing else.
- *
- * It lives on the web rather than on iOS on purpose: the thing in a band room is a Chromebook, a
- * laptop on the podium or a smart TV, and none of them can install an app.
- *
- * ## It shows the top of the board and never the bottom
- *
- * The full board ranks everybody, and every performer can already see all of it on their own phone.
- * A screen on a **wall** is a different act. "Jonah Park — 0%" projected in front of the ensemble is
- * not information any more, it is a fourteen-year-old being named to a room, and the app would be
- * the thing that did it. *Being behind is information* holds on somebody's own screen; it does not
- * survive being put on a wall.
- *
- * So this shows a leading group and the studio's own totals, says out loud that it is showing a top
- * ten, and leaves the complete board on Standings where it belongs. Nothing here reports who has not
- * logged, and it never will.
- *
- * @param onExit leaves the display. A screen with no way out is a trap, and the one person who needs
- *   it is a director in front of a room who has to get on with rehearsal.
- */
 export function displayScreen(store, { top = 10, onExit, awake = null } = {}) {
   const standings = store.standings();
   const people = Object.fromEntries(store.roster().map((p) => [p.id, p]));
@@ -3338,28 +3034,6 @@ export function displayScreen(store, { top = 10, onExit, awake = null } = {}) {
   );
 }
 
-/**
- * The season, as something that can leave the app.
- *
- * *A record that cannot leave the app is not a record — it is a screen.* An instructor has to justify
- * this to a booster club, a principal or a parent at a concert; a performer's season otherwise simply
- * stops. `StudioReport` writes both, and `web/app/report.js` is the transcription a parity gate holds
- * to Swift's exact text.
- *
- * ## Why the text is on the page rather than behind a button
- *
- * The obvious build is a "Share" button over `navigator.share`, and on a Chromebook that is a button
- * that does nothing: the API is absent or refuses outside a narrow set of gestures. **The artefact
- * itself is the feature**, so it is rendered — selectable, printable, and readable before anybody
- * decides to send it. Copy and share are conveniences layered on top, and each says what happened.
- *
- * ## And it refuses to print half a report
- *
- * `weeksMet`, `weeksWithWork` and `bestStreak` come only from a project carrying `0009`. Without
- * them there is no honest report to write — "0 of 0 weeks finished in full" is a sentence somebody
- * would forward to a principal — so the screen says which nothing it is, exactly as the standings
- * screen does for a project without `0004`. *Absent is not empty.*
- */
 export function seasonScreen(store, { onCopy, onShare, canShare = false, said = null } = {}) {
   const me = store.profile();
   const studio = store.studio();
@@ -3455,49 +3129,6 @@ export function seasonScreen(store, { onCopy, onShare, canShare = false, said = 
   );
 }
 
-/**
- * The manual — `Welcome`'s three cards and `Help`'s questions, in Swift's words.
- *
- * **The web had two hand-written paragraphs.** Sixty words where the iPhone has three cards and
- * five answers, and they were a second construction of sentences Core already owns — invisible to
- * `check_labels.py`, because the two never shared an opening for it to compare.
- *
- * The rule this exists for is `Welcome`'s own:
- *
- * > **Shown once, and findable forever.** Anything a person sees once and cannot get back is
- * > useless to exactly the person who needed it.
- *
- * The web has no tour at all, so this is the *only* place it is said — which makes the gap worse
- * than iOS's would have been, not milder.
- *
- * It explains **rules, not controls**: the rules are what somebody cannot work out by looking, and
- * they are the ones that make a number feel arbitrary when it is not.
- *
- * @param help the exported block. Null until it has loaded — the screen draws the cards it has and
- *   never a heading over nothing, the same way the reminders dial waits for its words.
- */
-/**
- * The three cards the app gets to say for itself, once.
- *
- * **iOS presented this to every new instructor and every new performer, and the web only ever
- * showed it to somebody who went looking in Help.** The client a school is most likely to hand a
- * student was the one that never explained itself: a director who buys on a Chromebook, makes a
- * studio and lands on a setup checklist gets the *what to do* and none of the *why it works this
- * way* — which is the whole of the argument the landing page makes to get them there.
- *
- * The same objections the iOS version was built against apply here and are answered the same way:
- *
- *   · **Skippable from the first frame**, in the corner, in plain words. A tour you have to escape
- *     is worse than no tour.
- *   · **Three cards and a dot for each**, so the whole thing is a known quantity before it starts
- *     and nobody is deciding whether to bail out of an unknown number of screens.
- *   · **Nothing here names a control or a screen**, so moving a button never turns it into a lie.
- *   · **It is not the only copy of itself** — every word is also under Help, which serves the
- *     person who skipped it and the person who has forgotten.
- *
- * Every sentence comes from the export, including the word on the closing button, because two
- * clients typing the same idea separately is the drift `check_labels.py` exists to catch.
- */
 export function welcomeScreen(store, { help = null, page = 0, onPage, onFinish } = {}) {
   const isInstructor = store?.isInstructor ?? false;
   const pages = (isInstructor ? help?.instructor : help?.performer) ?? [];
@@ -3549,7 +3180,7 @@ export function welcomeScreen(store, { help = null, page = 0, onPage, onFinish }
   );
 }
 
-export function helpScreen(store, { help = null, onBack } = {}) {
+export function helpScreen(store, { help = null, supportEmail = null, onBack } = {}) {
   const isInstructor = store?.isInstructor ?? false;
   const keepsScore = store?.rules?.().keepsScore ?? true;
 
@@ -3590,6 +3221,13 @@ export function helpScreen(store, { help = null, onBack } = {}) {
       { class: "stack", style: "text-align:center" },
       el("h2", { text: "Just a moment" }),
       el("p", { class: "caption", text: "Fetching the words this screen is made of." }),
+    ),
+    supportEmail && el(
+      "p",
+      { class: "caption", style: "text-align:center" },
+      "Still stuck? Write to ",
+      el("a", { href: `mailto:${supportEmail}`, text: supportEmail }),
+      ". A person reads it.",
     ),
     onBack && el("button", { type: "button", style: "width:100%", onClick: onBack, text: "Back to You" }),
   );

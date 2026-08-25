@@ -1,28 +1,8 @@
-/**
- * The backend, over plain HTTP. No SDK.
- *
- * ## Why no SDK
- *
- * `@supabase/supabase-js` is ~40 KB gzipped plus its dependency tree, and it would be the only
- * thing in this project requiring a bundler, a lockfile and a supply chain. The surface actually
- * used here is small enough to read in one sitting: GoTrue's token endpoints, PostgREST's query
- * grammar, and two Storage calls. A school Chromebook on school wi-fi downloads what it needs and
- * nothing else, and there is no package that can be compromised on a Tuesday.
- *
- * ## What this file is not allowed to do
- *
- * **No filtering that a policy should be doing.** A performer may not read another performer's
- * note or clip, and that is enforced by row-level security in Postgres — never by a `.filter()`
- * here. A client-side privacy control is one a debugger switches off. This client asks for what it
- * wants and the database decides; where a request would return more than it should, the fix goes
- * in the migration.
- */
 
 import { CLIP_BUCKET, CONFIG } from "./config.js";
 
 const SESSION_KEY = "ipt.session";
 
-/** Errors, in the same vocabulary `StoreError` uses in Swift, so both clients say the same thing. */
 export class StoreError extends Error {
   constructor(kind, message, status) {
     super(message);
@@ -44,28 +24,11 @@ export class StoreError extends Error {
   static notPermitted() {
     return new StoreError("notPermitted", "You don't have access to that.");
   }
-  /**
-   * `why` is kept for diagnosis and **not** put in front of a person.
-   *
-   * Every browser words this differently and none of them words it for a musician: "Failed to
-   * fetch", "Load failed", "NetworkError when attempting to fetch resource". Appended to a clear
-   * sentence it does the same job the bare status does — it gets nothing across except the feeling
-   * that something technical went wrong. Same rule as `humanize()`, which shows a status only when
-   * it has no sentence to show instead.
-   */
   static network(why) {
     const error = new StoreError("network", "Couldn't reach the server. Check your connection and try again.");
     error.detail = why;
     return error;
   }
-  /**
-   * The two doors, refused for want of a purchase.
-   *
-   * `0005_entitlement.sql` raises `IPT_NO_ACCOUNT` — a named, catchable condition rather than
-   * prose — from `create_studio` and `join_studio`, and nowhere else. Practice already logged is
-   * never gated: nobody's record is held hostage. `store.js` matches on the condition and the shell
-   * turns this one kind into the purchase prompt rather than into an error somebody has to read.
-   */
   static needsAccount(action = "createStudio") {
     const error = new StoreError(
       "needsAccount",
@@ -76,19 +39,13 @@ export class StoreError extends Error {
   }
 }
 
-/**
- * Turns a PostgREST or GoTrue error body into a sentence.
- *
- * A transcription of `humanized()` in `SupabaseStore.swift`, and it carries that file's one
- * deliberate omission: **duplicate key is left untranslated on purpose.** The outbox is
- * at-least-once, so a resent session reports success *as* a duplicate, and `createLog` below finds
- * it by looking for "23505" in this exact string. Humanising it would turn every resent session
- * into a fresh insert and silently double somebody's week — no error, no crash, nothing to notice.
- */
 function humanize(body, status) {
   const raw = (body?.message ?? body?.error_description ?? body?.msg ?? body?.error ?? "").toString();
   const code = body?.code ?? "";
   const lower = `${raw} ${code}`.toLowerCase();
+
+  const hint = (body?.hint ?? "").toString().trim();
+  if (/^IPT_[A-Z_]+$/.test(raw.trim()) && hint) return hint;
 
   if (lower.includes("rate limit") && lower.includes("email")) {
     return "Too many sign-up emails right now. Wait a few minutes and try again.";
@@ -156,20 +113,6 @@ function saveSession(next) {
   scheduleRefresh();
 }
 
-/**
- * Refresh a minute before expiry, not on a 401.
- *
- * Reacting to a 401 means the failing request is the one the performer just made — most often the
- * submit at the end of a session — and retrying it after refreshing risks sending it twice. The
- * outbox is idempotent so that would survive, but the right place to lose a race is not there.
- *
- * **The timer alone is not the guarantee.** A timer does not run in a closed Chromebook lid, so a
- * session restored the next morning is already stale and everything `boot()` fires before the
- * timer's five-second floor would go out with a dead token. A 401 is a *refusal*, and a refusal is
- * what the outbox is never allowed to wait out — five mornings like that and real practice would
- * be set aside as server-refused. So `request()` checks the stored expiry before attaching the
- * header and refreshes first; the timer only keeps that check from ever firing mid-rehearsal.
- */
 function scheduleRefresh() {
   clearTimeout(refreshTimer);
   if (!session?.expires_at) return;
@@ -177,11 +120,6 @@ function scheduleRefresh() {
   refreshTimer = setTimeout(() => { refreshSession().catch(() => {}); }, Math.max(ms, 5_000));
 }
 
-/**
- * One refresh in flight, ever. GoTrue rotates refresh tokens, so two concurrent refreshes are not
- * wasteful — they are fatal: the loser presents a rotated-away token, is refused, and the refusal
- * path signs the person out. `SupabaseClient.swift` holds the same rule for the same reason.
- */
 let refreshInFlight = null;
 
 function refreshSession() {
@@ -203,7 +141,6 @@ function refreshSession() {
   return refreshInFlight;
 }
 
-/** Stale means within a minute of expiry — the same margin the timer aims for. */
 function tokenIsStale() {
   return !!session?.expires_at && session.expires_at * 1000 - Date.now() < 60_000;
 }
@@ -312,19 +249,6 @@ export async function signIn({ email, password }) {
   }
 }
 
-/**
- * Adopts the session GoTrue hands back on the end of a confirmation link.
- *
- * **The confirmation link comes back as a hash fragment**, and this app is a hash-routed
- * single-page app — so `#access_token=…&refresh_token=…&type=signup` arrives where a route
- * belongs. Consuming it is not optional: left there it is a route the router does not recognise,
- * and the person who just confirmed their email lands on the sign-in screen holding a perfectly
- * good session in their address bar.
- *
- * The user is **fetched rather than decoded**. The tokens carry the id in a claim, and reading it
- * would mean a base64url JWT parser in the client for a value the server will hand over for one
- * request — one that also proves the token is live, which a decode cannot.
- */
 export async function adoptSession(payload) {
   saveSession(normaliseSession(payload));
   const user = await request("/auth/v1/user");
@@ -332,13 +256,6 @@ export async function adoptSession(payload) {
   return user;
 }
 
-/**
- * Another confirmation email.
- *
- * Worth having rather than telling somebody to sign up again: a second sign-up with the same
- * address does not fail loudly on GoTrue, it returns an obfuscated user and sends nothing — which
- * looks exactly like the app working and leaves them waiting for a mail that is never coming.
- */
 export function resendConfirmation(email) {
   return request("/auth/v1/resend", {
     auth: false,
@@ -347,27 +264,6 @@ export function resendConfirmation(email) {
   });
 }
 
-/**
- * What a fragment the browser arrived with is asking for.
- *
- * **This was tested by grepping `main.js` for the string `params.get("type") === "recovery"`.** That
- * is a check on the presence of a line, not on what happens, and it is the shape this project has a
- * section about: it passes for as long as the thing it tests is not real, and it cannot fail for any
- * regression that keeps the text and changes the meaning. The reason it was written that way is
- * plain enough — the decision lived inside a function that adopts sessions over the network, inside
- * a module that runs `boot()` on import, and nothing could reach it.
- *
- * So the decision comes out and the network stays behind. Four kinds, and the distinction that
- * matters most is the last one:
- *
- *   · `none`    — an ordinary route, or a fragment with nothing in it for us.
- *   · `error`   — GoTrue said why, and its `+`-encoded spaces are undone here.
- *   · `session` — a confirmation link. Adopt it and carry on.
- *   · `recovery` — **a reset link is not a sign-in.** It proves control of an inbox, and the one
- *     thing owed before anything else is a new password. Without this distinction the reset email
- *     signed people in silently and left the forgotten password unchanged: a reset that resets
- *     nothing, and somebody locked out of their own studio the next time they tried the old one.
- */
 export function authRedirectIntent(hash) {
   const raw = (hash ?? "").startsWith("#") ? hash.slice(1) : (hash ?? "");
   if (!raw.includes("access_token=") && !raw.includes("error_description=")) return { kind: "none" };
@@ -386,13 +282,6 @@ export function authRedirectIntent(hash) {
   };
 }
 
-/**
- * Sends the password-reset email. The link lands back on this origin, where
- * `consumeAuthRedirect` adopts the session and — because the fragment says `type=recovery` —
- * the shell asks for a new password before anything else happens. GoTrue deliberately answers
- * success for an unknown address, and this passes that through: "no account has that email" at
- * the door is an account-enumeration oracle.
- */
 export function requestPasswordReset(email) {
   const redirect = encodeURIComponent(location.origin);
   return request(`/auth/v1/recover?redirect_to=${redirect}`, {
@@ -402,7 +291,6 @@ export function requestPasswordReset(email) {
   });
 }
 
-/** The new password, set on the recovery session the reset link carried. */
 export function updatePassword(password) {
   return request("/auth/v1/user", { method: "PUT", body: { password } });
 }
@@ -416,68 +304,65 @@ export async function signOut() {
 }
 
 
-/**
- * `select` with PostgREST's query grammar, passed through rather than wrapped in a builder.
- *
- * A fluent builder would be a second, smaller construction of a query language that already
- * exists and is documented. The call sites read as what they send.
- */
 export function select(table, query = "") {
   const q = query ? (query.startsWith("?") ? query : `?${query}`) : "";
   return request(`/rest/v1/${table}${q}`);
 }
 
-/**
- * `select`, in pages, until the server has nothing left to give.
- *
- * ==========================================================================================
- * The silent wrong number
- * ==========================================================================================
- *
- * PostgREST caps how many rows one request may return. The cap is a platform setting — the Data
- * API's "Max rows" — it is **not** set anywhere in this repository, and a capped response looks
- * exactly like a complete one: 200, a JSON array, no error, no warning. The client that reads it
- * then computes a studio's totals from part of the data and shows a number that is confidently
- * wrong.
- *
- * That is the worst failure this product has available to it. Every screen here is a claim about
- * how much somebody practiced; a total that is quietly short is worse than an error, because an
- * error is something a person can see.
- *
- * And it is not a large-studio problem. `#loadStudio` asks for **every practice log since the
- * studio was created** — twenty performers logging three sessions a week is sixty rows a week, so
- * a common default of a thousand rows is one semester. The pilot database holds thirty-three rows
- * today, which is why nothing has gone wrong yet and why nothing would have warned anybody.
- *
- * ==========================================================================================
- * Why paging, and why it does not need to know the cap
- * ==========================================================================================
- *
- * The obvious fix is to ask for a count and compare — but `count=exact` makes Postgres scan the
- * whole table on every load, against an 8 second `statement_timeout`, to answer a question we do
- * not otherwise need answered.
- *
- * So this pages instead, and **advances by what actually came back rather than by the page size**.
- * That distinction is the whole design: `offset += pageSize` silently truncates whenever the
- * server's cap is smaller than the page asked for, which is precisely the unknown being defended
- * against. Advancing by `page.length` is correct for any cap, including one changed later in a
- * dashboard by somebody who never reads this file. It stops when a page comes back empty.
- *
- * The caller must pass a stable `order`, or paging over a shifting sort can repeat and skip rows.
- * That is asserted rather than assumed.
- */
-export async function selectAll(table, query = "", { pageSize = 1000 } = {}) {
+export async function selectAll(table, query = "", { pageSize = 5000, window: waveWidth = 6 } = {}) {
   if (!/(^|&|\?)order=/.test(query)) {
     throw new Error(`selectAll(${table}) needs a stable order, or paging can repeat and skip rows`);
   }
+  const ask = (limit, offset) => select(table, `${query}&limit=${limit}&offset=${offset}`);
+  let budget = 500;
   const rows = [];
-  let offset = 0;
-  for (let page = 0; page < 500; page += 1) {
-    const got = await select(table, `${query}&limit=${pageSize}&offset=${offset}`);
-    if (!Array.isArray(got)) return got;
-    rows.push(...got);
-    if (got.length === 0) return rows;
-    offset += got.length;
+
+  const first = await ask(pageSize, 0);
+  budget -= 1;
+  if (!Array.isArray(first)) return first;
+  rows.push(...first);
+  if (first.length === 0) return rows;
+  const size = first.length;
+
+  if (size < pageSize) {
+    if (budget <= 0) return rows;
+    const second = await ask(size, size);
+    budget -= 1;
+    if (!Array.isArray(second)) return second;
+    rows.push(...second);
+    if (second.length < size) return rows;
+  }
+
+  let offset = rows.length;
+  while (budget > 0) {
+    const count = Math.min(waveWidth, budget);
+    const starts = Array.from({ length: count }, (_, i) => offset + i * size);
+    budget -= count;
+    const wave = await Promise.all(starts.map((start) => ask(size, start)));
+
+    for (let i = 0; i < wave.length; i += 1) {
+      const page = wave[i];
+      if (!Array.isArray(page)) return page;
+      rows.push(...page);
+      if (page.length >= size) continue;
+      if (wave.slice(i + 1).every((p) => Array.isArray(p) && p.length === 0)) return rows;
+      return await serialTail(ask, starts[i] + page.length, size, rows, budget);
+    }
+    offset += count * size;
+  }
+  return rows;
+}
+
+async function serialTail(ask, start, size, rows, budget) {
+  let offset = start;
+  let left = budget;
+  while (left > 0) {
+    left -= 1;
+    const page = await ask(size, offset);
+    if (!Array.isArray(page)) return page;
+    rows.push(...page);
+    if (page.length === 0) return rows;
+    offset += page.length;
   }
   return rows;
 }
@@ -486,12 +371,6 @@ export function rpc(fn, args = {}) {
   return request(`/rest/v1/rpc/${fn}`, { method: "POST", body: args });
 }
 
-/**
- * `resolution` is how an upsert is asked for — `merge-duplicates` to overwrite, `ignore-duplicates`
- * to leave the existing row alone. Both are used: a focus point that kept its id keeps the ticks
- * against it, and a double-tapped focus mark on a bad connection is one row rather than an error
- * somebody has to interpret.
- */
 export function insert(table, rows, { returning = "representation", resolution } = {}) {
   const prefer = [`return=${returning}`];
   if (resolution) prefer.push(`resolution=${resolution}`);
@@ -515,14 +394,6 @@ export function remove(table, query) {
 }
 
 
-/**
- * Uploads a clip.
- *
- * The content type is fixed at `audio/mp4` because the bucket's `allowed_mime_types` permits only
- * that family, and because an instructor's iPhone plays these back through AVFoundation, which
- * cannot decode WebM or Opus at all. `recorder.js` is what guarantees the bytes match the claim —
- * a browser's default `MediaRecorder` on Chrome would produce WebM and this upload would 400.
- */
 export async function uploadClip(objectPath, blob) {
   return request(`/storage/v1/object/${CLIP_BUCKET_PATH(objectPath)}`, {
     method: "POST",
@@ -533,12 +404,6 @@ export async function uploadClip(objectPath, blob) {
 
 const CLIP_BUCKET_PATH = (p) => `${CLIP_BUCKET}/${p}`;
 
-/**
- * A short-lived URL the player can stream.
- *
- * Minted per playback and never persisted: clips live in a private bucket, and a signed URL
- * written into a row is a broken player three hours later.
- */
 export async function signedClipUrl(objectPath, expiresIn = 3600) {
   const res = await request(`/storage/v1/object/sign/${CLIP_BUCKET_PATH(objectPath)}`, {
     method: "POST",

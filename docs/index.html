@@ -54,17 +54,21 @@
   }
   body::after { background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--canvas) 45%, transparent) 0%,
+    color-mix(in srgb, var(--canvas) 88%, transparent) 0%,
+    color-mix(in srgb, var(--canvas) 72%, transparent) 11%,
+    color-mix(in srgb, var(--canvas) 45%, transparent) 26%,
     color-mix(in srgb, var(--canvas) 65%, transparent) 45%,
     color-mix(in srgb, var(--canvas) 97%, transparent) 82%,
     var(--canvas) 100%
   ); }
   @media (prefers-color-scheme: dark) {
-    body::before { opacity: 0.34; }
+    body::before { opacity: 0.48; }
     body::after { background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--canvas) 34%, transparent) 0%,
-    color-mix(in srgb, var(--canvas) 54%, transparent) 45%,
+    color-mix(in srgb, var(--canvas) 92%, transparent) 0%,
+    color-mix(in srgb, var(--canvas) 74%, transparent) 11%,
+    color-mix(in srgb, var(--canvas) 30%, transparent) 26%,
+    color-mix(in srgb, var(--canvas) 48%, transparent) 45%,
     color-mix(in srgb, var(--canvas) 97%, transparent) 82%,
     var(--canvas) 100%
   ); }
@@ -208,11 +212,24 @@
        screenshots were squeezed to the width they had on a phone. Prose wants a narrow measure;
        a hero does not. So the hero alone breaks the cap, by exactly the amount two phones and a
        readable column need, and every section below it keeps the 46rem it is written for. */
-    .hero-head, .hero {
+    /* The cards come with it, and that is a correction rather than an extension. The hero was the
+       only thing on the page allowed past 46rem, so the widest element sat above a column two
+       thirds its width and the page read as though the layout had given up below the fold. The
+       reasoning above is about prose versus not-prose, and three feature cards are not prose
+       either: at 736px they were 236px each, which broke "Assign the work, not the minutes" over
+       two lines and left the third card visibly shorter than its neighbours. At 1080 they are
+       ~350 and the headings sit on one line.
+
+       The sections *below* them keep 46rem on purpose. Those are sentences somebody reads, and a
+       long measure is what makes a paragraph hard to track back. Wide, wide, narrow is a rhythm;
+       wide, narrow, narrow was an accident. */
+    .hero-head, .hero, .landing {
       width: min(1080px, calc(100vw - 96px));
       margin-left: calc((min(1080px, 100vw - 96px) - 100%) / -2);
       margin-right: calc((min(1080px, 100vw - 96px) - 100%) / -2);
     }
+    .landing { gap: 18px; }
+    .card h3 { font-size: 17px; }
     /* Smaller than the single-column clamp, because the headline no longer has the page — it has
        a column beside two phones. At 58px "Assign the practice." needs about 550px and the column
        is 528, so it broke over three lines at exactly the width where this layout turns on. */
@@ -259,9 +276,111 @@
   .support h2 { margin-top: 0; }
   .updated { color: var(--muted); font-size: 15px; margin: 0 0 8px; }
   footer { color: var(--muted); font-size: 14px; margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); }
+
+  /* ======================================================================================
+     Depth, light and motion, with nothing fetched
+     ======================================================================================
+
+     The page was correct and read as a document: a flat canvas, hard rules, screenshots sitting
+     on the background like clip art, and no light anywhere. The brand colour appeared only as
+     ink — never as a source of light — which is the single biggest reason a dark page looks
+     unfinished rather than deliberate.
+
+     Everything below is CSS. This page promises, in its own footer, that it loads no scripts, no
+     fonts and nothing from anywhere else, and that promise is worth more than any effect it
+     forbids. Scroll reveals use `animation-timeline: view()`, which needs no JavaScript at all;
+     browsers without it simply see the finished state, which is why the keyframes end where the
+     element already is.
+
+     Two rules the rest of this file already lives by are kept: nothing here changes a text
+     colour or the surface a measured contrast pair was taken against, and every motion is off
+     for anybody who asked for less of it. */
+
+  /* The bloom. Two very soft radial washes of the accent, sitting behind everything, no edges.
+     Fixed rather than scrolled so it behaves like light in the room rather than an object on the
+     page. `pointer-events: none` because it covers the whole viewport. */
+  body { position: relative; }
+  .glow {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(58vw 42vh at 50% -6%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 68%),
+      radial-gradient(40vw 34vh at 88% 12%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%);
+  }
+  @media (prefers-color-scheme: light) {
+    /* A wash that reads as light on black reads as a stain on white, so it is barely there. */
+    .glow {
+      background:
+        radial-gradient(58vw 40vh at 50% -8%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%);
+    }
+  }
+  @media print { .glow { display: none; } }
+
+  /* The masthead rule was a full-width hairline, which is the most document-like thing a page can
+     do. Faded at both ends it reads as a horizon instead. */
+  header {
+    border-bottom: 0;
+    background-image: linear-gradient(90deg, transparent, var(--rule) 18%, var(--rule) 82%, transparent);
+    background-size: 100% 1px; background-position: 0 100%; background-repeat: no-repeat;
+  }
+
+  /* Cards, lit from above. A 1px top edge that catches the light is what separates a panel from a
+     rectangle, and it costs one pseudo-element. The border stays for anybody whose browser has no
+     `color-mix`. */
+  .card { position: relative; overflow: hidden; }
+  .card::before {
+    content: ""; position: absolute; inset: 0 0 auto; height: 1px;
+    background: linear-gradient(90deg, transparent,
+      color-mix(in srgb, var(--ink) 22%, transparent) 30%,
+      color-mix(in srgb, var(--ink) 22%, transparent) 70%, transparent);
+  }
+
+  /* The phones sat on the background with a shadow and nothing else. A glow *under* them is what
+     makes a screen look like it is emitting rather than printed, and a little perspective is what
+     stops two flat rectangles reading as a slide. */
+  .shots { position: relative; perspective: 1400px; }
+  .shots::before {
+    content: ""; position: absolute; left: 50%; bottom: 2%; transform: translateX(-50%);
+    width: min(560px, 82%); height: 46%; border-radius: 50%; z-index: -1;
+    background: radial-gradient(ellipse at center,
+      color-mix(in srgb, var(--accent) 22%, transparent), transparent 72%);
+    filter: blur(38px);
+  }
+  .shot {
+    box-shadow:
+      0 32px 78px rgba(0,0,0,.52),
+      0 6px 16px rgba(0,0,0,.3),
+      0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+  .shot-back { transform: perspective(1400px) rotateY(9deg) rotate(-4deg) translateY(14px); }
+  .shot:not(.shot-back) { transform: perspective(1400px) rotateY(-6deg) rotate(3deg); }
+
+  /* The primary door, given the light the rest of the page now has. */
+  .cta-button {
+    box-shadow:
+      0 10px 30px color-mix(in srgb, var(--accent) 30%, transparent),
+      0 2px 6px rgba(0,0,0,.28);
+  }
+
+  /* Scroll reveal, in CSS, and written so that a browser without it shows the finished state.
+     `animation-range` ends well before the element is centred, or a reader who scrolls quickly
+     watches text catch up with them. */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .landing .card, .band, .support {
+        animation: rise linear both;
+        animation-timeline: view();
+        animation-range: entry 6% cover 26%;
+      }
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: none; }
+      }
+    }
+  }
 </style>
 </head>
 <body>
+<div class="glow" aria-hidden="true"></div>
 <main>
   <header class="hero-head">
     <div class="wordmark">IP<span>T</span></div>
@@ -292,22 +411,41 @@
       <!-- "One shared board" was our word for it and nobody else's, and "actually listens to" put a
            dig in a sentence that had nobody to aim it at. This is written for a band director, not
            for somebody who already knows what the app does. -->
-      <p class="hero-sub">Built for a whole ensemble, not one soloist. Everybody's practice in one
-         place, and short recordings their instructor listens to.</p>
+      <!-- "Built for a whole ensemble, not one soloist" was competitive positioning, and it was
+           ours rather than the reader's. A director does not arrive thinking "I need an ensemble
+           tool"; they arrive thinking they cannot tell who is practising. Defining the product
+           against rivals they have never heard of spends the most valuable sentence on the page on
+           an argument nobody is having.
+
+           The half after it was worse. "Everybody's practice in one place, and short recordings
+           their instructor listens to" is a surveillance sentence — a database noun followed by a
+           child being recorded and monitored — and a parent scanning this page reads exactly that.
+           It is also the opposite of what the product is: `ListeningBacklog` exists because *the
+           loop dies at the instructor*, and what makes a fourteen-year-old practise again is being
+           heard. So the line describes the loop from the teaching side, and ends on the part that
+           is actually the feature. -->
+      <p class="hero-sub">Give them the instruction you would give in the room. They practice with
+         it in front of them and send back a few seconds of playing. You listen, and answer in one
+         line.</p>
 
       <!-- Two doors, on the page people are actually given. Sending somebody to a subdomain nobody
            told them about is friction at the moment they have decided to try it. -->
+      <!-- The demo was a text link under two buttons, and it is the most persuasive thing here.
+           A full studio with three weeks of practice in it, no account and no card, is what answers
+           the director's actual objection — and the standing decisions say so: *nobody asks forty
+           families to buy something they have not seen.* It is the primary action now. Sign in
+           drops to a quiet third, because somebody returning knows where the door is. -->
       <p class="cta-row">
-        <a class="cta-button" href="https://app.iptmusic.com">Sign in</a>
+        <a class="cta-button" href="https://app.iptmusic.com/#/demo">Look around a demo studio</a>
         <a class="cta-ghost" href="https://app.iptmusic.com">Create an account</a>
       </p>
       <!-- "A seeded band" is a developer's word for test data, and "a real studio" reads as though
            it might be somebody's actual one. What a director wants to know is what they will find
            when they click and what it will cost them, so it says that. Same description the app's
            own door uses, so the two places agree. -->
-      <p class="cta-note">Or <a href="https://app.iptmusic.com/#/demo">look around a demo studio</a> first.
-         It has three weeks of practice already in it: a roster, assigned work, standings, and
-         recordings. Nothing to set up, and no account needed.</p>
+      <p class="cta-note">The demo has three weeks of practice already in it: a roster, assigned
+         work, standings and recordings. Nothing to set up, and no account needed.
+         Already have one? <a href="https://app.iptmusic.com">Sign in</a>.</p>
     </div>
 
     <!-- Real pixels, not a mockup: what `make shots` photographs, so this cannot advertise a
@@ -323,7 +461,7 @@
   <section class="landing">
     <div class="card"><h3>Assign the work, not the minutes</h3><p>A time target says how long, not what to work on. Give them the instruction you would give in the room: hands separate, take it at 72, fix the release in bar 12. It is on the stand while they practice, so nobody has to remember it.</p></div>
     <div class="card"><h3>Hear how it went, not just how long</h3><p>Performers record a short take with their own click playing out loud, so you can hear how the playing and the click line up. They mark the moments worth hearing, which turns a four-minute take into a ten-second listen.</p></div>
-    <div class="card"><h3>Thirty seconds on a Monday</h3><p>Your dashboard puts whoever needs you first, and folds everybody who is doing fine out of the way. Listen to a take and send one line back. That is the part only you can do.</p></div>
+    <div class="card"><h3>See who needs you first</h3><p>The dashboard leads with the performers who need you, and keeps everyone who is doing fine a tap away. Listen to a take and send one line back. That is the part only you can do.</p></div>
   </section>
 
   <section class="band">
@@ -332,8 +470,17 @@
          what to do with them, or that an account costs anything. -->
     <h2>Given a join code?</h2>
     <p>Your instructor read out six characters. Open IPT, make an account and type them in. This
-       week's work is on the screen right away. An account is <strong>$4.99 USD once</strong> and
-       it is yours for good, on every device you sign in on.</p>
+       week's work is on the screen right away. An account is <strong>$4.99 USD once</strong> here, or
+       the same price in your own currency inside the iPhone app, and it is yours for good, on every
+       device you sign in on.</p>
+    <!-- The word "recordings" appears on this page with no reassurance beside it, and the
+         person most likely to be reading it is a parent deciding whether their child should be
+         recording audio at all. The facts are already true and are in `docs/privacy-policy.md`;
+         they were simply nowhere a scanning reader would meet them. Not a disclaimer: the third
+         sentence is a feature, and it is the one `A take is the performer's before it is the
+         instructor's` was written for. -->
+    <p>Recordings stay between a performer and their instructor. Nobody else in the studio can hear
+       them, they are never public, and the performer can delete their own take.</p>
     <p class="platforms">Works on iPhone, and in any browser: Chromebook, iPad, Android, laptop.</p>
   </section>
 
@@ -341,9 +488,26 @@
     <h2>What IPT costs</h2>
     <p class="offer">$4.99 once. Instructors and performers, every feature, on every device you sign in on.</p>
     <p>No subscription, no renewal, and no per-student pricing.</p>
-    <p>Bought once, by the person who will use it. A charge appears on a statement as
-       <strong>IPT PRACTICE APP</strong>, and if it is not for you,
-       <a href="/refunds">ask and you get your money back</a>. There is no time limit on that.</p>
+    <!-- This used to read "ask and you get your money back. There is no time limit on that."
+         Advertising a refund on the page where somebody decides to buy sells the exit rather than
+         the product, and at $4.99 it invites a request from anybody who never opens the app again.
+         What the owner wanted said instead: we answer problems, and we answer them with a person.
+         The refund itself has not gone anywhere — `/refunds` still commits to one where we cannot
+         put a thing right, and to every statutory right on top — it is simply no longer the
+         headline of the pricing section. -->
+    <p>Bought once, by the person who will use it. Buy here and the charge appears on your statement
+       as <strong>IPT PRACTICE APP</strong>. If something goes wrong,
+       <a href="/refunds">write to us and we will sort it out</a>.</p>
+    <!-- Two tills since 24 August 2026, and this page named one of them. The iPhone app sells
+         through Apple's In-App Purchase, so for that buyer the price is Apple's local tier, the
+         statement descriptor is Apple's, and the refund is Apple's to grant. Every sentence above
+         was written for a card and stayed on the page unchanged, which made the strongest promise
+         on it one that cannot be kept for an App Store buyer. Named here rather than left to the
+         refund page, because this is where somebody decides. Note the asterisks: this comment is
+         inside the rendered page, so the generator's unrendered-Markdown guard reads it too. -->
+    <p>Buying inside the iPhone app goes through the App Store instead: same account, same one-off
+       purchase, at the price Apple sets for your country, and the charge and the refund are
+       Apple's. <a href="/refunds">Refunds</a> says who does what.</p>
   </section>
 
   <section class="support" id="support">

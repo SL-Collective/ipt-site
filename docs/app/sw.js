@@ -1,64 +1,6 @@
-/**
- * The service worker: what makes IPT survive a school network.
- *
- * ==========================================================================================
- * What this is for, which is not "offline mode"
- * ==========================================================================================
- *
- * A practice room is a basement, and a school Chromebook on school wi-fi is the other half of the
- * same problem. This app already has an answer for practice itself — the outbox writes a session to
- * disk before the network is touched — but that answer is worth nothing if the *app* will not load.
- * A performer who opens IPT in a band hall and gets a browser error page has lost the session,
- * whatever the outbox would have done for them.
- *
- * So the job here is narrow: **the app's own files always load.** Not the data — the shell.
- *
- * ==========================================================================================
- * Two strategies, and why they are not the same one
- * ==========================================================================================
- *
- * · **The shell** — HTML, JS, CSS, the demo fixture — is cache-first. These are versioned by the
- *   cache name below, they change only when a deploy happens, and serving them from disk is the
- *   difference between an app that opens and one that does not.
- *
- * · **Supabase** — every `/auth/`, `/rest/` and `/storage/` request — is **never touched.** Not
- *   cached, not intercepted, not retried. That is a deliberate refusal and it is the same rule
- *   `CachingStore` states in Swift: *a cached answer must never stand in for a refusal.* A 4xx from
- *   PostgREST means the server has an opinion about this person — removed from the studio, role
- *   changed, session revoked — and answering it from a cache shows them what they may no longer be
- *   allowed to see while looking exactly like the app working.
- *
- * There is no offline data layer here and there should not be one without the same care
- * `CachingStore` took: it serves a cached read *only* in place of a network failure, never in place
- * of a refusal, and it returns nothing rather than `[]` when it has nothing — because an empty
- * array renders as "you have no assignments", which is a lie somebody would act on.
- */
 
-/**
- * The cache name, and **nobody types it**.
- *
- * Every asset is fetched fresh when the name changes and the old cache is deleted on activate, so
- * there is no per-file versioning to keep in step and no possibility of a half-updated app — the
- * shape of bug where new JavaScript meets old CSS and only one screen is wrong.
- *
- * This used to say the bump "belongs in the same commit as the shell change, never on a deploy
- * checklist", having watched v7 sit unchanged through a session that edited ten shell files. It
- * then went unbumped through six commits on 22 August that rewrote `main.js`, `screens.js`,
- * `supabase.js`, `app.css` and `tokens.css`, and every returning browser held the old app while
- * the origin served new JavaScript for an hour. **A rule that depends on remembering is the
- * "described control" failure wearing ops clothing, and writing that sentence in the comment did
- * not stop it happening twice.**
- *
- * So the value below is a placeholder. `stage_webapp.py` replaces it with a hash of the files
- * `SHELL` lists, which changes when and only when they do. What ships is never this string.
- */
-const CACHE = "ipt-shell-c0fd82c7";
+const CACHE = "ipt-shell-6963f159";
 
-/**
- * The whole shell. Small enough to list, and listed rather than globbed on purpose: a glob would
- * silently start caching whatever somebody drops into `web/`, and this file is downloaded in full
- * by a Chromebook before the app is usable.
- */
 const SHELL = [
   "./",
   "./index.html",
@@ -72,6 +14,7 @@ const SHELL = [
   "./app/judgement.js",
   "./app/bylines.js",
   "./app/settings-summary.js",
+  "./app/android.js",
   "./app/listening.js",
   "./app/trend.js",
   "./app/milestones.js",

@@ -1,50 +1,6 @@
-/**
- * An MP4 writer for exactly one thing: a mono AAC-LC track with no video.
- *
- * ==========================================================================================
- * Why this file exists at all
- * ==========================================================================================
- *
- * Chrome's `MediaRecorder` produces WebM/Opus, and three separate things in this product reject it
- * — the bucket's `allowed_mime_types`, the `ClipObjectPath` format that the storage policies parse,
- * and **AVFoundation, which cannot decode Opus at all**. The third is the one that matters: a
- * Chromebook student's clip would upload and then be silent on their instructor's iPhone. "The loop
- * dies at the instructor, not the student" is this product's own diagnosis of why every rival
- * fails, and shipping that would be walking into it deliberately.
- *
- * So the Chrome path encodes AAC through WebCodecs and this puts it in a container. There is no
- * dependency to do it with, because `web/` has no bundler and no supply chain — see `web/README.md`
- * for why that is worth more than the convenience.
- *
- * ==========================================================================================
- * What it deliberately does not do
- * ==========================================================================================
- *
- * It writes one audio track, one chunk, constant frame size. No video, no fragments, no edit lists,
- * no multiple tracks, no B-frames, no 64-bit boxes. A general MP4 writer is thousands of lines and
- * every one of them is downloaded by a school Chromebook on school wi-fi.
- *
- * The bounds that makes it safe are real and checked: a take is capped at five minutes, which at
- * 1024 samples per frame and 44.1 kHz is about 12,900 frames — nowhere near the 32-bit limits that
- * would require `co64` or a second chunk.
- *
- * ==========================================================================================
- * Faststart, and the two-pass that buys it
- * ==========================================================================================
- *
- * `moov` is written **before** `mdat`, so a player has the sample tables in the first bytes rather
- * than after the audio. That costs one extra pass — `stco` holds the absolute file offset of the
- * audio, which is not known until `moov`'s own length is — and it is worth it because the
- * alternative makes every playback a range request to the end of the file first.
- *
- * The rebuild is safe because `stco`'s size cannot change between passes: it is one 32-bit entry
- * whatever the value.
- */
 
-/** AAC-LC always encodes 1024 samples per frame. The sample tables below depend on it. */
 export const SAMPLES_PER_FRAME = 1024;
 
-/** MPEG-4 Audio sampling-frequency indices, for building an AudioSpecificConfig by hand. */
 const FREQUENCY_INDEX = [
   96000, 88200, 64000, 48000, 44100, 32000,
   24000, 22050, 16000, 12000, 11025, 8000, 7350,
@@ -74,25 +30,15 @@ function concat(parts) {
   return out;
 }
 
-/** `[size][type][payload…]`, which is every box in the format. */
 function box(type, ...payload) {
   const body = concat(payload);
   return concat([u32(body.length + 8), ascii(type), body]);
 }
 
-/** A full box carries a version and 24 bits of flags before its payload. */
 function fullBox(type, version, flags, ...payload) {
   return box(type, u8(version), u8((flags >> 16) & 0xff, (flags >> 8) & 0xff, flags & 0xff), ...payload);
 }
 
-/**
- * An MPEG-4 descriptor: `[tag][length…][payload]`.
- *
- * The length is a variable-length quantity — seven bits per byte, high bit set on every byte but
- * the last. Everything this writer emits is comfortably under 128 bytes, but the encoding is done
- * properly anyway: a descriptor whose length silently truncates produces a file that parses right
- * up to the point where it does not, which is the worst way for this to fail.
- */
 function descriptor(tag, payload) {
   const length = [];
   let remaining = payload.length;
@@ -104,15 +50,6 @@ function descriptor(tag, payload) {
   return concat([u8(tag), Uint8Array.from(length), payload]);
 }
 
-/**
- * An AudioSpecificConfig, built from first principles when the encoder does not supply one.
- *
- * Five bits of object type, four of frequency index, four of channel configuration, then three
- * zeroes. WebCodecs *usually* hands this over in `metadata.decoderConfig.description`, and when it
- * does that value is preferred — it is the encoder describing itself, which cannot be wrong. This
- * is the fallback, and it exists because a missing `esds` makes a file that every tool reports as
- * having a valid AAC track and no decoder can open.
- */
 export function audioSpecificConfig(sampleRate, channels) {
   const index = FREQUENCY_INDEX.indexOf(sampleRate);
   if (index < 0) throw new Error(`unsupported sample rate for AAC: ${sampleRate}`);
@@ -139,14 +76,6 @@ export class Mp4AacWriter {
   get frameCount() { return this.#frames.length; }
   get durationSeconds() { return (this.#frames.length * SAMPLES_PER_FRAME) / this.#sampleRate; }
 
-  /**
-   * Takes an `EncodedAudioChunk` from `AudioEncoder`, plus the metadata that came with it.
-   *
-   * The metadata is not optional decoration: `metadata.decoderConfig.description` is the
-   * AudioSpecificConfig, and it arrives **only on the first chunk**. Dropping it and rebuilding the
-   * config by hand mostly works and is wrong in exactly the cases that matter — an encoder that
-   * chose a different profile, or SBR, describes itself here and nowhere else.
-   */
   addChunk(chunk, metadata) {
     const description = metadata?.decoderConfig?.description;
     if (description && !this.#description) {
@@ -159,20 +88,16 @@ export class Mp4AacWriter {
     this.addFrame(bytes);
   }
 
-  /** One raw AAC frame — no ADTS header. MP4 stores bare AAC, and an ADTS header inside an
-   *  `mdat` is seven bytes of garbage at the head of every sample. */
   addFrame(bytes) {
     if (bytes.length === 0) return;
     this.#frames.push(bytes);
     this.#sizes.push(bytes.length);
   }
 
-  /** Overrides the AudioSpecificConfig. Used by the tests, which have a real one from ffmpeg. */
   setDescription(bytes) {
     this.#description = Uint8Array.from(bytes);
   }
 
-  /** The finished file, as bytes. */
   finishBytes() {
     if (this.#frames.length === 0) {
       throw new Error("nothing was recorded: no AAC frames to write");
@@ -192,18 +117,11 @@ export class Mp4AacWriter {
     return concat([ftyp, moov, box("mdat", audio)]);
   }
 
-  /** The finished file, as a Blob the upload can take straight to Storage. */
   finish() {
     return new Blob([this.finishBytes()], { type: "audio/mp4" });
   }
 
 
-  /**
-   * `M4A ` as the major brand rather than `isom`.
-   *
-   * This is what iTunes and AVFoundation write for audio-only files, and it is what makes a `.m4a`
-   * open as audio rather than as a video container that happens to have no video track.
-   */
   #ftyp() {
     return box("ftyp", ascii("M4A "), u32(0), ascii("M4A "), ascii("mp42"), ascii("isom"));
   }
@@ -275,12 +193,6 @@ export class Mp4AacWriter {
     return box("moov", mvhd, trak);
   }
 
-  /**
-   * The ES_Descriptor tree that tells a decoder this is MPEG-4 AAC and how it is configured.
-   *
-   * Four nested descriptors, and the AudioSpecificConfig at the bottom is the load-bearing one. A
-   * file missing it has a track every tool will describe correctly and no decoder can open.
-   */
   #esDescriptor(asc) {
     const OBJECT_TYPE_MPEG4_AUDIO = 0x40;
     const STREAM_TYPE_AUDIO = 0x15; // (0x05 << 2) | 1 — audio stream, upstream flag clear
@@ -304,7 +216,6 @@ export class Mp4AacWriter {
   }
 }
 
-/** The identity transform, which every `tkhd` and `mvhd` carries whether or not there is a picture. */
 const UNITY_MATRIX = [
   u32(0x0001_0000), u32(0), u32(0),
   u32(0), u32(0x0001_0000), u32(0),
