@@ -191,12 +191,22 @@ async function recordViaWebCodecs(stream, { onTick, onLevel, signal, maxSeconds 
     try { encoder.close(); } catch { /* already closed */ }
   }
 
-  if (!writer) throw new Error("the microphone produced no audio at all");
-  return {
-    blob: writer.finish(),
-    duration: writer.durationSeconds,
-    mimeType: "audio/mp4",
-  };
+  if (!writer) {
+    console.error("IPT: the microphone produced no audio at all");
+    throw new Error("Nothing came through the microphone, so there is no take to keep. "
+                    + "Check the microphone in Settings and try again.");
+  }
+  try {
+    return {
+      blob: writer.finish(),
+      duration: writer.durationSeconds,
+      mimeType: "audio/mp4",
+    };
+  } catch (cause) {
+    console.error("IPT: the MP4 writer refused to finish.", cause);
+    throw new Error("That take couldn't be saved as a file your instructor can play. "
+                    + "The practice still counts; record again if you want a take with it.");
+  }
 }
 
 

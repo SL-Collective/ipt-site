@@ -153,9 +153,11 @@ export class SupabaseStore {
 
     const row = profiles?.[0];
     if (!row) {
+      console.error("IPT: signed in with no profile row. Check the on_auth_user_created trigger.");
       throw new StoreError(
         "server",
-        "Signed in, but your profile wasn't found. Check the on_auth_user_created trigger.",
+        "You're signed in, but your account didn't finish setting up. That is on us rather than "
+          + "on you. Try again in a moment.",
         500,
       );
     }
@@ -433,7 +435,7 @@ export class SupabaseStore {
         throw accountGate(error);
       }
     }
-    throw last ?? new StoreError("server", "Couldn't allocate a join code.", 500);
+    throw last ?? new StoreError("server", "Couldn't make a join code just now. Try again.", 500);
   }
 
   async #createStudioRPC(name, code, weekStartsOn, zone) {
@@ -544,7 +546,13 @@ export class SupabaseStore {
       created_by: uuid(this.#profile.id),
     }]);
     const created = rows?.[0];
-    if (!created) throw new StoreError("server", "The assignment was not returned after being created.", 500);
+    if (!created) {
+      throw new StoreError(
+        "server",
+        "That may not have saved. Check your assignments before writing it again.",
+        500,
+      );
+    }
 
     try {
       if (!wholeStudio) {

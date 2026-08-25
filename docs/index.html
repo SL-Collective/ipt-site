@@ -364,6 +364,44 @@
   /* Scroll reveal, in CSS, and written so that a browser without it shows the finished state.
      `animation-range` ends well before the element is centred, or a reader who scrolls quickly
      watches text catch up with them. */
+  /* ======================================================================================
+     The sections below the fold, which were three outlined boxes on the page colour
+     ======================================================================================
+
+     `.support` was `background: var(--canvas)` — the *same colour as the page* — so a panel that
+     is opaque on purpose read as an empty outline. The reason it is opaque is sound and stays:
+     a translucent panel over a photograph is where a measured contrast floor quietly stops
+     holding. `.band` has been solving that correctly all along with `--surface`, which is opaque
+     and lifted, so `.support` uses it too. Nothing about the measurement changes; the panel
+     simply becomes visible as one. */
+  .support { background: var(--surface); }
+
+  /* An accent rule above each section's heading. Small, and it is the only place on this page the
+     brand colour appears as *structure* rather than as a button or a word — which is what makes a
+     stack of panels read as a designed page rather than as three of the same box. */
+  .band h2, .support h2 { position: relative; padding-top: 14px; }
+  .band h2::before, .support h2::before {
+    content: ""; position: absolute; top: 0; left: 0;
+    width: 34px; height: 3px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  /* The price is the money moment and it was a 20px bold sentence in a grey box. Given the size a
+     number gets when it is the thing being decided — and `text-wrap: balance` so it never breaks
+     into a widow, because *a number must never wrap*. */
+  .offer {
+    font-size: clamp(21px, 3.2vw, 27px); line-height: 1.25; letter-spacing: -0.015em;
+    text-wrap: balance; margin: 0 0 10px;
+  }
+
+  /* The page used to stop. A footer that fades out of the canvas reads as an ending rather than as
+     content running out. */
+  footer {
+    border-top: 0;
+    background-image: linear-gradient(90deg, transparent, var(--rule) 15%, var(--rule) 85%, transparent);
+    background-size: 100% 1px; background-position: 0 0; background-repeat: no-repeat;
+  }
+
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
       .landing .card, .band, .support {
