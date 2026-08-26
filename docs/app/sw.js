@@ -1,9 +1,8 @@
 
-const CACHE = "ipt-shell-9216182b";
+const CACHE = "ipt-shell-d7de084e";
 
 const SHELL = [
   "./",
-  "./index.html",
   "./styles/tokens.css",
   "./styles/app.css",
   "./app/main.js",
@@ -70,7 +69,7 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match("./index.html").then((r) => r ?? Response.error())),
+      fetch(request).catch(() => caches.match("./").then((r) => r ?? Response.error())),
     );
     return;
   }
