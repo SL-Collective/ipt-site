@@ -216,15 +216,15 @@ export function doorScreen({
         el("span", { text: "IP" }),
         el("span", { class: "wordmark-t", text: "T" }),
       ),
-      el("p", { class: "caption", text: "Individual Practice Time" }),
+      el("p", { class: "caption tagline", text: "Individual Practice Time" }),
     ),
     card({ class: "stack" }, form),
     el("a", {
       href: "https://iptmusic.com/privacy",
       target: "_blank",
       rel: "noopener",
-      class: "caption",
-      style: "text-align:center; display:block; color: var(--muted); min-height: 44px; padding-top: 12px",
+      class: "caption policy-link",
+      style: "text-align:center; display:block; min-height: 44px; padding-top: 12px",
       text: "Privacy policy",
     }),
     card(
@@ -523,7 +523,7 @@ export function studioScreen(store, {
             { class: "stack", style: "gap:0.2rem" },
             el(
               "div",
-              { class: "row", style: "gap:0.5rem; align-items:baseline" },
+              { class: "row", style: "gap:0.5rem; align-items:baseline; flex-wrap:wrap" },
               pill(step.isDone ? "Done" : `Step ${index + 1}`, step.isDone ? "met" : "accent"),
               el("h3", { text: step.title }),
             ),
@@ -1188,7 +1188,7 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
         { class: "stack" },
         el("h2", { text: "The work" }),
         field("Title", title, "What the performer sees: “Delécluse Étude 9, mm. 17–24”."),
-        field("Section", section, "Optional. Percussion, Low Brass, Color Guard."),
+        field("Measures or section", section, "Optional. “mm. 41–68”, “the shed at letter C”."),
       ),
       card(
         { class: "stack" },
@@ -1285,7 +1285,7 @@ function theirPlan(assignment, log, store) {
     { class: "card--inset stack", style: "gap:0.35rem" },
     el(
       "div",
-      { class: "row-between" },
+      { class: "row-between", style: "flex-wrap:wrap" },
       el("h3", { class: "micro", text: "Their plan" }),
       el("span", { class: "caption numeral plan-count", text: plan.phrase }),
     ),
@@ -1404,7 +1404,8 @@ export function listeningScreen(store, {
       theirPlan(assignments[log.assignmentId], log, store),
       (() => {
         const submit = el("button", { type: "submit", style: "width:100%", text: "Heard it" });
-        const noteField = field("Say one thing back (optional)", note);
+        const noteField = field("Say something back", note,
+                                "Optional. One line, and they'll see it.");
         const done = el("p", { class: "caption", hidden: true });
         const form = el(
           "form",
@@ -1439,7 +1440,11 @@ export function listeningScreen(store, {
 
   return el(
     "main",
-    { id: "main", class: "page" },
+    {
+      id: "main",
+      class: "page",
+      ...(queue.length === 0 ? { "data-room": "kit" } : {}),
+    },
     el("h1", { text: "Listening" }),
     queue.length > 0 && rates.length > 0 && onRateChange && ((() => {
       const buttons = [];
@@ -1713,7 +1718,7 @@ export function practiceScreen(store, {
                   plan.points.map((point) =>
                     el(
                       "li",
-                      { class: "caption", style: plan.isWorked(point.id) ? "color: var(--muted)" : undefined },
+                      { class: `caption plan-line${plan.isWorked(point.id) ? " is-worked" : ""}` },
                       tick
                         ? el("button", {
                           class: "button--plain",
@@ -1940,7 +1945,9 @@ export function sessionScreen(store, {
     class: "caption",
     text: `Sessions under ${Math.floor(floorSeconds / 60)} minutes don't count toward the target.`,
   });
-  const note = el("textarea", { rows: "2", id: "session-note" });
+  const note = el("textarea", {
+    rows: "2", id: "session-note", placeholder: "Left hand still drags out of the roll",
+  });
 
   const ticked = new Set();
   const focusRows = assignment.focus_points.map((point) => {
@@ -1957,8 +1964,11 @@ export function sessionScreen(store, {
   const liveWord = el("span", { class: "live-word", text: "Recording" });
   const liveClock = el("span", { class: "live-clock numeral", text: "" });
   const liveLeft = el("span", { class: "live-left nobr", text: "" });
+
+  const liveFill = el("span", { class: "live-level__fill" });
+  const liveLevel = el("span", { class: "live-level", "aria-hidden": "true" }, liveFill);
   const liveBar = el("p", { class: "live-bar", hidden: true },
-                     liveDot, liveWord, " ", liveClock, " ", liveLeft);
+                     liveDot, liveWord, " ", liveClock, " ", liveLeft, liveLevel);
 
   let markers = [];
   let elapsedInTake = 0;
@@ -1982,15 +1992,22 @@ export function sessionScreen(store, {
   const countInField = countIns.length > 0 && (() => {
     const select = el("select", {
       id: "count-in",
-      onChange: () => onCountIn?.(Number(select.value)),
+      onChange: () => {
+        onCountIn?.(Number(select.value));
+        const picked = countIns.find((o) => String(o.seconds) === select.value);
+        if (explanation) explanation.textContent = picked?.detail ?? "";
+      },
     });
     const chosen = countInSeconds;
     for (const option of countIns) {
-      const node = el("option", { value: String(option.seconds), text: `${option.label}: ${option.detail}` });
+      const node = el("option", { value: String(option.seconds), text: option.label });
       if (option.seconds === chosen) node.selected = true;
       select.append(node);
     }
-    return field("Count-in before recording", select);
+    const detail = countIns.find((o) => o.seconds === chosen)?.detail ?? "";
+    const wrapper = field("Count-in before recording", select, detail || undefined);
+    const explanation = wrapper.querySelector(".caption");
+    return wrapper;
   })();
 
 
@@ -2022,7 +2039,12 @@ export function sessionScreen(store, {
             return;
           }
         }
+        let shown = 0;
         recording = await capabilities.start({
+          onLevel: (peak) => {
+            shown = peak > shown ? peak : shown * 0.85 + peak * 0.15;
+            liveFill.style.transform = `scaleX(${Math.min(1, shown * 1.6).toFixed(3)})`;
+          },
           onTick: (seconds) => {
             elapsedInTake = seconds;
             const left = capabilities.remaining?.(seconds) ?? null;
@@ -2046,6 +2068,7 @@ export function sessionScreen(store, {
         markButton.hidden = true;
         liveClock.textContent = "";
         liveLeft.textContent = "";
+        liveFill.style.transform = "scaleX(0)";
         recordButton.textContent = take ? "Record it again" : "Record a take";
         recordButton.className = "";
       }
@@ -2095,7 +2118,12 @@ export function sessionScreen(store, {
       el("h2", { text: "What to work on" }),
       el("ul", { class: "stack check-list", style: "margin:0; padding:0; list-style:none" }, focusRows),
     ),
-    card({ class: "stack" }, el("h2", { text: "Anything to say?" }), field("Note for your instructor", note)),
+    card(
+      { class: "stack" },
+      el("h2", { text: "How did it go?" }),
+      field("Note for your instructor", note,
+            "Optional. What you worked on, or anything you want help with."),
+    ),
     el("button", {
       class: "button--primary",
       style: "width:100%",
@@ -2203,9 +2231,9 @@ export function standingsScreen(store, { onDisplay } = {}) {
           ),
           el(
             "div",
-            { style: "text-align:right" },
+            { style: "text-align:right; flex-shrink:0" },
             el("div", { class: "numeral", style: "font-weight:700", text: String(s.points) }),
-            el("div", { class: "caption", text: "points" }),
+            el("div", { class: "caption", style: "white-space:nowrap", text: "points" }),
           ),
         );
       }),
@@ -2219,6 +2247,7 @@ export function youScreen(store, {
   onLeave, offer, onSignOut, outbox = null, onSwitchStudio, onAnotherStudio = null, onDeleteAccount, onReminders,
   durable = null, onInstall = null,
   onTerms, onScoring, onRoster, onSeason, onLeaveStudio, onSaveProfile, onDeleteStudio,
+  onCreateAccount = null,
   scoringPresets = [],
 }) {
   const me = store.profile();
@@ -2308,6 +2337,13 @@ export function youScreen(store, {
         target: "_blank",
         rel: "noopener",
         text: `Get IPT for ${offer.priceText}`,
+      }),
+      !buyerLink && offer.isBuyable && onCreateAccount && el("button", {
+        class: "button--primary",
+        style: "width:100%",
+        type: "button",
+        onClick: onCreateAccount,
+        text: "Create a free account",
       }),
     ),
     (onTerms || onScoring || onRoster) && card(
@@ -2604,7 +2640,8 @@ export function standingsUnavailableScreen() {
         class: "caption",
         text:
           "Points and ranks are worked out by the server, never by this device. It does not hold " +
-          "anybody else's latest practice. This project has not been given that yet.",
+          "anybody else's latest practice, and this studio's server has not been set up to work " +
+          "them out yet.",
       }),
       el("p", {
         class: "caption",
@@ -2921,7 +2958,7 @@ function rosterRow(
       "summary",
       { class: "roster-summary" },
       identity,
-      el("span", { class: "caption", "aria-hidden": "true", text: "Manage" }),
+      el("span", { class: "caption no-shrink", "aria-hidden": "true", text: "Manage" }),
     ),
     el(
       "div",

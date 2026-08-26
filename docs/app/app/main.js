@@ -210,6 +210,13 @@ async function showPrompt(actionName) {
         class: "caption",
         text: "This needs an IPT account. One account works on every device you sign in on.",
       }),
+      state.inDemo && action.isPurchasable && el("button", {
+        class: "button--primary",
+        style: "width:100%",
+        type: "button",
+        onClick: () => { dismiss(); leaveDemo(); goToSignUp(); },
+        text: "Create a free account",
+      }),
       el("button", {
         class: "button--quiet",
         style: "width:100%",
@@ -1104,6 +1111,7 @@ function paintScreen() {
       break;
     case "#/you":
       screen = youScreen(store, {
+        onCreateAccount: state.inDemo ? () => { leaveDemo(); goToSignUp(); } : null,
         scoringPresets: state.vocabulary?.scoringPresets ?? [],
         onHelp: () => { location.hash = "#/help"; },
         onLeave: isDemo ? leaveDemo : null,
@@ -1822,6 +1830,11 @@ function switchSeat(role) {
   announce(`Viewing as ${role}`);
 
   setTimeout(() => document.querySelector('.segmented [aria-checked="true"]')?.focus(), 0);
+}
+
+function goToSignUp() {
+  state.auth = { ...state.auth, mode: "signUp", problem: null, message: null };
+  render();
 }
 
 function leaveDemo() {

@@ -56,15 +56,40 @@ export async function capabilities() {
 }
 
 export async function openMicrophone() {
-  return navigator.mediaDevices.getUserMedia({
-    audio: {
-      echoCancellation: false,
-      noiseSuppression: false,
-      autoGainControl: false,
-      channelCount: 1,
-      sampleRate: SAMPLE_RATE,
-    },
-  });
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        channelCount: 1,
+        sampleRate: SAMPLE_RATE,
+      },
+    });
+  } catch (error) {
+    console.error("IPT: the microphone could not be opened", error);
+    const name = error?.name ?? "";
+    if (name === "NotAllowedError" || name === "SecurityError") {
+      throw new Error(
+        "Microphone access is off, so takes can't be recorded. You can still log the time. "
+          + "To turn it back on, open your browser's site permissions for IPT.",
+      );
+    }
+    if (name === "NotFoundError" || name === "OverconstrainedError") {
+      throw new Error(
+        "No microphone was found on this device. You can still log the time.",
+      );
+    }
+    if (name === "NotReadableError") {
+      throw new Error(
+        "Something else on this device is using the microphone. Close it and try again, "
+          + "or log the time without a take.",
+      );
+    }
+    throw new Error(
+      "The microphone could not be opened, so there is no take to keep. You can still log the time.",
+    );
+  }
 }
 
 export async function record(stream, { onTick, onLevel, signal, maxSeconds } = {}) {

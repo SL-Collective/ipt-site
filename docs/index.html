@@ -277,6 +277,27 @@
   .updated { color: var(--muted); font-size: 15px; margin: 0 0 8px; }
   footer { color: var(--muted); font-size: 14px; margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); }
 
+  /* The footer row is navigation, not prose, and it was 17px tall.
+     WCAG 2.5.5 excuses a link inside a sentence — you cannot make one word in a paragraph 44px
+     tall without wrecking the line — which is why "Sign in" and the inline "Refunds" above are
+     left alone. This row is not that: four standalone destinations on their own line, and they are
+     the ones a parent or a district follows before deciding whether a fourteen-year-old may use
+     this. Measured on the deployed page at 375 points: 17px each.
+     `web/tests/targets_test.js` holds the app to a 44px floor and nothing has ever held this page
+     to anything. Padding rather than a taller line, so the row still reads as one line of text. */
+  .site-links { display: flex; flex-wrap: wrap; gap: 0 4px; align-items: center; }
+  .site-links a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; }
+  .site-links span { opacity: 0.55; }
+
+  /* Four 44px targets plus their separators need more than a phone's width, so the row wraps —
+     and a wrapped row left a middot dangling at the end of the first line with "Support" alone
+     underneath it. Punctuation that separates nothing reads as a typo on the row a parent follows.
+     The dots earn their place only while the row is one line; below that the gap does the work. */
+  @media (max-width: 460px) {
+    .site-links { gap: 0 10px; }
+    .site-links span { display: none; }
+  }
+
   /* ======================================================================================
      Depth, light and motion, with nothing fetched
      ======================================================================================
@@ -445,7 +466,10 @@
          and the buttons fell below the fold. One element per column is the shape this layout
          actually is. On a phone the wrapper is an ordinary div and changes nothing. -->
     <div class="hero-copy">
-      <h1>Assign the practice.<br><span class="hero-em">Hear the playing.</span></h1>
+      <h1>Assign the practice. <br><span class="hero-em">Hear the playing.</span></h1><!-- The space before the `br` is deliberate: without it the heading's text content is
+     "Assign the practice.Hear the playing.", which is what anything reading the DOM gets —
+     a summariser, a preview card, and some assistive technology that does not insert a
+     break of its own. The `br` still does the visual work. -->
       <!-- "One shared board" was our word for it and nobody else's, and "actually listens to" put a
            dig in a sentence that had nobody to aim it at. This is written for a band director, not
            for somebody who already knows what the app does. -->
@@ -556,8 +580,9 @@
   </section>
 
   <footer>
-  <p><a href="/privacy">Privacy policy</a> &middot; <a href="/terms">Terms of use</a> &middot;
-  <a href="/refunds">Refunds</a> &middot; <a href="/#support">Support</a></p>
+  <p class="site-links"><a href="/privacy">Privacy policy</a> <span>&middot;</span>
+  <a href="/terms">Terms of use</a> <span>&middot;</span>
+  <a href="/refunds">Refunds</a> <span>&middot;</span> <a href="/#support">Support</a></p>
   <p>IPT, Individual Practice Time. Nothing on this page is tracked. It loads no scripts, no
   fonts and nothing from anywhere else: the one photograph on it is part of the page itself.</p>
   <p>© 2026 SL Collective, a trading name of Sugar Land Collective LLC.</p>

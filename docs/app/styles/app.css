@@ -75,6 +75,23 @@ p { margin: 0; }
    Every `.numeral` in this app is a short phrase — a count, a duration, "3 of 5" — so none of
    them has anything to gain from wrapping, and the containers they sit in are all
    `minmax(0, 1fr)` tracks or shrinkable flex rows that take the squeeze themselves. */
+/* **`hidden` is a hint, and every `display` in this file outranks it.**
+ *
+ * The browser's own rule is `[hidden] { display: none }`, which is an ordinary declaration at the
+ * bottom of the cascade — so any class here that sets `display` silently defeats it. Twelve places
+ * in `screens.js` set `.hidden` and nothing in these stylesheets handled the attribute, so each of
+ * them worked only by luck: a `<p>` with no display rule hid correctly, and anything carrying
+ * `.button` or a flex class did not.
+ *
+ * Measured: the recording indicator and `Mark this spot` both read `hidden === true` and
+ * `display: flex`, and were painted at 44x292 on the practice screen — so a performer saw a live
+ * recording bar and a mark control while nothing was recording. The one element on the screen whose
+ * whole job is to say *this is happening now* was saying it permanently.
+ *
+ * `!important` is right here and almost nowhere else: this is not competing with an author's
+ * intent, it is restoring the semantics of an attribute the markup already used. */
+[hidden] { display: none !important; }
+
 .numeral { font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* A phrase that must never break inside itself — a date range, a duration — inside a label that
    *is* allowed to wrap. The two together are what let a line break where breaking means
@@ -223,6 +240,26 @@ textarea { min-height: 5rem; resize: vertical; }
   gap: 0.6rem;
   min-height: 44px;
 }
+/* A line of the compact plan, and whether it has been worked.
+ *
+ * The distinction used to be written in JavaScript as `color: var(--muted)` on a worked point —
+ * on an `li` already carrying `.caption`, which this stylesheet paints `--muted` twenty lines
+ * above. So it set the colour it already had, and worked and unworked lines were the same pixels.
+ * The list is tickable, which made it worse than cosmetic: the only thing that moved when
+ * somebody tapped was the count above the list.
+ *
+ * `FocusPlanView` uses three signals for the same state. These are its two typographic ones; the
+ * green check belongs to the full checklist, which is a different control on a different screen.
+ */
+.plan-line { color: var(--ink); }
+/* The child selector is load-bearing, and leaving it off was the same bug one level in. When the
+   plan is tickable each line's text lives inside a `<button>`, and **a button does not inherit
+   `text-decoration`** — `color` does, so the ink-to-muted half painted and the strikethrough set
+   on the `li` was a second no-op. Measured in a browser: the `li` computed `line-through` and the
+   button inside it computed `none`. Put the rule where the text is. */
+.plan-line.is-worked,
+.plan-line.is-worked > * { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--faint); }
+
 .check-list .field__label { order: 2; font-size: 1rem; color: var(--ink); font-weight: 400; }
 /* target-floor: the row is the target, not the box. `.check-list label` above carries the 44px and
    the whole row is clickable through the `<label>`, so a 22px box beside it is the affordance
@@ -591,8 +628,20 @@ details[open] > .roster-summary::after { transform: rotate(-135deg); }
   flex: 0 0 auto;
 }
 
+/* **The circle scales with the text inside it, or the initials break inside the circle.**
+ *
+ * This was `width: 36px; height: 36px` around `font-size: 0.75rem` — a box in px holding text in
+ * rem. A reader who raises their browser's default font size, which is the ordinary way to make a
+ * page readable, scales the text and not the circle: measured at a 200% root font, "MW" reported
+ * two line boxes, so a performer's initials broke in half inside a 36px disc on every row of the
+ * roster, the standings and the listening queue.
+ *
+ * `2.25rem` is 36px at the default and identical to look at; it just moves with the reader. Found
+ * by running `Tools/check_web_wrapping.py`'s probe at a larger root size, and it was the **only**
+ * rule in this file sizing a fixed box around scalable text — `.tabbar a` pairs `min-height` with
+ * rem, and a floor grows. */
 .avatar {
-  width: 36px; height: 36px; border-radius: 999px;
+  width: 2.25rem; height: 2.25rem; border-radius: 999px;
   display: grid; place-items: center;
   /* No color here: the label is measured per paint fill (`--on-paint-*`), and a hardcoded
      black was the 2.05:1 lesson waiting to reoccur the day a fill changed. */
@@ -843,13 +892,21 @@ body.no-chrome { padding-bottom: 0; }
  * indent a performer under their section — and a proportional font makes that read as ragged rather
  * than as structure. `readonly` rather than disabled: a disabled control cannot be selected, and
  * selecting the text is what somebody whose browser refuses the clipboard falls back to.
+ *
+ * **`pre-wrap`, not `pre`, and the difference is only ever visible on a phone.** Under `pre` a
+ * report line runs past 390 points and the box scrolls sideways, so the screenshot at the width
+ * this product actually ships to showed "13 clips recorde", "1 of 3 weeks," and "Play it with the
+ * recordi" — this heading says the text is here *so somebody can read it before they decide to
+ * send it*, and they could not. `pre-wrap` keeps every space, so the indentation the paragraph
+ * above defends survives; it only stops a long line from being cut off. The value is untouched
+ * either way, so what gets copied and what gets printed are exactly what they were.
  */
 .season-text {
   width: 100%;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.85rem;
   line-height: 1.5;
-  white-space: pre;
+  white-space: pre-wrap;
   overflow-x: auto;
   resize: vertical;
   background: var(--inset);
@@ -1208,4 +1265,42 @@ main[data-room] .tagline,
 main[data-room] .policy-link,
 main[data-room] > p > a {
   color: var(--ink);
+}
+
+/* The input level, which says "hearing you" where the dot says "recording".
+ *
+ * `recorder.js` has had `attachMeter` since the recorder was written and no screen ever passed
+ * `onLevel`, so it ran nowhere. Its own docstring is the argument for drawing it: a recorder with
+ * no visible response is one people stop trusting and start testing, and a take that turns out to
+ * be silence is forty minutes gone.
+ *
+ * Takes the rest of the row and drops to its own line when the row wraps, so it never squeezes the
+ * clock — a figure must never be shrunk to make room for decoration. */
+.live-level {
+  flex: 1 1 6rem;
+  min-width: 3rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--live) 22%, transparent);
+}
+
+.live-level__fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--live);
+  transform: scaleX(0);
+  transform-origin: left center;
+  /* Compositor-only, and short: a meter that lags is worse than none, because it stops answering
+     the question somebody is asking it. */
+  transition: transform 60ms linear;
+}
+
+/* **Not hidden for reduced motion.** This is information rather than decoration — it is the only
+   thing on the screen that answers "is the microphone hearing me". The transition goes; the
+   readout stays. */
+@media (prefers-reduced-motion: reduce) {
+  .live-level__fill { transition: none; }
 }
