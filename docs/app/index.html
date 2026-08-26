@@ -33,11 +33,35 @@
     #boot b { font: 700 44px/1 inherit; letter-spacing: 0.04em; color: #F5F5F7; }
     #boot span { color: #FF9F0A; }
     #boot small { font: 400 13px/1.4 inherit; color: #9C9CA6; }
+
+    /* The dial. Twelve ticks every 30 degrees, one revolution in six seconds — `LoadingMark`'s
+       own numbers, and the reasoning is beside the markup below. `--tick` and `--well` are set
+       here rather than read from `tokens.css`, because that stylesheet is one of the requests
+       this element exists to cover. */
+    #boot-dial {
+      --tick: #3A3A3E; --well: #08090A;
+      display: block; width: 54px; height: 54px; margin-top: 18px;
+      border-radius: 50%;
+      background: repeating-conic-gradient(var(--tick) 0deg 2deg, transparent 2deg 30deg);
+      animation: boot-turn 6s linear infinite;
+      position: relative;
+    }
+    /* The well that turns the disc into a ring. A background rather than a mask: see the markup. */
+    #boot-dial::after {
+      content: ""; position: absolute; inset: 7px;
+      border-radius: 50%; background: var(--well);
+    }
+    @keyframes boot-turn { to { transform: rotate(360deg); } }
+    /* Still, not slower. `LoadingMark` stops the rotation outright under `reduceMotion` and the
+       mark is legible standing still, so there is nothing to soften. */
+    @media (prefers-reduced-motion: reduce) { #boot-dial { animation: none; } }
+
     @media (prefers-color-scheme: light) {
       #boot { background: #F2F2F0; }
       #boot b { color: #08090A; }
       #boot span { color: #8F5300; }
       #boot small { color: #5F5F64; }
+      #boot-dial { --tick: #C7C7C2; --well: #F2F2F0; }
     }
   </style>
   <title>IPT: Individual Practice Time</title>
@@ -80,11 +104,31 @@
          being waited on and a mark that arrives unstyled is worse than none. Replaced wholesale by
          `replaceChildren` on first render, so it cannot outlive the thing it stands in for.
 
-         No spinner and no animation. A spinner claims progress this page cannot measure, and the
-         honest signal is simply that the right app is loading. -->
-    <div id="boot">
+         **And now the dial, which is not a spinner and the difference is the speed.** The
+         paragraph here used to end "no spinner and no animation — a spinner claims progress this
+         page cannot measure", which is right about a spinner and wrong about what iOS draws.
+         `LoadingMark` turns **once every six seconds**: twelve markers at one a half-second, a
+         beat at 120, and its own comment says what keeps it from being a `ProgressView` in
+         costume is exactly that speed. It is a dial keeping time, not a claim about progress, and
+         the web had no reason to be the client without it.
+
+         Drawn in CSS rather than ported. The objection above stands — 216 KB of bitmaps on the
+         critical path would make the wait they cover *longer*, which is the one thing a loading
+         state must never do — but it was an argument against the **artwork**, not against the
+         motion. Twelve ticks are a `repeating-conic-gradient` and a rotation: no request, no
+         decode, and it paints with the first frame like the wordmark beside it.
+
+         Two circles rather than a mask, deliberately. `mask` is a decade old and still the kind of
+         thing a managed Chromebook is a version behind on, and its failure mode here is a filled
+         disc rather than a ring — a broken shape on the first thing anybody sees. The inner circle
+         is a plain background in the boot colour, which cannot fail that way.
+
+         Still under `prefers-reduced-motion`, which is what `LoadingMark` does with
+         `reduceMotion` and for the same reason. -->
+    <div id="boot" role="status">
       <b>IP<span>T</span></b>
       <small>Individual Practice Time</small>
+      <i id="boot-dial" aria-hidden="true"></i>
     </div>
     <noscript>
       <p class="prose">IPT needs JavaScript to run. The iPhone app does not — it is on the App Store.</p>
