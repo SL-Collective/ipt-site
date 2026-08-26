@@ -208,7 +208,9 @@ async function showPrompt(actionName) {
       ),
       action.isPurchasable && isAndroidApp() && el("p", {
         class: "caption",
-        text: "This needs an IPT account. One account works on every device you sign in on.",
+        text: state.inDemo
+          ? "This needs an IPT account. One account works on every device you sign in on."
+          : "This account doesn't have IPT yet. Once it does, it works on every device you sign in on.",
       }),
       state.inDemo && action.isPurchasable && el("button", {
         class: "button--primary",
