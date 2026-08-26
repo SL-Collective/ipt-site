@@ -159,6 +159,10 @@ export function currentUserId() {
   return session?.user?.id ?? null;
 }
 
+export function currentUserEmail() {
+  return session?.user?.email ?? null;
+}
+
 export function isSignedIn() {
   return !!session?.access_token;
 }
@@ -293,6 +297,10 @@ export function requestPasswordReset(email) {
 
 export function updatePassword(password) {
   return request("/auth/v1/user", { method: "PUT", body: { password } });
+}
+
+export function updateEmail(email) {
+  return request("/auth/v1/user", { method: "PUT", body: { email } });
 }
 
 export async function signOut() {

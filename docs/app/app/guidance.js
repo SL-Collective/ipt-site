@@ -51,7 +51,7 @@ export function guidancePhrase(guidance) {
     ? "the last week"
     : `the last ${guidance.weeksObserved} weeks`;
   const median = `Over ${period}, performers here practiced a median of `
-    + `${longDuration(guidance.medianMinutes * 60)} a week.`;
+    + `${longDuration(guidance.medianMinutes * 60)} a week across everything they were assigned.`;
   if (!(guidance.upperMinutes > guidance.medianMinutes)) return median;
   return `${median} The busiest quarter did ${longDuration(guidance.upperMinutes * 60)} or more.`;
 }

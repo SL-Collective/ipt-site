@@ -13,8 +13,7 @@ import {
   standingStreak,
   weekMet,
 } from "./judgement.js";
-import { amountPhrase, clock, compactDuration, completionPhrase, count, groupedCode, longDuration, noun, targetPhrase, weekPhrase, whenPhrase } from "./format.js";
-import { guidancePhrase, targetGuidance } from "./guidance.js";
+import { amountPhrase, clock, compactDuration, completionPhrase, count, groupedCode, longDuration, noun, progressPercent, receiptSentence, targetPhrase, weekPhrase, whenPhrase } from "./format.js";
 import { instructorPhrase, refusal, refusalSentence } from "./selfreport.js";
 import {
   cleanTempo,
@@ -26,13 +25,13 @@ import {
   linePhrase,
   marksByAssignment,
   TEMPO_RANGE,
-  uncoveredInstructions,
+  groupBySection,
 } from "./coverage.js";
+import { AGE_QUESTION, AGE_REASON, isoDay, PARENT_DIRECT_NOTICE, PARENT_WORDS } from "./age-gate.js";
 import { countIn, marking } from "./recording-prefs.js";
 import { pastTerms, seasonWindow, termsFrom } from "./terms.js";
 import { isSetUp, nextStep, setupSteps, setupTitle } from "./setup.js";
-import { groupBySection, instructorSummary, performerSummary, spanFrom } from "./report.js";
-import { lengthPhrase } from "./quiet.js";
+
 import { avatar, card, emptyState, field, heading, meter, notice, performerRow, pill, ring, stat, weekStrip } from "./ui.js";
 import { currentWeek, performerWeekRows, studioWeekRows, weekProgress, weekTrend } from "./trend.js";
 import { reachedMilestones } from "./milestones.js";
@@ -141,10 +140,12 @@ export function doorScreen({
   problem = null,
   message = null,
   busy = false,
+  draft = null,
 } = {}) {
   const isNew = mode === "signUp";
 
   const name = el("input", { type: "text", autocomplete: "name", required: true, id: "auth-name" });
+  name.value = draft?.displayName ?? "";
   const email = el("input", { type: "email", autocomplete: "email", required: true, id: "auth-email" });
   email.value = value ?? "";
   const password = el("input", {
@@ -161,6 +162,15 @@ export function doorScreen({
     el("option", { value: "instructor", text: "Instructor: I assign practice" }),
   );
 
+  const born = el("input", {
+    type: "date",
+    id: "auth-born",
+    required: true,
+    autocomplete: "bday",
+    max: isoDay(new Date()),
+  });
+  born.value = draft?.bornOn ?? "";
+
   const form = el(
     "form",
     {
@@ -169,8 +179,14 @@ export function doorScreen({
         event.preventDefault();
         if (busy) return;
         const credentials = { email: email.value.trim(), password: password.value };
-        if (isNew) onSignUp?.({ ...credentials, displayName: name.value.trim(), role: role.value });
-        else onSignIn?.(credentials);
+        if (isNew) {
+          onSignUp?.({
+            ...credentials,
+            displayName: name.value.trim(),
+            role: role.value,
+            bornOn: born.value,
+          });
+        } else onSignIn?.(credentials);
       },
     },
     el("h2", { text: isNew ? "Create an account" : "Sign in" }),
@@ -180,6 +196,7 @@ export function doorScreen({
     field("Email", email),
     field("Password", password, isNew ? "At least 8 characters." : undefined),
     isNew && field("You are", role),
+    isNew && field(AGE_QUESTION, born, AGE_REASON),
     el("button", {
       class: "button--primary",
       style: "width:100%",
@@ -219,6 +236,11 @@ export function doorScreen({
       el("p", { class: "caption tagline", text: "Individual Practice Time" }),
     ),
     card({ class: "stack" }, form),
+    el("p", {
+      class: "caption",
+      style: "text-align:center; padding-top: 4px",
+      text: "Creating an account accepts the Terms of use.",
+    }),
     el("a", {
       href: "https://iptmusic.com/privacy",
       target: "_blank",
@@ -226,6 +248,14 @@ export function doorScreen({
       class: "caption policy-link",
       style: "text-align:center; display:block; min-height: 44px; padding-top: 12px",
       text: "Privacy policy",
+    }),
+    el("a", {
+      href: "https://iptmusic.com/terms",
+      target: "_blank",
+      rel: "noopener",
+      class: "caption policy-link",
+      style: "text-align:center; display:block; min-height: 44px; padding-top: 12px",
+      text: "Terms of use",
     }),
     card(
       { class: "card--tinted stack" },
@@ -293,6 +323,30 @@ export function resetPasswordScreen({ onSave, busy = false, problem = null } = {
         }),
       ),
     ),
+  );
+}
+
+export function parentRouteScreen({ onContinueAsParent, onBack } = {}) {
+  return el(
+    "main",
+    { id: "main", class: "page", "data-room": "percussion" },
+    el("h1", { text: PARENT_WORDS.heading }),
+    el("p", { class: "caption", text: PARENT_WORDS.explanation }),
+    card(
+      { class: "stack" },
+      el("h2", { text: PARENT_WORDS.noticeHeading }),
+      el("p", { class: "caption", text: PARENT_DIRECT_NOTICE }),
+    ),
+    onContinueAsParent && el("button", {
+      class: "button--primary", style: "width:100%", type: "button",
+      onClick: onContinueAsParent,
+      text: "I'm the parent or guardian, continue",
+    }),
+    el("p", { class: "caption", text: PARENT_WORDS.school }),
+    onBack && el("button", {
+      class: "button--quiet", style: "width:100%", type: "button",
+      onClick: onBack, text: "Back to sign in",
+    }),
   );
 }
 
@@ -410,6 +464,7 @@ export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCanc
 
 export function studioScreen(store, {
   onPrompt, onListen, onOpenPerformer, quiet = null, onDeclareBreak, onDismissBreak,
+  season = null, onSetUpSeason, onDismissSeason,
   span = null, onStepSpan = null, onPickSpan = null, onApplyCustom = null,
   onAssign = null,
   rosterSearch = "", onRosterSearch = null,
@@ -551,7 +606,7 @@ export function studioScreen(store, {
     ),
     quiet && card(
       { class: "card--tinted stack" },
-      el("h2", { text: `Was that ${lengthPhrase(quiet)} a break?` }),
+      el("h2", { text: quiet.title }),
       el("p", {
         class: "caption",
         text: "Nobody logged any practice. If the studio was off, saying so stops those weeks "
@@ -567,6 +622,20 @@ export function studioScreen(store, {
         el("button", { type: "button", text: "No, leave it", onClick: () => onDismissBreak?.(quiet) }),
       ),
     ),
+    season && card(
+      { class: "card--tinted stack" },
+      el("h2", { text: "Start a new season?" }),
+      el("p", { class: "caption", text: season.message }),
+      el(
+        "div",
+        { class: "row", style: "gap:0.5rem; flex-wrap:wrap" },
+        el("button", {
+          class: "button--primary", type: "button",
+          text: "Set up a season", onClick: () => onSetUpSeason?.(season),
+        }),
+        el("button", { type: "button", text: "No, leave it", onClick: () => onDismissSeason?.(season) }),
+      ),
+    ),
     hasPerformers && assignmentCount > 0 && el(
       "div",
       { class: "stat-grid" },
@@ -577,7 +646,8 @@ export function studioScreen(store, {
       stat(String(silent), "no practice yet", { accent: silent > 0 }),
       stat(compactDuration(totalSeconds),
         single ? (isCurrentWeek ? "practiced this week" : "practiced that week") : "studio total"),
-      stat(String(unheard), `${noun(unheard, "clip")} to hear`, { accent: unheard > 0 }),
+      (recordsAudio(store) || unheard > 0) &&
+        stat(String(unheard), `${noun(unheard, "clip")} to hear`, { accent: unheard > 0 }),
     ),
     trend && el(
       "p",
@@ -995,7 +1065,7 @@ export function performerScreen(store, {
   );
 }
 
-export function assignmentEditorScreen(store, { assignment = null, onSave, onCancel, onDelete, busy = false, problem = null }) {
+export function assignmentEditorScreen(store, { assignment = null, onSave, onCancel, onDelete, busy = false, problem = null, guidanceNote: guidanceText = null }) {
   const performers = store.performers();
   const isNew = !assignment?.id;
 
@@ -1014,13 +1084,9 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
   const amount = el("input", { type: "number", id: "a-amount", min: "1", max: "10000", required: true });
   amount.value = String(assignment?.target.amount ?? 90);
 
-  const guidance = targetGuidance(store.weeks(), store.facts(), termsFrom(store.terms()), new Date());
-  const guidanceNote = el("p", {
-    class: "caption",
-    text: guidance ? guidancePhrase(guidance) : "",
-  });
+  const guidanceNote = el("p", { class: "caption", text: guidanceText ?? "" });
   const settleGuidance = () => {
-    guidanceNote.hidden = !guidance || kind.value !== "minutes";
+    guidanceNote.hidden = !guidanceText || kind.value !== "minutes";
   };
   settleGuidance();
   kind.addEventListener("change", settleGuidance);
@@ -1515,7 +1581,7 @@ export function listeningScreen(store, {
 
 
 export function practiceScreen(store, {
-  onPrompt, onPractice, onFocusPoint, onNudgeSeen, onDeleteSession,
+  onPrompt, onPractice, onFocusPoint, onNudgeSeen, onDeleteSession, onRemoveClip,
   onAddSession = null, selfReportMark = "",
   onClipURL = null,
   span = null, onStepSpan = null, onPickSpan = null, onApplyCustom = null,
@@ -1627,7 +1693,7 @@ export function practiceScreen(store, {
     single
       ? card(
         { class: "row", style: "gap:1.1rem; align-items:center; flex-wrap:wrap; justify-content:center" },
-        ring(fraction, required.length ? `${Math.floor(fraction * 100)}%` : "—",
+        ring(fraction, required.length ? `${progressPercent(fraction, isMet)}%` : "—",
           required.length ? `${metCount} of ${required.length} done` : "nothing set"),
         el(
           "div",
@@ -1802,6 +1868,13 @@ export function practiceScreen(store, {
                 })
                 : pill("Clip", "accent")),
               el("span", { class: "caption numeral", text: compactDuration(s.duration) }),
+              onRemoveClip && s.clip && el("button", {
+                class: "button--plain", type: "button",
+                style: "min-height:44px; padding:0 0.6rem",
+                "aria-label": `Remove the recording from ${whenPhrase(s.startedAt, store.studio().time_zone)}`,
+                onClick: () => onRemoveClip(s),
+                text: "Remove the recording",
+              }),
               onDeleteSession && el("button", {
                 class: "button--plain", type: "button",
                 style: "color: var(--live); min-height:44px; padding:0 0.6rem",
@@ -1934,13 +2007,14 @@ function localInput(instant, timeZone) {
 }
 
 export function sessionScreen(store, {
-  assignment, capabilities, countIns = [], countInSeconds = 0, onCountIn, onSave, onCancel, onBlocked,
+  assignment, capabilities, countIns = [], countInSeconds = 0, startedAt = new Date(), draft = {},
+  onCountIn, onSave, onCancel, onBlocked,
 }) {
-  const startedAt = new Date();
   const rules = store.rules();
   const floorSeconds = rules.minimumCountableSession;
 
-  const display = el("div", { class: "session-clock numeral", text: clock(0) });
+  const elapsedSeconds = () => Math.floor((Date.now() - startedAt.getTime()) / 1000);
+  const display = el("div", { class: "session-clock numeral", text: clock(elapsedSeconds()) });
   const belowFloor = el("p", {
     class: "caption",
     text: `Sessions under ${Math.floor(floorSeconds / 60)} minutes don't count toward the target.`,
@@ -1948,13 +2022,17 @@ export function sessionScreen(store, {
   const note = el("textarea", {
     rows: "2", id: "session-note", placeholder: "Left hand still drags out of the roll",
   });
+  note.value = draft.note ?? "";
+  note.addEventListener("input", () => { draft.note = note.value; });
 
-  const ticked = new Set();
+  const ticked = new Set(draft.ticked ?? []);
   const focusRows = assignment.focus_points.map((point) => {
     const box = el("input", { type: "checkbox", id: `fp-${point.id}`, class: "check" });
+    box.checked = ticked.has(point.id);
     box.addEventListener("change", () => {
       if (box.checked) ticked.add(point.id);
       else ticked.delete(point.id);
+      draft.ticked = [...ticked];
     });
     return el("li", {}, field(focusPointPhrase(point), box));
   });
@@ -1970,7 +2048,7 @@ export function sessionScreen(store, {
   const liveBar = el("p", { class: "live-bar", hidden: true },
                      liveDot, liveWord, " ", liveClock, " ", liveLeft, liveLevel);
 
-  let markers = [];
+  let markers = draft.markers ?? [];
   let elapsedInTake = 0;
   const markButton = el("button", {
     class: "button", type: "button", hidden: true,
@@ -1978,6 +2056,7 @@ export function sessionScreen(store, {
     onClick: () => {
       const before = markers.length;
       markers = marking(elapsedInTake, markers);
+      draft.markers = markers;
       if (markers.length > before) {
         markButton.classList.add("is-marked");
         setTimeout(() => markButton.classList.remove("is-marked"), 700);
@@ -1985,7 +2064,8 @@ export function sessionScreen(store, {
     },
   });
 
-  let take = null;
+  let take = draft.take ?? null;
+  if (take) takeState.textContent = `Take attached · ${clock(take.duration)}`;
   let recording = null; // { stop() }
   let countingIn = null; // an AbortController while the count-in is running
 
@@ -2014,7 +2094,7 @@ export function sessionScreen(store, {
   const recordButton = el("button", {
     type: "button",
     style: "width:100%",
-    text: "Record a take",
+    text: take ? "Record it again" : "Record a take",
     onClick: async () => {
       if (onBlocked) { onBlocked("recordTake"); return; }
       if (recording) { recording.stop(); return; }
@@ -2057,9 +2137,13 @@ export function sessionScreen(store, {
         liveBar.hidden = false;
         markButton.hidden = false;
         take = await recording.done;
-        takeState.textContent = `Take attached · ${clock(take.duration)}`;
+        draft.take = take;
+        takeState.textContent = take.interrupted
+          ? `${take.interrupted} Take attached · ${clock(take.duration)}`
+          : `Take attached · ${clock(take.duration)}`;
       } catch (error) {
         take = null;
+        draft.take = null;
         takeState.textContent = error?.message ?? "That take didn't record.";
       } finally {
         recording = null;
@@ -2075,7 +2159,6 @@ export function sessionScreen(store, {
     },
   });
 
-  const elapsedSeconds = () => Math.floor((Date.now() - startedAt.getTime()) / 1000);
   const timer = setInterval(() => {
     display.textContent = clock(elapsedSeconds());
     belowFloor.hidden = elapsedSeconds() >= floorSeconds;
@@ -2108,11 +2191,13 @@ export function sessionScreen(store, {
         markButton,
         countInField,
       )
-      : card(
-        { class: "stack" },
-        el("h2", { text: "Recording" }),
-        el("p", { class: "caption", text: capabilities.reason }),
-      ),
+      : capabilities.reason
+        ? card(
+          { class: "stack" },
+          el("h2", { text: "Recording" }),
+          el("p", { class: "caption", text: capabilities.reason }),
+        )
+        : null,
     focusRows.length > 0 && card(
       { class: "stack" },
       el("h2", { text: "What to work on" }),
@@ -2247,8 +2332,13 @@ export function youScreen(store, {
   onLeave, offer, onSignOut, outbox = null, onSwitchStudio, onAnotherStudio = null, onDeleteAccount, onReminders,
   durable = null, onInstall = null,
   onTerms, onScoring, onRoster, onSeason, onLeaveStudio, onSaveProfile, onDeleteStudio,
+  purchase = undefined,
   onCreateAccount = null,
   scoringPresets = [],
+  onSetRecordsAudio = null,
+  onSaveEmail = null,
+  onExport = null,
+  exporting = false,
 }) {
   const me = store.profile();
   const studio = store.studio();
@@ -2354,13 +2444,36 @@ export function youScreen(store, {
       }),
       onScoring && settingButton(
         "Scoring",
-        scoringSummary(store.rules(), store.rules().keepsScore !== false, scoringPresets),
+        scoringSummary(store.rules(), store.rules().keepsScore !== false, scoringPresets,
+          recordsAudio(store)),
         onScoring,
       ),
       onTerms && settingButton("Terms", termsSummary(termsFrom(store.terms())), onTerms),
+      onSetRecordsAudio && el(
+        "button",
+        {
+          type: "button",
+          role: "switch",
+          class: "row-between",
+          style: "width:100%",
+          "aria-checked": recordsAudio(store) ? "true" : "false",
+          "data-records-audio": recordsAudio(store) ? "on" : "off",
+          onClick: () => onSetRecordsAudio(!recordsAudio(store)),
+        },
+        el("span", { text: "Recording" }),
+        el("span", { class: "caption", text: recordsAudio(store) ? "On" : "Off" }),
+      ),
+      onSetRecordsAudio && el("p", {
+        class: "caption",
+        text: recordsAudio(store)
+          ? "Performers can attach a short take to a session."
+          : "Off for this whole studio. Nobody is offered a record button, and clips are worth no points. Recordings already made are untouched.",
+      }),
       el("p", {
         class: "caption",
-        text: "Who is in the studio, how it is scored, and when it is running.",
+        text: onSetRecordsAudio
+          ? "Who is in the studio, how it is scored, when it is running, and whether it records."
+          : "Who is in the studio, how it is scored, and when it is running.",
       }),
     ),
     onReminders && card(
@@ -2373,6 +2486,21 @@ export function youScreen(store, {
           : "Practice reminders on this device, and how often you hear from IPT.",
       }),
       el("button", { type: "button", style: "width:100%", onClick: onReminders, text: "Reminders" }),
+    ),
+    onExport && card(
+      { class: "stack" },
+      el("h2", { text: "Your data" }),
+      el("p", {
+        class: "caption",
+        text: store.isInstructor
+          ? "The studio's roster, assignments and every session, as a file."
+          : "Every session you have logged, your notes and your recordings, as a file.",
+      }),
+      el("button", {
+        type: "button", style: "width:100%", onClick: onExport,
+        text: exporting ? "Putting it together…" : "Export",
+        disabled: exporting || undefined,
+      }),
     ),
     onSeason && card(
       { class: "stack" },
@@ -2390,8 +2518,11 @@ export function youScreen(store, {
       el("h2", { text: "How IPT works" }),
       el("p", {
         class: "caption",
-        text: "The idea, and the questions people actually ask: what counts as a week being met, "
-          + "who can hear your recordings, why a number rounded the way it did.",
+        text: recordsAudio(store)
+          ? "The idea, and the questions people actually ask: what counts as a week being met, "
+            + "who can hear your recordings, why a number rounded the way it did."
+          : "The idea, and the questions people actually ask: what counts as a week being met, "
+            + "who can read what you write, why a number rounded the way it did.",
       }),
       settingButton("How IPT works", helpAudience(store.isInstructor), onHelp),
       el("a", {
@@ -2402,6 +2533,29 @@ export function youScreen(store, {
         style: "text-align:center; display:block; color: var(--muted); min-height: 44px; padding-top: 12px",
         text: "Privacy policy",
       }),
+      el("a", {
+        href: "https://iptmusic.com/terms",
+        target: "_blank",
+        rel: "noopener",
+        class: "caption",
+        style: "text-align:center; display:block; color: var(--muted); min-height: 44px; padding-top: 12px",
+        text: "Terms of use",
+      }),
+      el("a", {
+        href: "https://iptmusic.com/refunds",
+        target: "_blank",
+        rel: "noopener",
+        class: "caption",
+        style: "text-align:center; display:block; color: var(--muted); min-height: 44px; padding-top: 12px",
+        text: "Refunds",
+      }),
+    ),
+    !onLeave && purchase !== undefined && card(
+      { class: "stack" },
+      el("h2", { text: "Your IPT account" }),
+      purchase
+        ? el("p", { text: receiptSentence(purchase), "data-account-receipt": "" })
+        : el("p", { class: "caption", text: "No purchase on this account yet." }),
     ),
     onLeave && el("button", { class: "button--quiet", style: "width:100%", type: "button", onClick: onLeave, text: "Leave the demo" }),
     onSaveProfile && card(
@@ -2432,6 +2586,37 @@ export function youScreen(store, {
           field("Your name", name),
           field("Instrument", instrument, "Optional. Percussion, Low Brass, Color Guard."),
           el("button", { class: "button--primary", style: "width:100%", type: "submit", text: "Save" }),
+          said,
+        );
+      })(),
+    ),
+    onSaveEmail && card(
+      { class: "stack" },
+      el("h2", { text: "Your email address" }),
+      el("p", {
+        class: "caption",
+        text: "Sign-ins and reset links go to this address. If you are leaving a school, change it "
+          + "to one you will keep.",
+      }),
+      (() => {
+        const address = el("input", { type: "email", id: "me-email", required: true });
+        address.value = me?.email ?? "";
+        const said = el("p", { class: "caption", role: "status", text: "" });
+        return el(
+          "form",
+          {
+            class: "stack",
+            onSubmit: (event) => {
+              event.preventDefault();
+              const wanted = address.value.trim();
+              if (!wanted) { said.textContent = "Enter the address you want to use."; return; }
+              said.textContent = "Sending…";
+              onSaveEmail(wanted);
+            },
+          },
+          field("Email address", address),
+          el("button", { class: "button--primary", style: "width:100%", type: "submit",
+                         text: "Change my address" }),
           said,
         );
       })(),
@@ -2671,9 +2856,10 @@ export function termsScreen(store, { onSave, onDelete, onBack, busy = false, pro
         el("h2", { text: "This studio runs all year" }),
         el("p", {
           class: "caption",
-          text: "Which is fine, and is what happens if you never add a term. Add one when your " +
-            "program has a break in it: weeks outside a term are not weeks anybody missed, so " +
-            "nobody's streak dies over the summer.",
+          text: "Which is fine for a first year. Add a term when your program has a break: weeks " +
+            "outside one are not weeks anybody missed, so nobody's streak dies over the summer. " +
+            "Terms also scope the standings, so somebody who joins next year is not a year of " +
+            "practice behind.",
         }),
       )
       : card(
@@ -2775,7 +2961,13 @@ function termRange(term, timeZone) {
 
 export function scoringScreen(store, { presets, onChoose, onBack, busy = false, problem = null }) {
   const rules = store.rules();
-  const current = presets.find((p) => sameRules(rules, { ...rules, ...p.rules }));
+  const silent = recordsAudio(store) === false;
+  const comparable = silent
+    ? (r) => { const { clipBonus: _b, clipBonusWeeklyCap: _c, ...rest } = r; return rest; }
+    : (r) => r;
+  const current = presets.find((p) =>
+    sameRules(comparable(rules), { ...comparable(rules), ...comparable(p.rules) })
+  );
 
   return el(
     "main",
@@ -2856,13 +3048,17 @@ function settingButton(label, value, onClick) {
   }, el("span", { text: label }), value ? el("span", { class: "caption", text: value }) : null);
 }
 
+function recordsAudio(store) {
+  return store?.studio?.()?.records_audio !== false;
+}
+
 function sameRules(a, b) {
   return Object.keys(b).every((key) => a[key] === b[key]);
 }
 
 export function rosterScreen(
   store,
-  { onSetRole, onRemove, onHandOver, onBack, busy = false, problem = null },
+  { onSetRole, onRemove, onHandOver, onCorrect, onBack, busy = false, problem = null },
 ) {
   const me = store.profile()?.id;
   const roster = [...store.roster()].sort((a, b) => a.display_name.localeCompare(b.display_name));
@@ -2898,6 +3094,7 @@ export function rosterScreen(
           onSetRole,
           onRemove,
           onHandOver,
+          onCorrect,
         })),
       ),
     problem && notice(problem, { kind: "error", role: "alert" }),
@@ -2910,7 +3107,7 @@ export function rosterScreen(
 
 function rosterRow(
   member,
-  { isMe, isLastInstructor, isOwner, iAmTheOwner, busy, onSetRole, onRemove, onHandOver },
+  { isMe, isLastInstructor, isOwner, iAmTheOwner, busy, onSetRole, onRemove, onHandOver, onCorrect },
 ) {
   const isInstructor = member.role === "instructor";
   const canHandOver = !!onHandOver && iAmTheOwner && isInstructor && !isOwner && !isMe;
@@ -3011,7 +3208,55 @@ function rosterRow(
         onClick: () => onHandOver?.(member),
         text: "Hand this studio over",
       }),
+      onCorrect && correctionForm(member, { busy, onCorrect }),
     ),
+  );
+}
+
+function correctionForm(member, { busy, onCorrect }) {
+  const name = el("input", { type: "text", maxlength: "80", required: true });
+  name.value = member.display_name ?? "";
+  const instrument = el("input", { type: "text", maxlength: "40" });
+  instrument.value = member.instrument ?? "";
+
+  return el(
+    "details",
+    { class: "stack", style: "gap:0.5rem" },
+    el("summary", { class: "caption", text: "Fix what this studio shows" }),
+    el("p", {
+      class: "caption",
+      text: "This changes the roster, the standings and the wall display in this studio only. "
+        + "Their own account is not touched, and if they are in another studio their name there "
+        + "does not change. Clearing a box puts back what they typed.",
+    }),
+    el(
+      "form",
+      {
+        class: "stack",
+        onSubmit: (event) => {
+          event.preventDefault();
+          onCorrect?.(member, {
+            displayName: name.value.trim() || null,
+            instrument: instrument.value.trim() || null,
+          });
+        },
+      },
+      field("Shown as", name),
+      field("Instrument", instrument),
+      el("button", {
+        class: "button--quiet",
+        style: "width:100%",
+        type: "submit",
+        disabled: busy || undefined,
+        "aria-label": `Save what this studio shows for ${member.display_name}`,
+        text: "Save",
+      }),
+    ),
+    member.is_corrected && el("p", {
+      class: "caption",
+      text: `They typed “${member.account_display_name}”`
+        + (member.account_instrument ? `, ${member.account_instrument}.` : "."),
+    }),
   );
 }
 
@@ -3023,8 +3268,9 @@ export function displayScreen(store, { top = 10, onExit, awake = null } = {}) {
   const leaders = earned.slice(0, top);
 
   const totalSeconds = earned.reduce((sum, s) => sum + (s.practiceSeconds ?? 0), 0);
-  const finished = earned.filter((s) => s.assignmentsAssigned > 0 && s.assignmentsMet >= s.assignmentsAssigned).length;
-  const withWork = earned.filter((s) => s.assignmentsAssigned > 0).length;
+
+  const finished = standings.filter((s) => s.assignmentsAssigned > 0 && s.assignmentsMet >= s.assignmentsAssigned).length;
+  const withWork = standings.filter((s) => s.assignmentsAssigned > 0).length;
 
   const rows = leaders.map((s) => {
     const person = people[s.performerId];
@@ -3071,7 +3317,23 @@ export function displayScreen(store, { top = 10, onExit, awake = null } = {}) {
   );
 }
 
-export function seasonScreen(store, { onCopy, onShare, canShare = false, said = null } = {}) {
+export function seasonScreen(
+  store,
+  { onCopy, onShare, canShare = false, said = null, report = null } = {},
+) {
+  if (!report) {
+    return el(
+      "main",
+      { id: "main", class: "page" },
+      el("h1", { text: "The season" }),
+      card(
+        { class: "stack", style: "text-align:center" },
+        el("h2", { text: "Just a moment" }),
+        el("p", { class: "caption", text: "Putting the summary together." }),
+      ),
+    );
+  }
+  const { instructorSummary, performerSummary, spanFrom } = report;
   const me = store.profile();
   const studio = store.studio();
   const standings = store.standings();
@@ -3120,7 +3382,7 @@ export function seasonScreen(store, { onCopy, onShare, canShare = false, said = 
       range,
       performers: roster,
       summaries: Object.fromEntries(spans),
-      uncovered: uncoveredInstructions({
+      uncovered: report.uncoveredInstructions({
         assignments: store.assignments(),
         weeks: store.weeks(),
         marks: store.focusMarks(),
@@ -3168,7 +3430,10 @@ export function seasonScreen(store, { onCopy, onShare, canShare = false, said = 
 
 export function welcomeScreen(store, { help = null, page = 0, onPage, onFinish } = {}) {
   const isInstructor = store?.isInstructor ?? false;
-  const pages = (isInstructor ? help?.instructor : help?.performer) ?? [];
+  const records = recordsAudio(store);
+  const pages = (isInstructor
+    ? (records ? help?.instructor : help?.instructorSilent ?? help?.instructor)
+    : (records ? help?.performer : help?.performerSilent ?? help?.performer)) ?? [];
   const finish = (isInstructor ? help?.instructorFinish : help?.performerFinish) ?? "Get started";
 
   if (pages.length === 0) return el("main", { id: "main", class: "page" });
@@ -3221,10 +3486,17 @@ export function helpScreen(store, { help = null, supportEmail = null, onBack } =
   const isInstructor = store?.isInstructor ?? false;
   const keepsScore = store?.rules?.().keepsScore ?? true;
 
-  const pages = (isInstructor ? help?.instructor : help?.performer) ?? [];
+  const records = recordsAudio(store);
+  const pages = (isInstructor
+    ? (records ? help?.instructor : help?.instructorSilent ?? help?.instructor)
+    : (records ? help?.performer : help?.performerSilent ?? help?.performer)) ?? [];
   const questions = (isInstructor
-    ? (keepsScore ? help?.instructorQuestions : help?.instructorQuestionsNoPoints)
-    : (keepsScore ? help?.performerQuestions : help?.performerQuestionsNoPoints)) ?? [];
+    ? (keepsScore
+      ? (records ? help?.instructorQuestions : help?.instructorQuestionsSilent ?? help?.instructorQuestions)
+      : (records ? help?.instructorQuestionsNoPoints : help?.instructorQuestionsNoPointsSilent ?? help?.instructorQuestionsNoPoints))
+    : (keepsScore
+      ? (records ? help?.performerQuestions : help?.performerQuestionsSilent ?? help?.performerQuestions)
+      : (records ? help?.performerQuestionsNoPoints : help?.performerQuestionsNoPointsSilent ?? help?.performerQuestionsNoPoints))) ?? [];
 
   return el(
     "main",

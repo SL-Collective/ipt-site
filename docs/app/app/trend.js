@@ -69,10 +69,16 @@ function judgedWeek({ progress, byId }) {
 
 export function performerWeekRows(store, performerId, weeks) {
   const mine = store.facts().filter((f) => f.performerId === performerId);
-  return weeks.map((week) => ({
-    week,
-    ...judgedWeek(weekProgress(store, performerId, week, mine)),
-  }));
+  const since = memberSinceDates({
+    joined: Object.fromEntries(store.roster().map((m) => [m.id, m.joined_at ?? null])),
+    facts: store.facts(),
+  }).get(performerId);
+  return weeks
+    .filter((week) => since == null || since < week.end)
+    .map((week) => ({
+      week,
+      ...judgedWeek(weekProgress(store, performerId, week, mine)),
+    }));
 }
 
 const NOISE_FLOOR = 0.10;

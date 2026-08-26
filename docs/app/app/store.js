@@ -1,6 +1,7 @@
 
-import { effectiveRules, weeksBetween } from "./judgement.js";
+import { effectiveRules, weekContaining, weeksBetween } from "./judgement.js";
 import {
+  currentUserEmail,
   currentUserId,
   deleteClip,
   insert,
@@ -13,6 +14,7 @@ import {
   signedClipUrl,
   signOut as endSession,
   StoreError,
+  updateEmail as sendEmailChange,
 } from "./supabase.js";
 import { forgetPerson } from "./milestones.js";
 import { discard, enqueue, flush, pending, queued, setAside, status as outboxStatus } from "./outbox.js";
@@ -167,6 +169,7 @@ export class SupabaseStore {
       instrument: row.instrument ?? null,
       paint: row.paint ?? null,
       accountRole: row.role,
+      email: currentUserEmail(),
     };
 
     this.#studios = (studios ?? []).map((s) => ({
@@ -177,6 +180,7 @@ export class SupabaseStore {
       time_zone: s.time_zone ?? null,
       created_at: s.created_at,
       scoring: s.scoring ?? null,
+      records_audio: s.records_audio ?? true,
       owner_id: s.owner_id,
     }));
 
@@ -213,6 +217,8 @@ export class SupabaseStore {
     const since = iso(studio.created_at);
     const zone = studio.time_zone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+    const firstWeekStart = iso(weekContaining(new Date(studio.created_at), studio.week_starts_on ?? 2, zone).start);
+
     const termRows = select("terms", query({
       studio_id: `eq.${id}`, select: "id,studio_id,name,starts_on,ends_on", order: "starts_on.asc",
     })).catch(() => []);
@@ -220,7 +226,7 @@ export class SupabaseStore {
     const [roster, assignments, logs, facts, focusMarks, terms, nudges, standings] = await Promise.all([
       select("memberships", query({
         studio_id: `eq.${id}`,
-        select: "role,joined_at,profiles(id,display_name,role,instrument,paint)",
+        select: "role,joined_at,display_name,instrument,profiles(id,display_name,role,instrument,paint)",
       })),
       selectAll("assignments", query({
         studio_id: `eq.${id}`,
@@ -234,7 +240,7 @@ export class SupabaseStore {
         studio_id: `eq.${id}`, started_at: `gte.${since}`, select: "*",
         order: "started_at.desc,performer_id,assignment_id",
       })),
-      selectAll("focus_marks", query({ studio_id: `eq.${id}`, week_start: `gte.${since}`, select: "*", order: "id" }))
+      selectAll("focus_marks", query({ studio_id: `eq.${id}`, week_start: `gte.${firstWeekStart}`, select: "*", order: "id" }))
         .catch(() => []),
       termRows,
       selectAll("nudges", query({ studio_id: `eq.${id}`, select: "*", order: "created_at.desc,id" }))
@@ -246,8 +252,11 @@ export class SupabaseStore {
       .filter((m) => m.profiles)
       .map((m) => ({
         id: m.profiles.id,
-        display_name: m.profiles.display_name,
-        instrument: m.profiles.instrument ?? null,
+        display_name: (m.display_name ?? "").trim() || m.profiles.display_name,
+        instrument: (m.instrument ?? "").trim() || m.profiles.instrument || null,
+        account_display_name: m.profiles.display_name,
+        account_instrument: m.profiles.instrument ?? null,
+        is_corrected: !!((m.display_name ?? "").trim() || (m.instrument ?? "").trim()),
         paint: m.profiles.paint ?? null,
         role: m.role,
         joined_at: m.joined_at,
@@ -264,10 +273,11 @@ export class SupabaseStore {
         time_zone: zone,
         created_at: studio.created_at,
         scoring: studio.scoring,
+        records_audio: studio.records_audio ?? true,
         join_code: studio.join_code,
         id: studio.id,
       },
-      rules: effectiveRules(studio.scoring),
+      rules: effectiveRules(studio.scoring, studio.records_audio ?? true),
       weeks: weeksBetween(new Date(studio.created_at), now, studio.week_starts_on, zone),
       roster: members,
       assignments: (assignments ?? []).map(assignmentFrom),
@@ -414,8 +424,27 @@ export class SupabaseStore {
     return this.#profile;
   }
 
+  async updateEmail(email) {
+    await sendEmailChange(String(email).trim());
+  }
+
   async deleteAccount() {
     const departing = this.#profile?.id;
+    if (departing) {
+      try {
+        const mine = await selectAll("practice_logs", query({
+          performer_id: `eq.${uuid(departing)}`,
+          clip_path: "not.is.null",
+          select: "clip_path",
+          order: "started_at.desc,id",
+        }));
+        for (const row of mine) {
+          if (row.clip_path) {
+            try { await deleteClip(row.clip_path); } catch { /* the nightly sweep is the backstop */ }
+          }
+        }
+      } catch { /* unreadable is not a reason to refuse somebody their deletion */ }
+    }
     await rpc("delete_account");
     forgetPerson(departing);
     await this.signOut();
@@ -475,8 +504,14 @@ export class SupabaseStore {
   }
 
   async deleteStudio(id = this.#studioId) {
+    let survivors = 0;
     for (const path of this.logs().map((l) => l.clip?.path).filter(Boolean)) {
-      try { await deleteClip(path); } catch { /* best effort; see SupabaseStore.deleteClips */ }
+      try { await deleteClip(path); } catch { survivors += 1; }
+    }
+    if (survivors > 0) {
+      throw new Error(survivors === 1
+        ? "One recording could not be removed, so the studio was kept. Try again."
+        : `${survivors} recordings could not be removed, so the studio was kept. Try again.`);
     }
     await remove("studios", query({ id: `eq.${uuid(id)}` }));
     await this.reload({ studioId: null });
@@ -496,6 +531,19 @@ export class SupabaseStore {
     await this.reload();
   }
 
+  async correctMember(profileId, { displayName = null, instrument = null } = {}) {
+    const rows = await patch("memberships", query({
+      studio_id: `eq.${uuid(this.#studioId)}`,
+      profile_id: `eq.${uuid(profileId)}`,
+      select: "profile_id",
+    }), {
+      display_name: displayName?.trim() || null,
+      instrument: instrument?.trim() || null,
+    });
+    if (!rows?.[0]) throw StoreError.notPermitted();
+    await this.reload();
+  }
+
   async transferStudio(profileId) {
     await rpc("transfer_studio", { p_studio: uuid(this.#studioId), p_to: uuid(profileId) });
     await this.reload();
@@ -504,6 +552,15 @@ export class SupabaseStore {
   async setScoring(rules) {
     const rows = await patch("studios", query({ id: `eq.${uuid(this.#studioId)}`, select: "*" }), {
       scoring: rules ?? null,
+    });
+    if (!rows?.[0]) throw StoreError.notPermitted();
+    await this.reload();
+    return this.studio();
+  }
+
+  async setRecordsAudio(records) {
+    const rows = await patch("studios", query({ id: `eq.${uuid(this.#studioId)}`, select: "*" }), {
+      records_audio: !!records,
     });
     if (!rows?.[0]) throw StoreError.notPermitted();
     await this.reload();
@@ -651,9 +708,44 @@ export class SupabaseStore {
   async deleteLog(id) {
     const log = this.logs().find((l) => l.id === id);
     if (log?.clip?.path) {
-      try { await deleteClip(log.clip.path); } catch { /* the row is what matters */ }
+      await deleteClip(log.clip.path);
     }
     await remove("practice_logs", query({ id: `eq.${uuid(id)}` }));
+    await this.reload();
+    await this.applyPending();
+  }
+
+  async accountPurchase() {
+    const me = this.#profile?.id;
+    if (!me) return null;
+    const rows = await select("purchases", query({
+      profile_id: `eq.${uuid(me)}`,
+      select: "product,amount_cents,currency,purchased_at,note,refunded_at",
+      order: "purchased_at.desc",
+      limit: "1",
+    }));
+    const row = rows?.[0];
+    if (!row) return null;
+    return {
+      product: row.product,
+      amountCents: row.amount_cents,
+      currency: row.currency,
+      purchasedAt: new Date(row.purchased_at),
+      note: row.note ?? null,
+      refundedAt: row.refunded_at ? new Date(row.refunded_at) : null,
+      isEntitled: row.refunded_at == null,
+      isComp: row.product === "comp",
+    };
+  }
+
+  async removeClip(id) {
+    const log = this.logs().find((l) => l.id === id);
+    if (log?.clip?.path) {
+      await deleteClip(log.clip.path);
+    }
+    await patch("practice_logs", query({ id: `eq.${uuid(id)}` }), {
+      clip_path: null, clip_duration: null, clip_markers: null,
+    });
     await this.reload();
     await this.applyPending();
   }

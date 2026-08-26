@@ -92,3 +92,30 @@ export function declaringBreak(terms, stretch, { studioCreatedAt, name = "Season
   }
   return result.sort((a, b) => new Date(a.startsOn) - new Date(b.startsOn));
 }
+
+
+const SEASON_MINIMUM_WEEKS = 43;
+
+export function seasonOffer(weeks, facts, terms, now = new Date()) {
+  if ((terms ?? []).length > 0) return null;
+  const started = (facts ?? [])
+    .map((f) => new Date(f.startedAt ?? f.started_at))
+    .filter((d) => !Number.isNaN(d.getTime()))
+    .sort((a, b) => a - b)[0];
+  if (!started) return null;
+
+  const running = (weeks ?? []).filter((w) => w.end <= now && w.end > started);
+  if (running.length < SEASON_MINIMUM_WEEKS) return null;
+  return { since: started, weeksRunning: running.length };
+}
+
+function seasonSincePhrase(offer) {
+  return offer.since.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+export function seasonMessage(offer) {
+  return `This studio has been running since ${seasonSincePhrase(offer)}, and the standings still `
+    + "count every week since then, so somebody who joined this year is behind by a year of other "
+    + "people's practice. Starting a season scopes the board to it. No practice is deleted, and "
+    + "last year's is still in the season summary.";
+}

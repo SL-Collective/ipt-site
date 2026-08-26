@@ -101,3 +101,28 @@ export function groupedCode(code) {
   if (value.length !== 6) return value;
   return `${value.slice(0, 3)}-${value.slice(3)}`;
 }
+
+export function receiptSentence(purchase) {
+  const day = (d) => new Intl.DateTimeFormat(undefined, {
+    day: "numeric", month: "long", year: "numeric",
+  }).format(d);
+
+  if (purchase.refundedAt) {
+    return `Refunded on ${day(purchase.refundedAt)}. `
+      + "This account can no longer start or join a studio.";
+  }
+  if (purchase.isComp) {
+    const note = (purchase.note ?? "").trim();
+    return note ? `Given on ${day(purchase.purchasedAt)}. ${note}` : `Given on ${day(purchase.purchasedAt)}.`;
+  }
+  const amount = new Intl.NumberFormat(undefined, {
+    style: "currency", currency: purchase.currency, currencyDisplay: "narrowSymbol",
+  }).format(purchase.amountCents / 100);
+  return `Bought on ${day(purchase.purchasedAt)}, ${amount}.`;
+}
+
+export function progressPercent(fraction, isMet) {
+  const clamped = Math.min(Math.max(fraction, 0), 1);
+  const floored = Math.floor(clamped * 100);
+  return isMet ? floored : Math.min(floored, 99);
+}

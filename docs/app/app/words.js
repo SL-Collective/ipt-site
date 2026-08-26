@@ -32,6 +32,8 @@ export async function vocabulary() {
     playbackRates: data.playbackRates ?? [],
     selfReportMark: data.selfReportMark ?? "",
     privacyPolicyURL: data.privacyPolicyURL ?? "",
+    termsURL: data.termsURL ?? "",
+    refundsURL: data.refundsURL ?? "",
     supportEmail: data.supportEmail ?? "",
     help: data.help ?? null,
   };

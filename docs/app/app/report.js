@@ -1,5 +1,12 @@
 
 import { longDuration } from "./format.js";
+import {
+  assignmentAudience,
+  focusCoverage,
+  groupBySection,
+  marksByAssignment,
+} from "./coverage.js";
+import { isActiveDuring } from "./judgement.js";
 
 function weeksPhrase(summary) {
   if (!(summary.weeksWithWork > 0)) return "nothing assigned";
@@ -16,40 +23,6 @@ function knowsWeeks(summary) {
     && summary.weeksWithWork !== null && summary.weeksWithWork !== undefined;
 }
 
-export function groupBySection(performers) {
-  const buckets = new Map();
-  const unassigned = [];
-
-  for (const performer of performers) {
-    const raw = (performer.instrument ?? "").trim();
-    if (!raw) {
-      unassigned.push(performer);
-      continue;
-    }
-    const key = raw.toLowerCase();
-    if (!buckets.has(key)) buckets.set(key, { name: raw, members: [] });
-    buckets.get(key).members.push(performer);
-  }
-
-  const byName = (a, b) => {
-    const x = a.display_name.toLowerCase();
-    const y = b.display_name.toLowerCase();
-    return x < y ? -1 : x > y ? 1 : 0;
-  };
-
-  const sections = [...buckets.values()]
-    .map((bucket) => ({ name: bucket.name, members: bucket.members.slice().sort(byName) }))
-    .sort((a, b) => {
-      const x = a.name.toLowerCase();
-      const y = b.name.toLowerCase();
-      return x < y ? -1 : x > y ? 1 : 0;
-    });
-
-  if (unassigned.length > 0) {
-    sections.push({ name: "No section set", members: unassigned.slice().sort(byName) });
-  }
-  return sections;
-}
 
 export function instructorSummary({
   studioName,
@@ -173,4 +146,26 @@ export function spanFrom(standing) {
     assignmentsMet: standing.assignmentsMet ?? 0,
     assignmentsAssigned: standing.assignmentsAssigned ?? 0,
   };
+}
+
+
+export function uncoveredInstructions({ assignments = [], weeks = [], marks = [], performers = [], memberSince = new Map() }) {
+  const starts = new Set(weeks.map((w) => w.start.getTime()));
+  const byAssignment = marksByAssignment(marks, starts);
+  const out = [];
+
+  for (const assignment of assignments) {
+    const points = assignment.focus_points ?? [];
+    if (points.length === 0) continue;
+    if (!weeks.some((week) => isActiveDuring(assignment, week))) continue;
+
+    const activeWeeks = weeks.filter((week) => isActiveDuring(assignment, week));
+    const audience = assignmentAudience({ assignment, performers, weeks: activeWeeks, memberSince });
+    if (audience.length === 0) continue;
+    const its = byAssignment.get(assignment.id) ?? [];
+    const coverage = focusCoverage({ points, marks: its, rosterCount: audience.length });
+    for (const line of coverage.untouched) out.push(`${assignment.title}: ${line.point.text}`);
+  }
+
+  return out;
 }

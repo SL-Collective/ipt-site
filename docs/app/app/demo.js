@@ -82,8 +82,9 @@ export async function buildDemoStudio({
       time_zone: timeZone,
       created_at: studioCreatedAt.toISOString(),
       scoring: data.scoring ?? null,
+      records_audio: data.recordsAudio ?? true,
     },
-    rules: effectiveRules(data.scoring),
+    rules: effectiveRules(data.scoring, data.recordsAudio ?? true),
     weeks,
     instructor: {
       id: "instructor-0",
@@ -91,6 +92,9 @@ export async function buildDemoStudio({
       role: "instructor",
       instrument: null,
       paint: null,
+      account_display_name: data.instructorName,
+      account_instrument: null,
+      is_corrected: false,
     },
     performers: data.performers.map((p) => ({
       id: p.id,
@@ -98,6 +102,9 @@ export async function buildDemoStudio({
       instrument: p.instrument ?? null,
       paint: p.paint ?? null,
       role: "performer",
+      account_display_name: p.displayName,
+      account_instrument: p.instrument ?? null,
+      is_corrected: false,
     })),
     performerSeatId: data.performerSeatID,
     standings: data.standings.map((s) => ({
@@ -166,6 +173,8 @@ export class DemoStore {
   performers() { return this.#studio.performers; }
   offer() { return this.#studio.offer; }
 
+  async accountPurchase() { return null; }
+
   scoringPresets() { return this.#studio.scoringPresets ?? []; }
   action(name) { return this.#studio.actions[name]; }
   rules() { return this.#studio.rules; }
@@ -215,6 +224,8 @@ export class DemoStore {
   leaveStudio() { refuse("manageRoster"); }
   deleteStudio() { refuse("manageRoster"); }
   setScoring() { refuse("setScoring"); }
+  setRecordsAudio() { refuse("manageRoster"); }
+  correctMember() { refuse("manageRoster"); }
 
   saveTerm() { refuse("setTerms"); }
   deleteTerm() { refuse("setTerms"); }
@@ -231,6 +242,11 @@ export class DemoStore {
 
   logPractice() { refuse("logPractice"); }
   deleteLog() { refuse("logPractice"); }
+  discardPending() { refuse("logPractice"); }
+  removeClip() { refuse("logPractice"); }
+  updateEmail() { refuse("editProfile"); }
+  applyPending() {}
+  selectStudio() {}
   acknowledgeLog() { refuse("acknowledgeSession"); }
   setFocusMark() { refuse("markFocusPoint"); }
   sendNudge() { refuse("sendNudge"); }

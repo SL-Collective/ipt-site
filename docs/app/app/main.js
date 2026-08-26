@@ -8,11 +8,22 @@ import { customWeeks, pastTermWeeks, monthWeeks, seasonWeeks, spanSubtitle, span
 import { DemoBlocked, checkoutURLFor, vocabulary } from "./words.js";
 import { isAndroidApp } from "./android.js";
 import { countInSeconds, saveCountInSeconds } from "./recording-prefs.js";
-import { declaringBreak, mostRecentQuiet } from "./quiet.js";
+import { outcomeFor } from "./age-gate.js";
+
 import { termsFrom } from "./terms.js";
 import { SupabaseStore, isPlausibleJoinCode } from "./store.js";
 import { CONFIG, isConfigured, remindersConfigured } from "./config.js";
+import { longDuration } from "./format.js";
 import * as push from "./push.js";
+import {
+  belongsTo as sessionBelongsTo,
+  clearOpenSession,
+  HEARTBEAT_MS,
+  offerFor,
+  readOpenSession,
+  saveOpenSession,
+  watchedSeconds,
+} from "./open-session.js";
 import {
   adoptSession,
   authRedirectIntent,
@@ -51,6 +62,7 @@ import {
   studioSetupScreen,
   termProblems,
   termsScreen,
+  parentRouteScreen,
   welcomeScreen,
   youScreen,
 } from "./screens.js";
@@ -62,8 +74,13 @@ const state = {
   mode: "door",
   store: null,
   inDemo: false,
-  auth: { mode: "signIn", problem: null, message: null, busy: false, email: "" },
+  auth: { mode: "signIn", problem: null, message: null, busy: false, email: "", asParent: false },
   session: null,
+  purchase: undefined,
+  loadingPurchase: false,
+  report: null,
+  guidanceNote: null,
+  exporting: false,
   durableStorage: null,
   welcome: null,
   demoWelcomedSeats: new Set(),
@@ -84,6 +101,8 @@ const state = {
   resettingPassword: false,
   seasonSaid: null,
   dismissedBreak: false,
+  dismissedSeason: false,
+  studioOffers: null,
   outbox: null,
   offline: false,
 };
@@ -93,6 +112,12 @@ function titleFor(name) {
 }
 
 let mounted = null;
+
+
+function go(hash) {
+  if (location.hash === hash) render();
+  else location.hash = hash;
+}
 
 
 function announce(message) {
@@ -284,6 +309,7 @@ function report(error) {
       state.session = null;
       state.editing = null;
       state.viewing = null;
+      state.purchase = undefined;
       state.viewedSpan = null;
       state.mode = "door";
       state.auth = { ...state.auth, busy: false, problem: "You're signed out. Sign in and carry on." };
@@ -522,6 +548,64 @@ function leaveDisplay() {
 }
 
 
+let offersPending = false;
+async function loadStudioOffers() {
+  const store = state.store;
+  if (offersPending || !store?.isInstructor || store.facts().length === 0) return;
+  offersPending = true;
+  try {
+    const { lengthPhrase, mostRecentQuiet, seasonMessage, seasonOffer } = await import("./quiet.js");
+    const terms = termsFrom(store.terms());
+    const now = new Date();
+
+    const stretch = state.dismissedBreak
+      ? null
+      : mostRecentQuiet(store.weeks(), store.facts(), terms, now);
+    const season = state.dismissedSeason
+      ? null
+      : seasonOffer(store.weeks(), store.facts(), terms, now);
+
+    const next = {
+      quiet: stretch ? { ...stretch, title: `Was that ${lengthPhrase(stretch)} a break?` } : null,
+      season: season ? { ...season, message: seasonMessage(season) } : null,
+    };
+    const same = JSON.stringify(next) === JSON.stringify(state.studioOffers);
+    if (!same) { state.studioOffers = next; render(); }
+  } catch {
+  } finally {
+    offersPending = false;
+  }
+}
+
+let guidancePending = false;
+async function loadGuidance() {
+  if (guidancePending || !state.editing) return;
+  guidancePending = true;
+  try {
+    const { guidancePhrase, targetGuidance } = await import("./guidance.js");
+    const guidance = targetGuidance(
+      state.store.weeks(), state.store.facts(), termsFrom(state.store.terms()), new Date());
+    const note = guidance ? guidancePhrase(guidance) : null;
+    if (note !== state.guidanceNote) { state.guidanceNote = note; render(); }
+  } catch {
+  } finally {
+    guidancePending = false;
+  }
+}
+
+let reportPending = false;
+async function loadReport() {
+  if (state.report || reportPending) return;
+  reportPending = true;
+  try {
+    state.report = await import("./report.js");
+    render();
+  } catch {
+  } finally {
+    reportPending = false;
+  }
+}
+
 async function copySeason(text) {
   try {
     await navigator.clipboard.writeText(text);
@@ -551,6 +635,7 @@ async function declareBreak(stretch) {
   const existing = termsFrom(rows).map((term, index) => ({
     ...term, id: rows[index].id, name: rows[index].name,
   }));
+  const { declaringBreak } = await import("./quiet.js");
   const wanted = declaringBreak(existing, stretch, {
     studioCreatedAt: new Date(state.store.studio().created_at),
   });
@@ -604,6 +689,72 @@ async function saveProfile(draft) {
     await state.store.updateProfile(draft);
     announce("Your details were saved");
   });
+}
+
+async function exportEverything() {
+  if (state.exporting) return;
+  state.exporting = true;
+  render();
+  try {
+    const { buildDocument, filename, toCSV, toJSON } = await import("./export.js");
+    const store = state.store;
+    const mine = store.isInstructor
+      ? store.logs()
+      : store.logs().filter((l) => l.performerId === store.profile()?.id);
+
+    const clipURLs = {};
+    for (const log of mine) {
+      if (!log.clip?.path) continue;
+      try { clipURLs[log.clip.path] = await store.clipURL(log.clip.path); } catch { /* absent */ }
+    }
+
+    const document_ = buildDocument(store, { clipURLs });
+    if (!document_) return;
+    save(toJSON(document_), filename(document_, "json"), "application/json");
+    save(toCSV(document_), filename(document_, "csv"), "text/csv");
+    announce("Your data was downloaded");
+  } catch {
+    settingsSaid("That didn't work. Try again in a moment.");
+  } finally {
+    state.exporting = false;
+    render();
+  }
+}
+
+function save(text, name, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const link = Object.assign(document.createElement("a"), { href: url, download: name });
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function changeEmail(wanted) {
+  const current = state.store.profile()?.email;
+  if (wanted === current) {
+    settingsSaid("That is already your address.");
+    return;
+  }
+  const sure = await askToConfirm({
+    title: "Change your sign-in address?",
+    message: `IPT will send a confirmation link to ${wanted}. Nothing changes until you follow it, `
+      + `so you keep signing in with the address you have now until then. If ${wanted} is wrong, `
+      + `the link goes nowhere and nothing happens.`,
+    confirmText: "Send the link",
+  });
+  if (!sure) { settingsSaid(""); return; }
+
+  await settingsWrite(async () => {
+    await state.store.updateEmail(wanted);
+    settingsSaid(`Check ${wanted} for the link. Until you follow it, sign in with your old address.`);
+    announce("A confirmation link was sent to the new address");
+  });
+}
+
+function settingsSaid(text) {
+  const said = document.querySelector("#me-email")?.form?.querySelector('[role="status"]');
+  if (said) said.textContent = text;
 }
 
 async function deleteStudioAndLeave() {
@@ -662,7 +813,8 @@ async function deleteSession(session) {
     title: unsent ? "Throw this session away?" : "Delete this session?",
     message: unsent
       ? "It hasn't been sent yet, so it will be gone for good, including the recording."
-      : "The time and any clip attached to it are removed from your week.",
+      : "The minutes, the recording, and anything your instructor wrote back all go. "
+        + "To keep the session and remove only the audio, use Remove the recording.",
     confirmText: unsent ? "Throw it away" : "Delete",
   });
   if (!sure) return;
@@ -670,6 +822,23 @@ async function deleteSession(session) {
     if (unsent) await state.store.discardPending(session.id);
     else await state.store.deleteLog(session.id);
     announce(unsent ? "Session thrown away" : "Session deleted");
+    render();
+  } catch (error) {
+    report(error);
+  }
+}
+
+async function removeClipFrom(session) {
+  const sure = await askToConfirm({
+    title: "Remove the recording?",
+    message: "The audio is deleted for good. The session, its minutes and anything your "
+      + "instructor wrote stay where they are.",
+    confirmText: "Remove it",
+  });
+  if (!sure) return;
+  try {
+    await state.store.removeClip(session.id);
+    announce("Recording removed");
     render();
   } catch (error) {
     report(error);
@@ -822,7 +991,11 @@ async function openWelcomeIfNew() {
 
   if (!state.vocabulary) await loadExportedWords();
 
-  const pages = state.store?.isInstructor ? state.vocabulary?.help?.instructor : state.vocabulary?.help?.performer;
+  const help = state.vocabulary?.help;
+  const records = state.store?.studio?.()?.records_audio !== false;
+  const pages = state.store?.isInstructor
+    ? (records ? help?.instructor : help?.instructorSilent ?? help?.instructor)
+    : (records ? help?.performer : help?.performerSilent ?? help?.performer);
   if (!pages?.length) return;
 
   markWelcome();
@@ -891,6 +1064,7 @@ function paintScreen() {
       problem: state.auth.problem,
       message: state.auth.message,
       busy: state.auth.busy,
+      draft: state.auth.draft ?? null,
       onSignIn: handleSignIn,
       onSignUp: handleSignUp,
       onForgot: sendPasswordReset,
@@ -902,6 +1076,27 @@ function paintScreen() {
       onInstall: installEvent ? offerInstall : null,
     }));
     document.title = "IPT: Individual Practice Time";
+    return;
+  }
+
+  if (state.mode === "parentRoute") {
+    show(parentRouteScreen({
+      onContinueAsParent: () => {
+        state.mode = "door";
+        state.auth = { ...state.auth, mode: "signUp", asParent: true, problem: null };
+        render();
+        announce("Continuing as a parent or guardian");
+      },
+      onBack: () => {
+        state.mode = "door";
+        state.auth = {
+          mode: "signIn", problem: null, message: null, busy: false,
+          email: state.auth.email, asParent: false,
+        };
+        render();
+      },
+    }));
+    document.title = titleFor("Setting up an account");
     return;
   }
 
@@ -963,7 +1158,9 @@ function paintScreen() {
       onSave: saveAssignment,
       onCancel: () => { state.editing = null; render(); },
       onDelete: state.editing.assignment ? removeAssignment : null,
+      guidanceNote: state.guidanceNote,
     }));
+    loadGuidance();
     document.title = titleFor(state.editing.assignment ? "Edit assignment" : "New assignment");
     return;
   }
@@ -974,10 +1171,17 @@ function paintScreen() {
       capabilities: state.session.capabilities,
       countIns: state.session.countIns ?? [],
       countInSeconds: countInSeconds(),
+      startedAt: state.session.startedAt,
+      draft: state.session.draft,
       onCountIn: (seconds) => { saveCountInSeconds(seconds); },
       onSave: saveSession,
       onBlocked: state.inDemo ? ((name) => showPrompt(name)) : null,
-      onCancel: () => { state.session = null; render(); announce("Session discarded"); },
+      onCancel: () => {
+        state.session = null;
+        clearOpenSession();
+        render();
+        announce("Session discarded");
+      },
     }));
     document.title = titleFor("Practicing");
     return;
@@ -1041,7 +1245,9 @@ function paintScreen() {
         said: state.seasonSaid,
         onCopy: copySeason,
         onShare: shareSeason,
+        report: state.report,
       });
+      loadReport();
       title = "The season";
       break;
     case "#/display":
@@ -1087,6 +1293,7 @@ function paintScreen() {
         onSetRole: setMemberRole,
         onRemove: removeMember,
         onHandOver: handOverStudio,
+        onCorrect: correctMember,
         onBack: () => { location.hash = "#/you"; },
         busy: state.settings.busy,
         problem: state.settings.problem,
@@ -1112,7 +1319,15 @@ function paintScreen() {
       if (!isDemo) refreshSubscription();
       break;
     case "#/you":
+      if (state.purchase === undefined && !state.loadingPurchase) {
+        state.loadingPurchase = true;
+        store.accountPurchase()
+          .then((row) => { state.purchase = row; render(); })
+          .catch(() => {})
+          .finally(() => { state.loadingPurchase = false; });
+      }
       screen = youScreen(store, {
+        purchase: state.purchase,
         onCreateAccount: state.inDemo ? () => { leaveDemo(); goToSignUp(); } : null,
         scoringPresets: state.vocabulary?.scoringPresets ?? [],
         onHelp: () => { location.hash = "#/help"; },
@@ -1121,6 +1336,9 @@ function paintScreen() {
           ? leaveStudio
           : null,
         onSaveProfile: isDemo ? null : saveProfile,
+        onSaveEmail: isDemo ? null : changeEmail,
+        onExport: isDemo ? null : exportEverything,
+        exporting: state.exporting,
         onDeleteStudio: !isDemo && store.studio()?.owner_id === store.profile().id
           ? deleteStudioAndLeave
           : null,
@@ -1145,6 +1363,7 @@ function paintScreen() {
         onRoster: store.isInstructor
           ? () => { location.hash = "#/roster"; }
           : null,
+        onSetRecordsAudio: store.isInstructor ? setRecordsAudio : null,
         onReminders: isDemo ? null : () => { location.hash = "#/reminders"; },
         onSeason: () => { location.hash = "#/season"; },
       });
@@ -1166,6 +1385,7 @@ function paintScreen() {
         },
         onPractice: startSession,
         onDeleteSession: isDemo ? null : deleteSession,
+        onRemoveClip: removeClipFrom,
         onNudgeSeen: isDemo ? null : markSeenOnce,
         onAddSession: () => go("#/add-session"),
         selfReportMark: state.selfReportMark,
@@ -1173,6 +1393,7 @@ function paintScreen() {
       title = "Practice";
       break;
     default:
+      loadStudioOffers();
       screen = studioScreen(store, {
         onPrompt,
         ...spanControls(store),
@@ -1187,11 +1408,12 @@ function paintScreen() {
           again.focus();
           if (at !== null) again.setSelectionRange(at, at);
         },
-        quiet: store.isInstructor && store.facts().length > 0 && !state.dismissedBreak
-          ? mostRecentQuiet(store.weeks(), store.facts(), termsFrom(store.terms()), new Date())
-          : null,
+        quiet: state.studioOffers?.quiet ?? null,
         onDeclareBreak: declareBreak,
         onDismissBreak: () => { state.dismissedBreak = true; render(); announce("Left as it is"); },
+        season: state.studioOffers?.season ?? null,
+        onSetUpSeason: () => { location.hash = "#/terms"; },
+        onDismissSeason: () => { state.dismissedSeason = true; render(); announce("Left as it is"); },
         onOpenPerformer: openPerformer,
         onListen: () => { location.hash = "#/listening"; },
         onAssign: () => { state.editing = { assignment: null }; render(); },
@@ -1241,9 +1463,28 @@ function handleSignIn({ email, password }) {
   });
 }
 
-function handleSignUp({ email, password, displayName, role }) {
+function handleSignUp({ email, password, displayName, role, bornOn }) {
+  const outcome = outcomeFor(bornOn);
+  if (outcome === "needsAParent" && state.auth.asParent) {
+  } else if (outcome !== "mayCreateAccount") {
+    state.mode = outcome === "needsAParent" ? "parentRoute" : "door";
+    state.auth = {
+      ...state.auth,
+      busy: false,
+      draft: { displayName, bornOn, role },
+      email,
+      problem: outcome === "implausible"
+        ? "Check the date of birth. That one isn't a date anybody was born on."
+        : null,
+    };
+    render();
+    if (outcome === "needsAParent") announce("A parent or guardian sets this account up");
+    return;
+  }
+
   return attempt(async () => {
     state.auth.email = email;
+    state.auth.draft = null;
     const { confirmed } = await signUp({ email, password, displayName, role });
     if (!confirmed) {
       state.mode = "confirm";
@@ -1271,6 +1512,7 @@ async function handleSignOut() {
   state.session = null;
   state.editing = null;
   state.viewing = null;
+  state.purchase = undefined;
   state.outbox = null;
   seenNudges.clear();
   state.mode = "door";
@@ -1326,6 +1568,7 @@ async function enterStudio() {
   state.inDemo = false;
   forgetExportedWords();
   state.session = null;
+  state.purchase = undefined;
   state.auth = { ...state.auth, busy: false, problem: null, message: null };
 
   requestDurableStorage()
@@ -1354,8 +1597,66 @@ async function enterStudio() {
   else location.hash = wanted;
 
   announce(`${state.store.studio().name}, viewing as ${state.store.role}`);
+  offerInterruptedSession();
   setTimeout(() => document.getElementById("main")?.focus(), 0);
   drainOutbox();
+}
+
+function beatOpenSession() {
+  if (!state.session || !state.store) return;
+  saveOpenSession({
+    assignmentId: state.session.assignment.id,
+    performerId: state.store.profile()?.id,
+    startedAt: state.session.startedAt,
+    note: state.session.draft?.note ?? "",
+    markers: state.session.draft?.markers ?? [],
+  });
+}
+
+setInterval(beatOpenSession, HEARTBEAT_MS);
+
+async function offerInterruptedSession() {
+  const held = readOpenSession();
+  if (!held) return;
+
+  const me = state.store?.profile()?.id;
+  const assignment = state.store?.assignments()?.find((a) => a.id === held.assignmentId);
+  if (!sessionBelongsTo(held, me) || !assignment) { clearOpenSession(); return; }
+
+  const floor = state.store.rules().minimumCountableSession;
+  const offer = offerFor(held, new Date(), floor);
+  if (offer === "nothingToKeep") {
+    clearOpenSession();
+    return;
+  }
+
+  const sure = await askToConfirm({
+    title: "Pick up where you left off?",
+    message: `You had a session running on ${assignment.title}. `
+      + `It counted ${longDuration(watchedSeconds(held))} before this tab closed.`,
+    confirmText: "Save those minutes",
+    cancelText: "Throw it away",
+  });
+  clearOpenSession();
+  if (!sure) return;
+
+  try {
+    await state.store.logPractice({
+      assignmentId: held.assignmentId,
+      startedAt: held.startedAt,
+      duration: watchedSeconds(held),
+      note: held.note.trim() || null,
+      clip: null,
+      clipDuration: null,
+      markers: [],
+      focusPointIds: [],
+    });
+    await refreshOutbox();
+    render();
+    announce("Session saved");
+  } catch (error) {
+    report(error);
+  }
 }
 
 
@@ -1371,6 +1672,10 @@ async function startSession(assignment) {
 }
 
 async function recordingCapability(assignment) {
+  if (state.store?.studio?.()?.records_audio === false) {
+    return { canRecord: false, reason: null };
+  }
+
   const { capabilities, openMicrophone, record, secondsBeforeLimit, takeSeconds } =
     await import("./recorder.js");
   const caps = await capabilities();
@@ -1410,6 +1715,7 @@ async function saveSession(draft) {
   }
 
   state.session = null;
+  clearOpenSession();
   for (const focusPointId of week ? draft.focusPointIds ?? [] : []) {
     state.store.setFocusMark({
       focusPointId,
@@ -1620,12 +1926,37 @@ async function deleteTerm(term) {
   });
 }
 
+async function setRecordsAudio(wanted) {
+  if (!wanted) {
+    const sure = await askToConfirm({
+      title: "Turn recording off for this studio?",
+      message: "Nobody is offered a record button, and clips are worth no points. Recordings " +
+        "already made are untouched, and turning it back on restores their points.",
+      confirmText: "Turn recording off",
+    });
+    if (!sure) return;
+  }
+  await settingsWrite(async () => {
+    await state.store.setRecordsAudio(wanted);
+    announce(wanted ? "Recording turned on" : "Recording turned off");
+  });
+}
+
 async function chooseScoring(preset) {
   await settingsWrite(async () => {
     await state.store.setScoring(preset.rules);
     announce(`Scoring set to ${preset.title}`);
   });
   document.querySelector('.options [aria-checked="true"]')?.focus();
+}
+
+async function correctMember(member, correction) {
+  await settingsWrite(async () => {
+    await state.store.correctMember(member.id, correction);
+    announce(correction.displayName
+      ? `This studio now shows ${correction.displayName}`
+      : `${member.account_display_name} is shown as they typed it again`);
+  });
 }
 
 async function setMemberRole(member, role) {

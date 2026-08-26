@@ -69,6 +69,7 @@ function derive(summary) {
   const required = entries.filter(([id]) => !optional.has(id));
   return {
     entries,
+    required,
     activeAssignmentCount: required.length,
     metAssignmentCount: required.filter(([, p]) => isMet(p)).length,
     totalCountedSeconds: entries.reduce((sum, [, p]) => sum + p.countedSeconds, 0),
@@ -164,7 +165,7 @@ function streakTitle(streak, daysLeft) {
 
 function streakBody(summary, derived, daysLeft) {
   const days = daysLeft === 1 ? "Today is the last day" : `${daysLeft} days left`;
-  const short = derived.entries.filter(([, p]) => !isMet(p)).length;
+  const short = derived.required.filter(([, p]) => !isMet(p)).length;
   const work = short === 1 ? "one assignment" : `${short} assignments`;
   return `${days}, and ${work} still to finish. One session keeps it alive.`;
 }
@@ -196,7 +197,7 @@ function remainingPhrase(open, summary) {
 
 function isOnPace(derived, daysLeft, weekLength) {
   if (derived.activeAssignmentCount <= 0) return true;
-  const done = derived.entries.reduce((sum, [, p]) => sum + fraction(p), 0) /
+  const done = derived.required.reduce((sum, [, p]) => sum + fraction(p), 0) /
     derived.activeAssignmentCount;
   const elapsed = (weekLength - daysLeft) / weekLength;
   return done >= elapsed;
@@ -211,7 +212,9 @@ export function performerPlan({ now, week, summary, assignments, preferences, te
   const derived = derive(summary);
   const planned = [];
 
+  const optionalIds = new Set(summary.optionalIds ?? []);
   const open = assignments.filter((a) => {
+    if (optionalIds.has(a.id)) return false;
     const progress = summary.progress[a.id];
     return progress ? !isMet(progress) : false;
   });

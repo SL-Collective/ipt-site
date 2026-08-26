@@ -128,13 +128,23 @@ export function pending() {
   return tx("readonly", (s) => s.index("startedAt").getAll());
 }
 
-export async function queued() {
-  return (await pending()).filter((i) => !i.setAside);
+function belongsTo(item, performerId) {
+  if (!performerId) return false;
+  return item.performerId === performerId;
 }
 
-export async function setAside() {
-  return (await pending()).filter((i) => i.setAside);
+export function ownedBy(items, performerId) {
+  return items.filter((i) => belongsTo(i, performerId));
 }
+
+export async function queued(performerId = currentUserId()) {
+  return ownedBy((await pending()).filter((i) => !i.setAside), performerId);
+}
+
+export async function setAside(performerId = currentUserId()) {
+  return ownedBy((await pending()).filter((i) => i.setAside), performerId);
+}
+
 
 export function discard(id) {
   return tx("readwrite", (s) => s.delete(id));
@@ -238,8 +248,8 @@ async function deliver(item) {
   }
 }
 
-export async function status() {
-  const [waiting, aside] = await Promise.all([queued(), setAside()]);
+export async function status(performerId = currentUserId()) {
+  const [waiting, aside] = await Promise.all([queued(performerId), setAside(performerId)]);
   const oldest = waiting[0] ? new Date(waiting[0].draft.startedAt) : null;
   return {
     waiting: waiting.length,

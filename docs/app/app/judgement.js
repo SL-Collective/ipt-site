@@ -170,6 +170,11 @@ const DEFAULT_RULES = Object.freeze({
   keepsScore: true,
 });
 
-export function effectiveRules(scoring) {
-  return { ...DEFAULT_RULES, ...(scoring ?? {}) };
+export function effectiveRules(scoring, recordsAudio = true) {
+  const merged = { ...DEFAULT_RULES, ...(scoring ?? {}) };
+  if (recordsAudio === false) {
+    merged.clipBonus = 0;
+    merged.clipBonusWeeklyCap = 0;
+  }
+  return merged;
 }

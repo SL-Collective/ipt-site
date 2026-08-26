@@ -3,11 +3,18 @@ export function helpAudience(isInstructor) {
   return isInstructor ? "For instructors" : "For performers";
 }
 
-export function scoringSummary(rules, keepsScore, presets) {
+export function scoringSummary(rules, keepsScore, presets, recordsAudio = true) {
   if (!keepsScore) return "Off";
   if (!presets || presets.length === 0) return null;
-  const match = presets.find((p) => Object.keys(p.rules).every((k) => rules[k] === p.rules[k]));
+  const match = presets.find((p) => matchesPreset(rules, p.rules, recordsAudio));
   return match ? match.title : "Custom";
+}
+
+function matchesPreset(rules, presetRules, recordsAudio) {
+  const skipped = recordsAudio === false ? ["clipBonus", "clipBonusWeeklyCap"] : [];
+  return Object.keys(presetRules)
+    .filter((k) => !skipped.includes(k))
+    .every((k) => rules[k] === presetRules[k]);
 }
 
 function termOn(terms, date) {

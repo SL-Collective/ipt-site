@@ -1,15 +1,18 @@
 
-const CACHE = "ipt-shell-125fa97a";
+const CACHE = "ipt-shell-7d919817";
 
 const SHELL = [
   "./",
   "./styles/tokens.css",
   "./styles/app.css",
   "./app/main.js",
+  "./app/open-session.js",
   "./app/dom.js",
   "./app/format.js",
   "./app/ui.js",
   "./app/screens.js",
+  "./app/age-gate.js",
+  "./app/export.js",
   "./app/judgement.js",
   "./app/bylines.js",
   "./app/settings-summary.js",

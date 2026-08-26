@@ -6,7 +6,11 @@ import {
   weekContaining,
 } from "./judgement.js";
 import { listeningBacklog } from "./listening.js";
-import { capped, instructorPlan, performerPlan, weeklyAnchor } from "./reminders.js";
+let planner = null;
+async function reminders() {
+  planner ??= await import("./reminders.js");
+  return planner;
+}
 import { termsFrom } from "./terms.js";
 
 const PREFERENCES_KEY = "ipt.notifications";
@@ -142,7 +146,7 @@ export async function syncPlan(store, { now = new Date() } = {}) {
     if (!subscription) return null;
     await register(store, subscription);
 
-    const plan = planFor(store, { now });
+    const plan = await planFor(store, { now });
 
     for (const [studioId, items] of planByStudio(plan, store)) {
       await store.replaceReminderPlan(items, studioId);
@@ -163,7 +167,8 @@ export function planByStudio(plan, store) {
   return byStudio;
 }
 
-export function planFor(store, { now = new Date(), preferences: prefs = preferences() } = {}) {
+export async function planFor(store, { now = new Date(), preferences: prefs = preferences() } = {}) {
+  const { capped, instructorPlan, performerPlan, weeklyAnchor } = await reminders();
   const studio = store.studio();
   if (!studio) return [];
 
@@ -192,11 +197,12 @@ export function planFor(store, { now = new Date(), preferences: prefs = preferen
 
   for (const other of store.joinedStudios?.() ?? []) {
     if (other.id === store.studioId) continue;
-    const anchor = anchorFor(store, other, { now, preferences: prefs });
+    const anchor = anchorFor(store, other, { now, preferences: prefs, weeklyAnchor });
     if (anchor) items.push(anchor);
   }
 
   const anchor = anchorFor(store, studio, {
+    weeklyAnchor,
     now,
     preferences: prefs,
     isInstructor: store.isInstructor,
@@ -206,7 +212,7 @@ export function planFor(store, { now = new Date(), preferences: prefs = preferen
   return capped(anchor ? [...items, anchor] : items);
 }
 
-function anchorFor(store, studio, { now, preferences: prefs, isInstructor, nextWeek, timeZone }) {
+function anchorFor(store, studio, { now, preferences: prefs, isInstructor, nextWeek, timeZone, weeklyAnchor }) {
   const zone = timeZone ?? studio.time_zone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const startsOn = studio.week_starts_on ?? 2;
   const next = nextWeek ?? (() => {

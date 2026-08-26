@@ -92,6 +92,39 @@ export async function openMicrophone() {
   }
 }
 
+export function watchInput(stream, onLost) {
+  const tracks = stream.getAudioTracks();
+  let lost = null;
+  const note = (why) => { if (!lost) { lost = why; onLost?.(why); } };
+
+  const onEnded = () => note("The microphone was disconnected part way through.");
+  const onMute = () => note("Something else took the microphone part way through.");
+  for (const track of tracks) {
+    track.addEventListener("ended", onEnded);
+    track.addEventListener("mute", onMute);
+  }
+
+  return {
+    check() {
+      if (!lost && tracks.some((t) => t.muted || t.readyState === "ended")) {
+        note("The microphone stopped part way through.");
+      }
+      return lost;
+    },
+    get lost() { return lost; },
+    stop() {
+      for (const track of tracks) {
+        track.removeEventListener("ended", onEnded);
+        track.removeEventListener("mute", onMute);
+      }
+    },
+  };
+}
+
+export function interruptedSentence(why) {
+  return `${why} What was captured up to that point has been kept.`;
+}
+
 export async function record(stream, { onTick, onLevel, signal, maxSeconds } = {}) {
   const caps = await capabilities();
   if (!caps.canProduceCompatibleClip) {
@@ -120,15 +153,22 @@ function recordViaMediaRecorder(stream, { onTick, onLevel, signal, maxSeconds })
 
     const started = performance.now();
     const meter = onLevel ? attachMeter(stream, onLevel) : null;
+    let capturedUntil = null;
+    const input = watchInput(stream, () => {
+      capturedUntil ??= performance.now();
+      if (recorder.state !== "inactive") recorder.stop();
+    });
     const tick = setInterval(() => {
       const elapsed = (performance.now() - started) / 1000;
       onTick?.(elapsed);
+      input.check();
       if (elapsed >= maxSeconds) recorder.stop();
     }, 200);
 
     const finish = () => {
       clearInterval(tick);
       meter?.stop();
+      input.stop();
     };
 
     recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
@@ -137,8 +177,9 @@ function recordViaMediaRecorder(stream, { onTick, onLevel, signal, maxSeconds })
       finish();
       resolve({
         blob: new Blob(chunks, { type: "audio/mp4" }),
-        duration: (performance.now() - started) / 1000,
+        duration: ((capturedUntil ?? performance.now()) - started) / 1000,
         mimeType: "audio/mp4",
+        interrupted: input.lost ? interruptedSentence(input.lost) : null,
       });
     };
 
@@ -188,9 +229,14 @@ async function recordViaWebCodecs(stream, { onTick, onLevel, signal, maxSeconds 
 
   const started = performance.now();
   const meter = onLevel ? attachMeter(stream, onLevel) : null;
-  const tick = setInterval(() => onTick?.((performance.now() - started) / 1000), 200);
 
   let stopped = false;
+  const input = watchInput(stream, () => { stopped = true; });
+  const tick = setInterval(() => {
+    onTick?.((performance.now() - started) / 1000);
+    if (input.check()) stopped = true;
+  }, 200);
+
   const stop = () => { stopped = true; };
   signal?.addEventListener("abort", stop, { once: true });
 
@@ -209,6 +255,7 @@ async function recordViaWebCodecs(stream, { onTick, onLevel, signal, maxSeconds 
   } finally {
     clearInterval(tick);
     meter?.stop();
+    input.stop();
     try { reader.releaseLock(); } catch { /* already released */ }
     track.stop();
     for (const t of stream.getAudioTracks()) t.stop();
@@ -226,6 +273,7 @@ async function recordViaWebCodecs(stream, { onTick, onLevel, signal, maxSeconds 
       blob: writer.finish(),
       duration: writer.durationSeconds,
       mimeType: "audio/mp4",
+      interrupted: input.lost ? interruptedSentence(input.lost) : null,
     };
   } catch (cause) {
     console.error("IPT: the MP4 writer refused to finish.", cause);
