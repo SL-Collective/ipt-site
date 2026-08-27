@@ -1,7 +1,7 @@
 {
   "name": "IPT: Individual Practice Time",
   "short_name": "IPT",
-  "description": "Your instructor assigns the practice, you record how it went, and they hear it back.",
+  "description": "An instructor sets the week's practice, performers log what they do, and the instructor sees it. A short recording is optional.",
   "id": "/",
   "start_url": "./",
   "scope": "./",
