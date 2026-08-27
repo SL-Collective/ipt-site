@@ -855,7 +855,7 @@ function accountGate(error, action = "createStudio") {
   return /IPT_NO_ACCOUNT/.test(said) ? StoreError.needsAccount(action) : error;
 }
 
-const JOIN_ALPHABET = "ACDEFGHJKMNPQRTUVWXY3467";
+export const JOIN_ALPHABET = "ACDEFGHJKMNPQRTUVWXY3467";
 const JOIN_LENGTH = 6;
 
 export function normaliseJoinCode(raw) {

@@ -242,22 +242,32 @@ export function doorScreen({
       style: "text-align:center; padding-top: 4px",
       text: "Creating an account accepts the Terms of use.",
     }),
-    el("a", {
-      href: "https://iptmusic.com/privacy",
-      target: "_blank",
-      rel: "noopener",
-      class: "caption policy-link",
-      style: "text-align:center; display:block; min-height: 44px; padding-top: 12px",
-      text: "Privacy policy",
-    }),
-    el("a", {
-      href: "https://iptmusic.com/terms",
-      target: "_blank",
-      rel: "noopener",
-      class: "caption policy-link",
-      style: "text-align:center; display:block; min-height: 44px; padding-top: 12px",
-      text: "Terms of use",
-    }),
+    el(
+      "div",
+      { class: "row", style: "gap: 0; justify-content: center" },
+      el("a", {
+        href: "https://iptmusic.com/privacy",
+        target: "_blank",
+        rel: "noopener",
+        class: "caption policy-link",
+        style: "min-height:44px; padding:0 0.9rem; display:flex; align-items:center",
+        text: "Privacy policy",
+      }),
+      el("span", {
+        class: "caption",
+        "aria-hidden": "true",
+        style: "color: var(--muted); align-self: center",
+        text: "·",
+      }),
+      el("a", {
+        href: "https://iptmusic.com/terms",
+        target: "_blank",
+        rel: "noopener",
+        class: "caption policy-link",
+        style: "min-height:44px; padding:0 0.9rem; display:flex; align-items:center",
+        text: "Terms of use",
+      }),
+    ),
     card(
       { class: "card--tinted stack" },
       el("h2", { class: "micro", style: "color: var(--accent)", text: "See it working" }),
@@ -806,9 +816,12 @@ export function assignmentsScreen(store, { onPrompt, onNew, onEdit, onDuplicate,
           }))
           : el("h3", { text: assignment.title }),
         assignment.is_optional
-          ? pill("Optional")
+          ? audience.length
+            ? pill(`${metCount} of ${audience.length} took it on`)
+            : pill("Optional")
           : audience.length
-          ? pill(`${metCount}/${audience.length} met`, metCount === audience.length ? "met" : undefined)
+          ? pill(`${metCount} of ${audience.length} met it this week`,
+                 metCount === audience.length ? "met" : undefined)
           : pill(performers.length ? "No one assigned" : "No performers yet"),
       ),
       assignment.section && el("p", { class: "caption", text: assignment.section }),
@@ -1215,7 +1228,15 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
     settleSection(section, count, action);
     header.setAttribute("aria-label", label());
   }
-  wholeStudio.addEventListener("change", () => { audience.hidden = wholeStudio.checked; });
+  const laterJoiners = el("p", {
+    class: "caption",
+    text: "Includes performers who join later.",
+    hidden: !wholeStudio.checked,
+  });
+  wholeStudio.addEventListener("change", () => {
+    audience.hidden = wholeStudio.checked;
+    laterJoiners.hidden = !wholeStudio.checked;
+  });
 
   const problems = el("div", { class: "stack" });
 
@@ -1295,6 +1316,7 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
         { class: "stack" },
         el("h2", { text: "Who it is for" }),
         el("div", { class: "check-list" }, field("The whole studio", wholeStudio)),
+        laterJoiners,
         audience,
       ),
       el("button", {
