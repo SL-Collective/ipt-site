@@ -65,12 +65,16 @@ export function listeningBacklog(logs) {
   return { waiting: waiting.length, oldestRecordedAt: oldest.startedAt };
 }
 
-export function waitingPhrase(logs, now = new Date(), timeZone = undefined) {
+export function oldestWaitingDays(logs, now = new Date(), timeZone = undefined) {
   const waiting = logs.filter((l) => l.hasClip && !l.wasHeard && !l.isPending);
   if (!waiting.length) return null;
   const oldest = waiting.reduce((a, b) => (a.startedAt < b.startedAt ? a : b));
-  const days = daysBetween(oldest.startedAt, now, timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
-  if (days === 0) return null;
+  return daysBetween(oldest.startedAt, now, timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
+}
+
+export function waitingPhrase(logs, now = new Date(), timeZone = undefined) {
+  const days = oldestWaitingDays(logs, now, timeZone);
+  if (days === null || days === 0) return null;
   if (days === 1) return "the oldest since yesterday";
   return `the oldest for ${days} days`;
 }

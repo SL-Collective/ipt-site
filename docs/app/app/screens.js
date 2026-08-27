@@ -8,6 +8,7 @@ import {
   workHeading,
   assignmentProgress,
   audienceIncludes,
+  MAX_FOCUS_POINTS,
   isActiveDuring,
   progressFraction,
   standingStreak,
@@ -37,7 +38,7 @@ import { currentWeek, performerWeekRows, studioWeekRows, weekProgress, weekTrend
 import { reachedMilestones } from "./milestones.js";
 import { spanRows } from "./spans.js";
 import { checkoutURLFor } from "./words.js";
-import { deletionCost, finishedPhrase, heardPhrase, listeningOrder, positionPhrase, REMOVAL_UNDOABLE, savingPhrase, waitingPhrase } from "./listening.js";
+import { deletionCost, finishedPhrase, heardPhrase, listeningOrder, oldestWaitingDays, PATIENCE_DAYS, positionPhrase, REMOVAL_UNDOABLE, savingPhrase, waitingPhrase } from "./listening.js";
 
 
 function spanLine(store, span, onStepSpan, onPickSpan) {
@@ -264,7 +265,7 @@ export function doorScreen({
         class: "caption",
         text:
           "A real studio with three weeks of practice in it: a roster, assigned work, standings, " +
-          "and recordings. No account, nothing to set up.",
+          "and recordings you can play. No account, nothing to set up.",
       }),
       el("button", {
         class: "button--primary",
@@ -468,6 +469,7 @@ export function studioScreen(store, {
   span = null, onStepSpan = null, onPickSpan = null, onApplyCustom = null,
   onAssign = null,
   rosterSearch = "", onRosterSearch = null,
+  now = new Date(),
 }) {
   const grid = store.weeks();
   const viewed = span ?? {
@@ -667,6 +669,12 @@ export function studioScreen(store, {
         onClick: () => (onListen ? onListen() : onPrompt("acknowledgeSession")),
         text: `Listen to all ${unheard}`,
       }),
+    unheard > 0 && waitingPhrase(store.logs(), now) &&
+      el("p", {
+        class: "caption",
+        style: (oldestWaitingDays(store.logs(), now) ?? 0) >= PATIENCE_DAYS ? "color: var(--accent)" : "",
+        text: waitingPhrase(store.logs(), now),
+      }),
     hasPerformers && heading(
       "The roster",
       store.isInstructor
@@ -846,7 +854,7 @@ export function assignmentsScreen(store, { onPrompt, onNew, onEdit, onDuplicate,
     el(
       "p",
       { class: "caption" },
-      "The instruction you would give in the room, on the stand while they practice.",
+      "The work you have assigned, and the notes performers read while they practice.",
     ),
     heading("Open work", count(assignments.length, "assignment")),
     el("div", { class: "stack" }, rows),
@@ -1320,8 +1328,8 @@ export function assignmentProblems(draft) {
   if (!draft.wholeStudio && (draft.audience ?? []).length === 0) {
     found.push("Pick at least one performer, or assign it to the whole studio.");
   }
-  if ((draft.focusPoints ?? []).length > 8) {
-    found.push("Keep it to 8 things to work on. A longer list gets skimmed.");
+  if ((draft.focusPoints ?? []).length > MAX_FOCUS_POINTS) {
+    found.push(`Keep it to ${MAX_FOCUS_POINTS} things to work on. A longer list gets skimmed.`);
   }
   if (draft.takeMinutes != null &&
       (draft.takeMinutes < 1 || draft.takeMinutes > MAX_TAKE_MINUTES)) {
@@ -1390,8 +1398,14 @@ export function listeningScreen(store, {
   const queue = listeningOrder(store.logs());
   const people = Object.fromEntries(store.roster().map((p) => [p.id, p]));
 
-  let applyRate = null;
-  const onRate = (fn) => { applyRate = fn; };
+  const players = [];
+  const applyRate = (next) => { for (const audio of players) audio.playbackRate = next; };
+  const onRate = (audio) => {
+    players.push(audio);
+    audio.addEventListener("play", () => {
+      for (const other of players) if (other !== audio && !other.paused) other.pause();
+    });
+  };
   const assignments = Object.fromEntries(store.assignments().map((a) => [a.id, a]));
   const heard = store.logs().filter((l) => l.hasClip && l.wasHeard).length;
   const waiting = waitingPhrase(store.logs(), now);
@@ -1416,7 +1430,7 @@ export function listeningScreen(store, {
           audio.src = await clipURL(log.clip.path);
           audio.preservesPitch = true;
           audio.playbackRate = rate;
-          onRate?.((next) => { audio.playbackRate = next; });
+          onRate(audio);
           play.replaceWith(audio);
           status.textContent = "";
           audio.play().catch(() => {
@@ -1542,7 +1556,7 @@ export function listeningScreen(store, {
             "aria-pressed": r.value === rate ? "true" : "false",
             text: r.label,
             onClick: () => {
-              applyRate?.(r.value);
+              applyRate(r.value);
               onRateChange(r.value);
               repaint(r.value);
             },
@@ -1910,7 +1924,7 @@ export function addSessionScreen(store, { onSave, onCancel, busy = false, proble
       card(
         { class: "stack" },
         el("p", {
-          text: "There is nothing assigned to you this week, so there is nothing to add practice against yet.",
+          text: "There is nothing assigned to you this week, so there is nothing to add practice against.",
         }),
       ),
       el("button", { class: "button", type: "button", text: "Back", onClick: onCancel }),
@@ -2386,7 +2400,7 @@ export function youScreen(store, {
       { class: "stack" },
       el("h2", { text: "Your join code" }),
       el("p", { class: "numeral", style: "font-size:1.6rem; font-weight:700; letter-spacing:0.12em", text: groupedCode(studio.join_code) }),
-      el("p", { class: "caption", text: "Performers choose “Join a studio” and type this. It never uses characters that sound alike, so it is safe to read out across a rehearsal room. Everyone joins as a performer. To add another instructor, open the roster and make them one." }),
+      el("p", { class: "caption", text: "Performers choose “Join a studio” and type this. " + "Capitals, spaces and dashes make no difference, and the code leaves out the characters people mix up. There is no O or 0, and no I or 1." + " Everyone joins as a performer. To add another instructor, open the roster and make them one." }),
     ),
     others.length > 0 && card(
       { class: "stack" },
@@ -2584,7 +2598,8 @@ export function youScreen(store, {
             },
           },
           field("Your name", name),
-          field("Instrument", instrument, "Optional. Percussion, Low Brass, Color Guard."),
+          field("Instrument or part", instrument,
+                "Optional. “Snare”, “Marimba 2”. It groups the roster into sections, so everyone in the studio sees it."),
           el("button", { class: "button--primary", style: "width:100%", type: "submit", text: "Save" }),
           said,
         );
@@ -3026,10 +3041,15 @@ export function scoringScreen(store, { presets, onChoose, onBack, busy = false, 
       }),
       el("p", {
         class: "caption",
-        text: "Ticking a focus point earns no points, on purpose. It is there to help somebody " +
-          "keep their place in the work, not to be scored. Points come from minutes practiced, " +
-          "and a session somebody added afterwards is marked as such wherever it appears, so you " +
-          "can always see what the app timed.",
+        text: recordsAudio(store)
+          ? "Ticking a focus point earns no points, in every preset. Points come from finishing "
+            + "what was assigned, keeping a streak, and attaching a recording; minutes are worth "
+            + "the least and are capped. A session somebody added afterward is marked as such "
+            + "wherever it appears, so you can always see what the app timed."
+          : "Ticking a focus point earns no points, in every preset. Points come from finishing "
+            + "what was assigned and keeping a streak; minutes are worth the least and are "
+            + "capped. A session somebody added afterward is marked as such wherever it appears, "
+            + "so you can always see what the app timed.",
       }),
     ),
     onBack && el("button", {
@@ -3072,8 +3092,8 @@ export function rosterScreen(
     roster.length <= 1
       ? emptyState(
         "Nobody has joined yet",
-        "Performers choose “Join a studio” and type this code. It never contains characters that " +
-          "sound alike, so it survives being read out across a rehearsal room.",
+        "Performers choose “Join a studio” and type this code. " +
+          "Capitals, spaces and dashes make no difference, and the code leaves out the characters people mix up. There is no O or 0, and no I or 1.",
         store.studio()?.join_code
           ? el("p", {
             class: "numeral",
@@ -3242,7 +3262,7 @@ function correctionForm(member, { busy, onCorrect }) {
         },
       },
       field("Shown as", name),
-      field("Instrument", instrument),
+      field("Instrument or part", instrument),
       el("button", {
         class: "button--quiet",
         style: "width:100%",

@@ -69,6 +69,8 @@ export function weekContaining(instant, weekStartsOn, timeZone) {
   };
 }
 
+export const MAX_FOCUS_POINTS = 8;
+
 export function weekTitle(week, now, weekStartsOn, timeZone) {
   const current = weekContaining(now, weekStartsOn, timeZone);
   if (week.start.getTime() === current.start.getTime()) return "This week";
