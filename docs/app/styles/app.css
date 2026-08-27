@@ -20,6 +20,39 @@
 
 html { -webkit-text-size-adjust: 100%; }
 
+/* The ambient light the app is lit by.
+
+   Two radial gradients, no image. This is what the landing page has used all along, and putting
+   the two side by side on a phone in dark mode is what settled the question: the sign-in screen
+   with its practice-room photograph at 0.48 and the studio dashboard with no photograph at all
+   were indistinguishable. The photographs are 216 KB across seven files, fetched over a school
+   connection, to render as noise on the one background they are laid over.
+
+   A gradient's peak luminance is chosen rather than discovered, so it cannot surprise the contrast
+   floor the way a photograph's bright band did — and it needs no per-screen measurement, which is
+   why it can be on every screen instead of the seven that carry a `data-room`.
+
+   Fixed, so it does not travel with the scroll and become a thing being looked at. */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(58vw 42vh at 50% -6%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 68%),
+    radial-gradient(40vw 34vh at 88% 12%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%);
+}
+:root:not([data-theme="dark"]) body::before,
+:root[data-theme="light"] body::before {
+  /* A wash that reads as light on black reads as a stain on white, so it is barely there. */
+  background:
+    radial-gradient(58vw 40vh at 50% -8%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body::before {
+    background:
+      radial-gradient(58vw 42vh at 50% -6%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 68%),
+      radial-gradient(40vw 34vh at 88% 12%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%);
+  }
+}
+
 body {
   margin: 0;
   background: var(--canvas);
@@ -232,6 +265,19 @@ textarea { min-height: 5rem; resize: vertical; }
 .field { display: grid; gap: 0.3rem; }
 .field__label { font-size: 0.82rem; font-weight: 600; color: var(--muted); }
 
+/* A field with a control beside it: the password box and its Show button.
+
+   `min-width: 0` on the input because a grid item's default `min-width: auto` refuses to shrink
+   below its content, which on a 375px phone pushes the button off the row instead of narrowing
+   the box. `no-shrink` on the button for the reason that class exists: squeezed, "Show" wraps to
+   one letter per line, which this app has already fixed twice elsewhere. */
+.field__with-action { display: grid; grid-template-columns: 1fr auto; gap: 0.4rem; align-items: stretch; }
+.field__with-action > input { min-width: 0; }
+.reveal {
+  flex-shrink: 0; white-space: nowrap;
+  padding-inline: 0.85rem; min-height: 44px; font-size: 0.85rem;
+}
+
 /* A checkbox is the one control that must NOT stretch to its column, and the label beside it is
    the target — so the row reverses `field`'s stacking and the label takes the width. */
 .check-list .field {
@@ -391,7 +437,16 @@ a { color: var(--accent); }
   background: var(--accent-soft);
   color: var(--on-accent-soft);
   border-bottom: 1px solid var(--hairline);
-  padding: 0.6rem 1.25rem 0.7rem;
+  /* 0.35rem on top, not 0.6rem. Measured rather than eyeballed: "Demo studio" is an 11.2px
+     uppercase line in a 16.24px line box, so about 4px of leading sits above the caps before the
+     padding is counted at all. At 0.6rem the optical gap above the text was 14px against 11.2px
+     below it, which reads as the bar hanging.
+
+     `safe-area-inset-top` because this is the topmost element on the page and the document is
+     `viewport-fit=cover`: installed to a home screen it runs under the status bar, and nothing
+     else on the page was insetting for that. In a browser tab the value is 0 and this is simply
+     the smaller padding. */
+  padding: calc(0.35rem + env(safe-area-inset-top)) 1.25rem 0.7rem;
   position: sticky;
   top: 0;
   z-index: 10;

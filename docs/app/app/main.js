@@ -14,7 +14,6 @@ import { termsFrom } from "./terms.js";
 import { SupabaseStore, isPlausibleJoinCode } from "./store.js";
 import { CONFIG, isConfigured, remindersConfigured } from "./config.js";
 import { longDuration } from "./format.js";
-import * as push from "./push.js";
 import {
   belongsTo as sessionBelongsTo,
   clearOpenSession,
@@ -81,6 +80,7 @@ const state = {
   report: null,
   guidanceNote: null,
   exporting: false,
+  push: null,
   durableStorage: null,
   welcome: null,
   demoWelcomedSeats: new Set(),
@@ -590,6 +590,29 @@ async function loadGuidance() {
   } catch {
   } finally {
     guidancePending = false;
+  }
+}
+
+let pushModule = null;
+async function pushing() {
+  pushModule ??= await import("./push.js");
+  return pushModule;
+}
+
+function syncReminderPlan(store) {
+  pushing().then((push) => push.syncPlan(store)).catch(() => {});
+}
+
+let pushPending = false;
+async function loadPush() {
+  if (state.push || pushPending) return;
+  pushPending = true;
+  try {
+    state.push = await pushing();
+    render();
+  } catch {
+  } finally {
+    pushPending = false;
   }
 }
 
@@ -1301,11 +1324,12 @@ function paintScreen() {
       title = "Roster";
       break;
     case "#/reminders":
+      loadPush();
       screen = remindersScreen({
-        capability: push.capability(),
+        capability: state.push?.capability() ?? null,
         subscribed: state.reminders.subscribed,
         configured: remindersConfigured(),
-        preferences: push.preferences(),
+        preferences: state.push?.preferences() ?? null,
         volumes: state.vocabulary?.notificationVolumes ?? [],
         isInstructor: store.isInstructor,
         busy: state.reminders.busy,
@@ -1557,7 +1581,7 @@ async function afterStudioChange(message) {
   await openWelcomeIfNew();
   location.hash = tabsFor(state.store)[0].href;
   await refreshOutbox();
-  push.syncPlan(state.store);
+  syncReminderPlan(state.store);
   render();
   announce(message);
 }
@@ -1589,7 +1613,7 @@ async function enterStudio() {
   await openWelcomeIfNew();
   await state.store.applyPending();
   await refreshOutbox();
-  push.syncPlan(state.store);
+  syncReminderPlan(state.store);
 
   const home = tabsFor(state.store)[0].href;
   const wanted = tabsFor(state.store).some((t) => t.href === location.hash) ? location.hash : home;
@@ -2059,16 +2083,16 @@ async function loadExportedWords() {
 }
 
 async function refreshSubscription() {
-  const subscribed = (await push.current()) != null;
+  const subscribed = (await (await pushing()).current()) != null;
   if (subscribed === state.reminders.subscribed) return;
   state.reminders = { ...state.reminders, subscribed };
   if (currentRoute() === "#/reminders") render();
 }
 
 function setReminderVolume(volume) {
-  push.savePreferences({ volume });
+  pushing().then((push) => push.savePreferences({ volume })).catch(() => {});
   render();
-  push.syncPlan(state.store);
+  syncReminderPlan(state.store);
 
   const level = state.vocabulary?.notificationVolumes?.find((v) => v.name === volume);
   announce(`Reminders set to ${level?.label ?? volume}`);
@@ -2080,13 +2104,13 @@ async function enableReminders() {
   state.reminders = { ...state.reminders, busy: true, problem: null };
   render();
   try {
-    await push.enable(state.store, CONFIG.vapidPublicKey);
-    await push.syncPlan(state.store);
+    await (await pushing()).enable(state.store, CONFIG.vapidPublicKey);
+    await syncReminderPlan(state.store);
     state.reminders = { busy: false, problem: null, subscribed: true };
     announce("Reminders are on for this browser");
   } catch (error) {
     state.reminders = {
-      busy: false, problem: error.message, subscribed: (await push.current()) != null,
+      busy: false, problem: error.message, subscribed: (await (await pushing()).current()) != null,
     };
   }
   render();
@@ -2096,12 +2120,12 @@ async function disableReminders() {
   state.reminders = { ...state.reminders, busy: true, problem: null };
   render();
   try {
-    await push.disable(state.store);
+    await (await pushing()).disable(state.store);
     state.reminders = { busy: false, problem: null, subscribed: false };
     announce("Reminders are off for this browser");
   } catch (error) {
     state.reminders = {
-      busy: false, problem: error.message, subscribed: (await push.current()) != null,
+      busy: false, problem: error.message, subscribed: (await (await pushing()).current()) != null,
     };
   }
   render();

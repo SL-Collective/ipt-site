@@ -153,9 +153,29 @@ export function field(label, control, hint) {
     "div",
     { class: "field" },
     el("label", { for: id, class: "field__label", text: label }),
-    control,
+    control.type === "password" ? withReveal(control) : control,
     hint && el("p", { id: `${id}-hint`, class: "caption", text: hint }),
   );
+}
+
+function withReveal(control) {
+  const toggle = el("button", {
+    type: "button",
+    class: "button--quiet reveal",
+    "aria-pressed": "false",
+    "aria-controls": control.getAttribute("id"),
+    text: "Show",
+    onClick: () => {
+      const shown = control.type === "text";
+      control.type = shown ? "password" : "text";
+      toggle.textContent = shown ? "Show" : "Hide";
+      toggle.setAttribute("aria-pressed", shown ? "false" : "true");
+      control.focus();
+      const end = control.value.length;
+      try { control.setSelectionRange(end, end); } catch { /* type=password refuses this in Safari */ }
+    },
+  });
+  return el("div", { class: "field__with-action" }, control, toggle);
 }
 
 export function notice(text, { kind = "quiet", role } = {}) {

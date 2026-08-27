@@ -8,77 +8,77 @@
       "title" : "Starting a studio"
     },
     {
-      "blurb" : "A performer enters the code their instructor gave them and lands in the studio with this week's work already on screen. There is nothing else to set up.",
+      "blurb" : "A performer enters the code their instructor gave them and lands in the studio, with whatever is assigned this week on screen. There is nothing else to set up.",
       "isPurchasable" : true,
       "isStoreEnforced" : true,
       "name" : "joinStudio",
       "title" : "Joining a studio"
     },
     {
-      "blurb" : "Assign a piece with a weekly target and the instructions you would give in the room: hands separate, take it at 72, sticking as written. They have it on Tuesday night when you are not there.",
+      "blurb" : "Assign a piece with a weekly target and notes on what to work on: hands separate, take it at 72, sticking as written. Your notes are in the app, so a performer reads them while they practice.",
       "isPurchasable" : true,
       "isStoreEnforced" : true,
       "name" : "assignWork",
       "title" : "Assigning the work"
     },
     {
-      "blurb" : "A performer starts a session before they play and stops it when they are done, so the time is counted rather than remembered. Sessions are saved on the phone first, so a practice room with no signal never loses one.",
+      "blurb" : "A performer starts a session before they play and stops it when they are done, so the time is counted rather than remembered. Sessions are saved on the device before they are sent, so a practice room with no signal does not lose them.",
       "isPurchasable" : true,
       "isStoreEnforced" : true,
       "name" : "logPractice",
       "title" : "Logging a session"
     },
     {
-      "blurb" : "The performer plays their own click out loud and the take catches both, so their instructor can hear how the two line up. They mark the moments worth hearing, which turns a four-minute recording into a ten-second listen.",
+      "blurb" : "A performer can attach a short recording to a session, and can flag the moments they want heard. IPT never stops another app's metronome, so anything playing in the room is captured with them.",
       "isPurchasable" : true,
       "isStoreEnforced" : false,
       "name" : "recordTake",
       "title" : "Recording a take"
     },
     {
-      "blurb" : "Each instruction on the plan gets ticked off as it is worked. It is deliberately worth no points, because a self-report you pay for stops being information.",
+      "blurb" : "Each instruction on the plan gets ticked off as it is worked. Ticks are not scored. They are there so a performer can see what is left.",
       "isPurchasable" : true,
       "isStoreEnforced" : true,
       "name" : "markFocusPoint",
       "title" : "Ticking off the plan"
     },
     {
-      "blurb" : "You hear a take and send one line back. This is the step every rival product is missing, and a performer who thinks nobody listens stops recording inside a fortnight.",
+      "blurb" : "You listen to a take and send one line back, and the performer is told when you do. It goes one direction: no thread and no reply.",
       "isPurchasable" : true,
       "isStoreEnforced" : true,
       "name" : "acknowledgeSession",
       "title" : "Saying you heard it"
     },
     {
-      "blurb" : "One line to one performer, with no thread and no reply. It reaches somebody who has gone quiet without turning the app into a chat client.",
+      "blurb" : "One line to one performer, to reach somebody who has gone quiet. They can read it and mark it seen. There is no thread and no reply.",
       "isPurchasable" : true,
       "isStoreEnforced" : true,
       "name" : "sendNudge",
       "title" : "Sending one line"
     },
     {
-      "blurb" : "Promote an assistant to instructor, move somebody between sections, or remove a performer who has left. A second adult in the room is the normal case, not the edge one.",
+      "blurb" : "Promote an assistant to instructor, correct what this studio shows for somebody, or remove a performer who has left.",
       "isPurchasable" : true,
       "isStoreEnforced" : true,
       "name" : "manageRoster",
       "title" : "Running the roster"
     },
     {
-      "blurb" : "Tune what earns points, or switch the leaderboard off entirely. Running a studio without one is a first-class choice. What cannot be done is letting raw minutes outscore finishing the work.",
+      "blurb" : "Tune what earns points, or switch the leaderboard off entirely and the standings disappear. The one thing IPT will not store is a set of weights where raw minutes outscore finishing the work.",
       "isPurchasable" : true,
       "isStoreEnforced" : true,
       "name" : "setScoring",
       "title" : "How the studio scores"
     },
     {
-      "blurb" : "Tell IPT when your program is in session, so summer and exam weeks do not read as weeks somebody failed to practice. A break is not a miss.",
+      "blurb" : "Tell IPT when your program is in session. Weeks outside a term do not count against anybody, so a summer off does not end every streak in the studio.",
       "isPurchasable" : true,
       "isStoreEnforced" : true,
       "name" : "setTerms",
       "title" : "When the studio is running"
     },
     {
-      "blurb" : "A performer's name, instrument and color are what the studio sees beside their practice. There are no photographs anywhere in IPT, and that is deliberate.",
+      "blurb" : "A performer's name, instrument and color are what the studio sees beside their practice. There are no photographs anywhere in IPT.",
       "isPurchasable" : true,
       "isStoreEnforced" : true,
       "name" : "editProfile",
@@ -495,16 +495,16 @@
   "help" : {
     "instructor" : [
       {
-        "body" : "Set a weekly time target for one performer or the whole studio, and add your notes on what to work on: hands separate, take it at 72, fix the release in bar 12. Your notes are on the screen while they practice, so nobody has to remember them from rehearsal.",
-        "title" : "Assign the week's work"
+        "body" : "Set a target for one performer or the whole studio, and add notes on what to work on: hands separate, take it at 72, fix the release in bar 12. Your notes stay on the screen while they practice, and each line can be ticked off as it is worked.",
+        "title" : "Assignments, with a weekly target"
       },
       {
-        "body" : "A performer can attach a short recording to a session. They play their own metronome out loud, so the take catches the playing and the click together, and they can flag the moments they want you to hear. You can turn recording off for the whole studio.",
-        "title" : "Hear how it went"
+        "body" : "A performer can attach a short recording to a session and flag the moments they want heard. IPT never stops another app's metronome, so whatever is playing in the room is captured with them. An instructor can turn recording off for a whole studio.",
+        "title" : "Optional recordings"
       },
       {
-        "body" : "Your dashboard lists the performers who are behind before the ones who are fine. Open somebody's week, listen to what they sent, and write a line back.",
-        "title" : "See who needs you first"
+        "body" : "It lists the performers who are behind before the ones who are fine, rather than in alphabetical order. Open somebody's week, hear anything they sent, and write a line back.",
+        "title" : "A dashboard that sorts itself"
       }
     ],
     "instructorFinish" : "Set up my studio",
@@ -518,7 +518,7 @@
         "question" : "Why did somebody's streak not break over the holidays?"
       },
       {
-        "answer" : "Yes, and the performer can flag the moments they want you to hear. Listen to all plays the queue one recording at a time, taking one from each performer before anybody's second.",
+        "answer" : "Yes, and the performer can flag the moments they want you to hear. Listen to all plays them one at a time, and takes one from each performer before it comes back for anybody's second.",
         "question" : "Can I see how long a recording is before I play it?"
       },
       {
@@ -526,7 +526,7 @@
         "question" : "A performer's practice isn't showing up."
       },
       {
-        "answer" : "Settings → Scoring → No points. The standings disappear rather than sitting there empty, and assignments, practice and recordings work exactly the same. Plenty of programs run well without a leaderboard.",
+        "answer" : "Settings → Scoring → No points. The standings disappear rather than sitting there empty, and assignments, practice and recordings work exactly the same. Plenty of programs run without a leaderboard.",
         "question" : "Can I turn the points off?"
       }
     ],
@@ -540,7 +540,7 @@
         "question" : "Why did somebody's streak not break over the holidays?"
       },
       {
-        "answer" : "Yes, and the performer can flag the moments they want you to hear. Listen to all plays the queue one recording at a time, taking one from each performer before anybody's second.",
+        "answer" : "Yes, and the performer can flag the moments they want you to hear. Listen to all plays them one at a time, and takes one from each performer before it comes back for anybody's second.",
         "question" : "Can I see how long a recording is before I play it?"
       },
       {
@@ -592,36 +592,36 @@
         "question" : "A performer's practice isn't showing up."
       },
       {
-        "answer" : "Settings → Scoring → No points. The standings disappear entirely rather than sitting there empty, and assignments and practice work exactly the same. Plenty of programs run better without a leaderboard.",
+        "answer" : "Settings → Scoring → No points. The standings disappear rather than sitting there empty, and assignments and practice work exactly the same. Plenty of programs run without a leaderboard.",
         "question" : "Can I turn the points off?"
       }
     ],
     "instructorSilent" : [
       {
-        "body" : "Set a weekly time target for one performer or the whole studio, and add your notes on what to work on: hands separate, take it at 72, fix the release in bar 12. Your notes are on the screen while they practice, so nobody has to remember them from rehearsal.",
-        "title" : "Assign the week's work"
+        "body" : "Set a target for one performer or the whole studio, and add notes on what to work on: hands separate, take it at 72, fix the release in bar 12. Your notes stay on the screen while they practice, and each line can be ticked off as it is worked.",
+        "title" : "Assignments, with a weekly target"
       },
       {
-        "body" : "Performers write a line when they stop: what they fixed, what is still not right. You read it beside the time they put in, and send one line back. Minutes alone never told you which of them needs you.",
+        "body" : "Performers can write a line when they stop: what they fixed, what is still not right. You read it beside the time they logged, and can send a line back.",
         "title" : "Read how it went, not just how long"
       },
       {
-        "body" : "The dashboard leads with the performers who need you, and keeps everyone who is doing fine a tap away. Read what they wrote and send one line back. That is the part only you can do.",
+        "body" : "It lists the performers who are behind before the ones who are fine, rather than in alphabetical order. Open somebody's week, read what they wrote, and send a line back.",
         "title" : "See who needs you first"
       }
     ],
     "performer" : [
       {
-        "body" : "Stop it when you are done and IPT keeps the time for you. What your instructor asked for is on the screen the whole time, so you are not working from memory. If you forget to start one, you can write the session down afterward.",
+        "body" : "Stop it when you are done and IPT keeps the time for you. What your instructor asked for stays on the screen while you practice. If you forget to start a session, you can write it down afterward.",
         "title" : "Start a session before you play"
       },
       {
-        "body" : "It is optional, and it is the part your instructor can answer. Play your metronome out loud and the take catches both. Mark this spot flags a moment while you are recording, so they go straight to the bit you meant.",
+        "body" : "Recording is optional. If you add one, your instructor can hear how it sounded and write back about it. Mark this spot flags a moment while you are recording, so they go straight to the part you meant.",
         "title" : "Add a recording if you want to"
       },
       {
-        "body" : "They listen to what you send and can write back. Nobody else in the studio can hear your recordings or read your notes. They see that you practiced, and for how long.",
-        "title" : "Your instructor hears it"
+        "body" : "They can listen to what you send and write back. Nobody else in the studio can hear your recordings or read your notes. They only see that you practiced, and for how long.",
+        "title" : "Only your instructor hears it"
       }
     ],
     "performerFinish" : "Start practicing",
@@ -631,7 +631,7 @@
         "question" : "Who can hear my recordings?"
       },
       {
-        "answer" : "Anything under two minutes is not counted, and IPT tells you when that happens, so a start you did not mean does not become a session you did not practice. Any real run at something clears two minutes.",
+        "answer" : "Anything under two minutes is not counted, and IPT tells you when that happens, so a start you did not mean does not become a session you did not practice.",
         "question" : "Does a really short session count?"
       },
       {
@@ -643,7 +643,7 @@
         "question" : "Why did my time round down?"
       },
       {
-        "answer" : "No. A session counts without one. A recording is what lets your instructor hear how it sounded and write back about it, which they cannot do from a number.",
+        "answer" : "No. A session counts without one. A recording is what lets your instructor hear how it sounded and write back about it.",
         "question" : "Do I have to record something?"
       }
     ],
@@ -653,7 +653,7 @@
         "question" : "Who can hear my recordings?"
       },
       {
-        "answer" : "Anything under two minutes is not counted, and IPT tells you when that happens, so a start you did not mean does not become a session you did not practice. Any real run at something clears two minutes.",
+        "answer" : "Anything under two minutes is not counted, and IPT tells you when that happens, so a start you did not mean does not become a session you did not practice.",
         "question" : "Does a really short session count?"
       },
       {
@@ -665,7 +665,7 @@
         "question" : "Why did my time round down?"
       },
       {
-        "answer" : "No. A session counts without one. A recording is what lets your instructor hear how it sounded and write back about it, which they cannot do from a number.",
+        "answer" : "No. A session counts without one. A recording is what lets your instructor hear how it sounded and write back about it.",
         "question" : "Do I have to record something?"
       },
       {
@@ -679,7 +679,7 @@
         "question" : "Who can read my notes?"
       },
       {
-        "answer" : "Anything under two minutes is not counted, and IPT tells you when that happens, so a start you did not mean does not become a session you did not practice. Any real run at something clears two minutes.",
+        "answer" : "Anything under two minutes is not counted, and IPT tells you when that happens, so a start you did not mean does not become a session you did not practice.",
         "question" : "Does a really short session count?"
       },
       {
@@ -705,7 +705,7 @@
         "question" : "Who can read my notes?"
       },
       {
-        "answer" : "Anything under two minutes is not counted, and IPT tells you when that happens, so a start you did not mean does not become a session you did not practice. Any real run at something clears two minutes.",
+        "answer" : "Anything under two minutes is not counted, and IPT tells you when that happens, so a start you did not mean does not become a session you did not practice.",
         "question" : "Does a really short session count?"
       },
       {
@@ -723,11 +723,11 @@
     ],
     "performerSilent" : [
       {
-        "body" : "Stop it when you are done and IPT keeps the time for you. What your instructor asked for is on the screen the whole time, so you are not working from memory. If you forget to start one, you can write the session down afterward.",
+        "body" : "Stop it when you are done and IPT keeps the time for you. What your instructor asked for stays on the screen while you practice. If you forget to start a session, you can write it down afterward.",
         "title" : "Start a session before you play"
       },
       {
-        "body" : "When you stop, write what you worked on and what is still not right. One line is enough. It is the part your instructor reads first, and it is how a hard week reads as a hard week instead of a short one.",
+        "body" : "When you stop, you can write what you worked on and what is still not right. One line is enough, and it is what your instructor reads beside your time.",
         "title" : "Say how it went in your own words"
       },
       {

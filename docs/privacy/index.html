@@ -122,6 +122,25 @@
        Three across, or one; never two and a straggler. */
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
   }
+  /* What the product actually does, in a list somebody can scan.
+
+     Three columns on a wide screen and one on a phone, from the same `auto-fit` the cards use, so
+     there is never a two-and-a-straggler row. The lists are plain `ul`s on purpose: a feature list
+     is a list, and making it a grid of little cards would be decorating a thing whose whole job is
+     to be read quickly. */
+  .features { margin: 8px 0 34px; }
+  .features h2 { margin: 0 0 14px; }
+  /* 210px matches `.landing`'s track for the same reason it gives: three across or one, never
+     two and a straggler. At the page's own 736px this fitted two and orphaned the third. */
+  .feature-cols {
+    display: grid; gap: 22px 26px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  }
+  .feature-cols h3 { font-size: 15px; margin: 0 0 8px; color: var(--ink); }
+  .feature-cols ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+  .feature-cols li { color: var(--muted); line-height: 1.45; }
+  .feature-cols li::marker { color: color-mix(in srgb, var(--accent) 60%, transparent); }
+
   .thesis { font-size: 24px; font-weight: 700; line-height: 1.25; margin: 0 0 6px; }
   .thesis-detail { color: var(--muted); margin: 0 0 22px; }
   .card {
@@ -223,7 +242,7 @@
        The sections *below* them keep 46rem on purpose. Those are sentences somebody reads, and a
        long measure is what makes a paragraph hard to track back. Wide, wide, narrow is a rhythm;
        wide, narrow, narrow was an accident. */
-    .hero-head, .hero, .landing {
+    .hero-head, .hero, .landing, .features {
       width: min(1080px, calc(100vw - 96px));
       margin-left: calc((min(1080px, 100vw - 96px) - 100%) / -2);
       margin-right: calc((min(1080px, 100vw - 96px) - 100%) / -2);
@@ -423,6 +442,15 @@
     background-size: 100% 1px; background-position: 0 0; background-repeat: no-repeat;
   }
 
+  /* --- scroll ---------------------------------------------------------------------------
+     CSS only, because this page's own footer promises it loads no scripts. Both blocks are
+     guarded by @supports and by prefers-reduced-motion, so a browser without scroll-driven
+     animations gets exactly the page it got before, and so does anybody who has asked their
+     machine to stop moving things.
+
+     Nothing rests below full opacity and nothing carrying text moves sideways: the contrast
+     floor is measured on the published bytes, and a resting 0.9 would lower every measurement
+     it touched. Comments here are terse on purpose. They are bytes on a school connection. */
   @supports (animation-timeline: view()) {
     @media (prefers-reduced-motion: no-preference) {
       .landing .card, .band, .support {
@@ -430,10 +458,50 @@
         animation-timeline: view();
         animation-range: entry 6% cover 26%;
       }
+
+      /* Staggered: three cards on one row share a timeline, so one range makes them arrive as a
+         single block, which reads as the page loading late rather than as three things. */
+      .landing .card:nth-child(2) { animation-range: entry 10% cover 30%; }
+      .landing .card:nth-child(3) { animation-range: entry 14% cover 34%; }
+
+      /* The phones part slightly as the hero leaves. `translate`, not `transform`: the shots
+         already carry their rotations in `transform`, and animating it would flatten them. The
+         individual properties compose after it. Vertical only, or 375px gains a scrollbar. */
+      .shots .shot {
+        animation: part-front linear both;
+        animation-timeline: view();
+        animation-range: exit 0% exit 100%;
+      }
+      .shots .shot-back {
+        animation: part-back linear both;
+        animation-timeline: view();
+        animation-range: exit 0% exit 100%;
+      }
+
       @keyframes rise {
         from { opacity: 0; transform: translateY(16px); }
         to   { opacity: 1; transform: none; }
       }
+      @keyframes part-front { to { translate: 0 -12px; } }
+      @keyframes part-back  { to { translate: 0 14px; } }
+    }
+  }
+
+  @supports (animation-timeline: scroll()) {
+    @media (prefers-reduced-motion: no-preference) {
+      /* How far down the page somebody is. A pseudo-element, so there is nothing in the DOM and
+         nothing for a screen reader to reach; fixed and two pixels, so it can neither overlap
+         text nor make the page taller. */
+      body::before {
+        content: ""; position: fixed; inset: 0 auto auto 0;
+        height: 2px; width: 100%; z-index: 5; pointer-events: none;
+        transform-origin: 0 50%;
+        background: linear-gradient(90deg,
+          var(--accent), color-mix(in srgb, var(--accent) 35%, transparent));
+        animation: read linear both;
+        animation-timeline: scroll(root block);
+      }
+      @keyframes read { from { scale: 0 1; } to { scale: 1 1; } }
     }
   }
 </style>
