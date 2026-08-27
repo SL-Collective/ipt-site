@@ -116,7 +116,7 @@
      a 1100px page with 400px of empty column either side — which is the "dead space" a landing
      page is judged on. They are one idea each and read as a set, so they should sit as one. */
   .landing {
-    margin: 40px 0 34px; display: grid; gap: 14px;
+    margin: 40px 0 30px; display: grid; gap: 14px; align-items: stretch;
     /* 210px, not 260: the page's own max-width leaves about 736px here, and 260 fitted only two
        — which orphans the third on a row of its own and looks more broken than a plain stack.
        Three across, or one; never two and a straggler. */
@@ -130,16 +130,45 @@
      to be read quickly. */
   .features { margin: 8px 0 34px; }
   .features h2 { margin: 0 0 14px; }
-  /* 210px matches `.landing`'s track for the same reason it gives: three across or one, never
-     two and a straggler. At the page's own 736px this fitted two and orphaned the third. */
+  /* Four groups of five or six, not three of thirteen, eight and eight.
+
+     The first version split by audience — instructor, performer, practical — and the instructor
+     had thirteen items against the others' eight, so the section ended in a column of text beside
+     two columns of nothing. Splitting the instructor's half by *what you are doing* balances it
+     and reads better: somebody scanning for "can it do X" looks for the verb, not for themselves.
+
+     190px so four fit at 1080 and two at a tablet width. Never three and a straggler. */
   .feature-cols {
-    display: grid; gap: 22px 26px;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    display: grid; gap: 26px 30px; align-items: start;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
   }
-  .feature-cols h3 { font-size: 15px; margin: 0 0 8px; color: var(--ink); }
-  .feature-cols ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
-  .feature-cols li { color: var(--muted); line-height: 1.45; }
-  .feature-cols li::marker { color: color-mix(in srgb, var(--accent) 60%, transparent); }
+  .feature-cols h3 {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    margin: 0 0 10px; color: var(--accent);
+  }
+  .feature-cols ul { margin: 0; padding-left: 1.05em; display: grid; gap: 7px; }
+  .feature-cols li { color: var(--muted); line-height: 1.45; font-size: 15px; }
+  .feature-cols li::marker { color: color-mix(in srgb, var(--accent) 55%, transparent); }
+
+  /* The facts that belong to nobody's role, in a band under the four columns rather than as a
+     fifth of them: they are about the product, and a column headed "everywhere" beside three
+     headed with verbs reads as a category error. */
+  .feature-strip {
+    margin: 30px 0 0; padding: 20px 22px; list-style: none;
+    background: var(--surface); border: 1px solid var(--hairline); border-radius: 18px;
+    display: grid; gap: 10px 30px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  }
+  .feature-strip li {
+    color: var(--muted); line-height: 1.45; font-size: 15px;
+    padding-left: 18px; position: relative;
+  }
+  /* A rule rather than a bullet: the strip is a set of facts, and a second column of dots under
+     four columns of dots is noise. */
+  .feature-strip li::before {
+    content: ""; position: absolute; left: 0; top: 0.62em;
+    width: 9px; height: 1px; background: var(--accent); opacity: 0.7;
+  }
 
   .thesis { font-size: 24px; font-weight: 700; line-height: 1.25; margin: 0 0 6px; }
   .thesis-detail { color: var(--muted); margin: 0 0 22px; }
@@ -242,7 +271,7 @@
        The sections *below* them keep 46rem on purpose. Those are sentences somebody reads, and a
        long measure is what makes a paragraph hard to track back. Wide, wide, narrow is a rhythm;
        wide, narrow, narrow was an accident. */
-    .hero-head, .hero, .landing, .features {
+    .hero-head, .hero, .landing, .features, .closing {
       width: min(1080px, calc(100vw - 96px));
       margin-left: calc((min(1080px, 100vw - 96px) - 100%) / -2);
       margin-right: calc((min(1080px, 100vw - 96px) - 100%) / -2);
@@ -268,8 +297,23 @@
   }
 
   /* The performer's block, set apart so it does not read as more buyer copy. */
+  /* The bottom half of the page was 736px while everything above it was 1080, so the eye read the
+     change of width as a change of document. `.closing` takes the wide measure and lays the two
+     buyer-facing panels side by side inside it — which uses the width without ever putting a line
+     of prose across 1080px, because a 1080px measure is not readable, which is why the sections
+     were narrow in the first place. */
+  /* `margin-top`, never the `margin` shorthand. The wide-screen rule breaks this block out of the
+     page's reading measure with negative left and right margins, and a later shorthand at equal
+     specificity resets them to zero — leaving the block 1080px wide and still anchored to the
+     736px column, which pushes half of it off the right of the page. */
+  .closing { display: grid; gap: 16px; margin-top: 34px; }
+  @media (min-width: 900px) {
+    .closing { grid-template-columns: 1fr 1fr; align-items: start; }
+    .closing > .band { grid-column: 1 / -1; }
+  }
+
   .band {
-    margin: 46px 0 0; padding: 26px 24px; border-radius: 20px;
+    margin: 0; padding: 26px 24px; border-radius: 20px;
     background: var(--surface); border: 1px solid var(--hairline);
   }
   .band h2 { margin: 0 0 8px; font-size: 21px; }
@@ -290,7 +334,7 @@
        floor quietly stops holding. The scrim governs the page background, not what is composited
        on top of it. `--canvas` is the color the measurement was taken against. */
     background: var(--canvas); border: 1px solid var(--rule); border-radius: 14px;
-    padding: 20px 22px; margin: 40px 0 0;
+    padding: 20px 22px; margin: 0;
   }
   .support h2 { margin-top: 0; }
   .updated { color: var(--muted); font-size: 15px; margin: 0 0 8px; }
@@ -595,55 +639,63 @@
   </section>
 
   <section class="features">
-    <h2>What is in it</h2>
+    <h2>What it does</h2>
     <div class="feature-cols">
       <div>
-        <h3>For an instructor</h3>
+        <h3>Assigning</h3>
         <ul>
           <li>Assign to one performer, a section, or the whole studio.</li>
           <li>Weekly targets in minutes or in sessions.</li>
           <li>Notes on what to work on, which a performer ticks off as they go.</li>
           <li>See which of those nobody in the studio has worked yet.</li>
-          <li>A dashboard ordered by who is behind, not alphabetically.</li>
-          <li>One queue for recordings, taking one performer at a time.</li>
-          <li>Reply to a session in a line. The performer is told when you do.</li>
-          <li>Standings and streaks, tuneable, or switched off entirely.</li>
-          <li>Terms, so a summer or an exam week does not end anybody's streak.</li>
-          <li>A written season summary to send to a parent or a department head.</li>
-          <li>A board for the room, sized for a projector or a classroom screen.</li>
-          <li>A second instructor, and a way to hand the studio over.</li>
+          <li>Duplicate last week's work instead of typing it again.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Hearing it back</h3>
+        <ul>
+          <li>A short recording on a session, if a performer wants one.</li>
+          <li>They flag the moments, and a flagged recording starts there.</li>
+          <li>One queue, taking one performer at a time.</li>
+          <li>Reply in a line. The performer is told when you do.</li>
           <li>Turn recording off for the whole studio, in one tap.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Running a studio</h3>
+        <ul>
+          <li>A dashboard ordered by who is behind, not alphabetically.</li>
+          <li>Standings and streaks, tuneable, or switched off entirely.</li>
+          <li>Terms, so a summer or an exam week ends nobody's streak.</li>
+          <li>A written season summary to send on.</li>
+          <li>A board for the room, sized for a projector or a screen.</li>
+          <li>A second instructor, and a way to hand the studio over.</li>
         </ul>
       </div>
       <div>
         <h3>For a performer</h3>
         <ul>
           <li>Start a session before you play, or write one down afterward.</li>
-          <li>What your instructor asked for, on the screen while you practice.</li>
-          <li>A short recording if you want one, with the moments you flag.</li>
+          <li>What your instructor asked for, on screen while you practice.</li>
           <li>Delete a recording and keep the session, in any week.</li>
           <li>Works with no signal. Nothing is lost in a practice room.</li>
           <li>Reminders you can turn down or off.</li>
-          <li>A Home Screen widget, on iPhone.</li>
-          <li>Face ID or a passcode on the app, if you want it.</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Everywhere, and once</h3>
-        <ul>
-          <li>An iPhone app, and any browser: Chromebook, iPad, Android, laptop.</li>
-          <li>Installable to a home screen or a desktop, and it works offline.</li>
-          <li>$4.99 USD once, per person. No subscription and no renewal.</li>
-          <li>No per-student pricing and no seat count.</li>
-          <li>No advertising, no tracking, and nothing about anybody is sold.</li>
-          <li>Recordings are private to a performer and their instructors.</li>
-          <li>Export everything you have, as a file you keep.</li>
-          <li>Delete your account, and everything on it, from inside the app.</li>
+          <li>A Home Screen widget and a Face ID lock, on iPhone.</li>
         </ul>
       </div>
     </div>
+
+    <ul class="feature-strip">
+      <li>An iPhone app, and any browser: Chromebook, iPad, Android, laptop.</li>
+      <li>Installable to a home screen or a desktop, and it works offline.</li>
+      <li>$4.99 USD once, per person. No subscription, no renewal, no per-student pricing.</li>
+      <li>No advertising, no tracking, and nothing about anybody is sold.</li>
+      <li>Recordings are private to a performer and their instructors.</li>
+      <li>Export everything you have, or delete the account, from inside the app.</li>
+    </ul>
   </section>
 
+  <div class="closing">
   <section class="band">
     <!-- The highest-volume visitor was not served at all. A director buys once; forty performers
          are each told "go to iptmusic.com" and handed six characters, and nothing here told them
@@ -696,6 +748,7 @@
        up: <a href="mailto:support@iptmusic.com">support@iptmusic.com</a>.</p>
     <p>Mail sent here is read by a person. There is no support form and no ticket number.</p>
   </section>
+  </div>
 
   <footer>
   <p class="site-links"><a href="/privacy">Privacy policy</a> <span>&middot;</span>

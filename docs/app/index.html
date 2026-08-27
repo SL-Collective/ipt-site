@@ -39,16 +39,34 @@
        here rather than read from `tokens.css`, because that stylesheet is one of the requests
        this element exists to cover. */
     #boot-dial {
-      --tick: #3A3A3E; --well: #08090A;
-      display: block; width: 54px; height: 54px; margin-top: 18px;
+      --tick: #4A4A52; --hand: #FF9F0A; --well: #08090A;
+      display: block; width: 58px; height: 58px; margin-top: 20px;
       border-radius: 50%;
-      background: repeating-conic-gradient(var(--tick) 0deg 2deg, transparent 2deg 30deg);
+      background: repeating-conic-gradient(var(--tick) 0deg 2.2deg, transparent 2.2deg 30deg);
       animation: boot-turn 6s linear infinite;
       position: relative;
+      box-shadow: 0 0 34px -6px rgba(255, 159, 10, 0.28);
+    }
+    /* The two long markers, true vertical.
+
+       This is what makes it the IPT mark rather than a grey ring, and the geometry is not
+       invented: the artwork was measured with connected components rather than by binning pixels
+       into angle buckets, and the answer was twelve ticks with both long markers on the vertical.
+       Drawing that structure is what the note above meant by an argument against the artwork
+       rather than against the motion — the objection was 216 KB of bitmaps on the critical path,
+       and a conic gradient is neither a request nor a decode.
+
+       Amber, because #3A3A3E on #08090A was very nearly invisible and said nothing about which
+       app was loading. */
+    #boot-dial::before {
+      content: ""; position: absolute; inset: -5px; border-radius: 50%;
+      background:
+        conic-gradient(from -1.6deg, var(--hand) 0 3.2deg, transparent 3.2deg 360deg),
+        conic-gradient(from 178.4deg, var(--hand) 0 3.2deg, transparent 3.2deg 360deg);
     }
     /* The well that turns the disc into a ring. A background rather than a mask: see the markup. */
     #boot-dial::after {
-      content: ""; position: absolute; inset: 7px;
+      content: ""; position: absolute; inset: 8px;
       border-radius: 50%; background: var(--well);
     }
     @keyframes boot-turn { to { transform: rotate(360deg); } }
@@ -61,7 +79,10 @@
       #boot b { color: #08090A; }
       #boot span { color: #8F5300; }
       #boot small { color: #5F5F64; }
-      #boot-dial { --tick: #C7C7C2; --well: #F2F2F0; }
+      #boot-dial {
+        --tick: #B8B8B2; --hand: #8F5300; --well: #F2F2F0;
+        box-shadow: 0 0 30px -8px rgba(143, 83, 0, 0.22);
+      }
     }
   </style>
   <title>IPT: Individual Practice Time</title>
