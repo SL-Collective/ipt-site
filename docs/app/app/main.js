@@ -2254,6 +2254,10 @@ async function offerInstall() {
 addEventListener("hashchange", () => {
   if (state.settings.problem) state.settings = { ...state.settings, problem: null };
   if (state.addSession.problem) state.addSession = { ...state.addSession, problem: null };
+
+  if (state.editing) state.editing = null;
+  if (state.viewing) state.viewing = null;
+
   render();
 });
 
