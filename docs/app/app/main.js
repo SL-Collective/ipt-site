@@ -34,7 +34,7 @@ import {
   restoreSession,
   signIn,
   signUp,
-  StoreError,
+  StoreError, useSharedDevice,
 } from "./supabase.js";
 import { requestDurableStorage } from "./outbox.js";
 import {
@@ -375,16 +375,18 @@ function offlineBar() {
 }
 
 function tabsFor(store) {
+  const standings = { href: "#/standings", label: "Standings", glyph: "★" };
+  const board = store.rules?.().keepsScore !== false ? [standings] : [];
   return store.isInstructor
     ? [
       { href: "#/studio", label: "Studio", glyph: "▦" },
       { href: "#/assignments", label: "Assignments", glyph: "☰" },
-      { href: "#/standings", label: "Standings", glyph: "★" },
+      ...board,
       { href: "#/you", label: "You", glyph: "●" },
     ]
     : [
       { href: "#/practice", label: "Practice", glyph: "▲" },
-      { href: "#/standings", label: "Standings", glyph: "★" },
+      ...board,
       { href: "#/you", label: "You", glyph: "●" },
     ];
 }
@@ -488,7 +490,8 @@ function extraRoutesFor(store) {
     ? ["#/season", "#/help", "#/add-session"]
     : ["#/reminders", "#/season", "#/help", "#/add-session"];
   if (!store.isInstructor) return routes;
-  return [...routes, "#/listening", "#/terms", "#/scoring", "#/roster", "#/display"];
+  const board = store.rules?.().keepsScore !== false ? ["#/display"] : [];
+  return [...routes, "#/listening", "#/terms", "#/scoring", "#/roster", ...board];
 }
 
 
@@ -1335,6 +1338,7 @@ function paintScreen() {
         busy: state.reminders.busy,
         problem: state.reminders.problem,
         onVolume: setReminderVolume,
+        onPreference: setReminderPreference,
         onEnable: enableReminders,
         onDisable: disableReminders,
       });
@@ -1479,9 +1483,10 @@ async function attempt(work) {
   }
 }
 
-function handleSignIn({ email, password }) {
+function handleSignIn({ email, password, sharedDevice = false }) {
   return attempt(async () => {
     state.auth.email = email;
+    useSharedDevice(sharedDevice);
     await signIn({ email, password });
     await enterStudio();
   });
@@ -1689,7 +1694,13 @@ async function startSession(assignment) {
     recordingCapability(assignment),
     vocabulary().then((v) => v.countIns).catch(() => []),
   ]);
-  state.session = { assignment, capabilities, countIns: words };
+  state.session = {
+    assignment,
+    capabilities,
+    countIns: words,
+    startedAt: new Date(),
+    draft: { note: "", ticked: [], markers: [] },
+  };
   render();
   document.getElementById("main")?.focus();
   announce(`Practicing ${assignment.title}`);
@@ -1843,12 +1854,12 @@ async function saveAssignment(draft) {
   render();
   try {
     const existing = state.editing.assignment;
-    if (existing) await state.store.updateAssignment(existing.id, draft);
+    if (existing?.id) await state.store.updateAssignment(existing.id, draft);
     else await state.store.createAssignment(draft);
     state.editing = null;
     state.auth = { ...state.auth, busy: false };
     render();
-    announce(existing ? "Assignment saved" : "Assignment created");
+    announce(existing?.id ? "Assignment saved" : "Assignment created");
   } catch (error) {
     state.auth = { ...state.auth, busy: false };
     if (error instanceof DemoBlocked) {
@@ -2087,6 +2098,12 @@ async function refreshSubscription() {
   if (subscribed === state.reminders.subscribed) return;
   state.reminders = { ...state.reminders, subscribed };
   if (currentRoute() === "#/reminders") render();
+}
+
+function setReminderPreference(patch) {
+  pushing().then((push) => push.savePreferences(patch)).catch(() => {});
+  render();
+  syncReminderPlan(state.store);
 }
 
 function setReminderVolume(volume) {

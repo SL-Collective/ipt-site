@@ -78,7 +78,7 @@ export function performerRow(person, week, {
       "div",
       { class: "row", style: "gap: 0.5rem; flex-wrap: wrap" },
       person.instrument && el("span", { class: "caption", text: person.instrument }),
-      streak >= 2 && pill(`${streak}-week streak`, "accent"),
+      streak >= 2 && pill(`${streak}-week streak`, "accent", { wraps: true }),
       week.clips > 0 && el("span", { class: "caption", text: count(week.clips, "clip") }),
       el("span", { class: "caption", text: compactDuration(week.seconds) }),
     ),

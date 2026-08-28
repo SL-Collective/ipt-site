@@ -1,38 +1,9 @@
-/* Layout and components, on top of the generated palette in tokens.css.
- *
- * ## What is here and what is not
- *
- * **No colours are chosen in this file.** Every one is a `var(--…)` from `tokens.css`, which is
- * generated from `Brand.swift` and measured by `ContrastTests` in both appearances. A hex value
- * typed here would be a second, unmeasured palette that drifts the first time somebody nudges a
- * colour in Swift — and the drift is invisible, because a slightly different amber on a phone and a
- * laptop cannot be told apart except side by side.
- *
- * ## Accessibility is built in here rather than retrofitted
- *
- * WCAG 2.1 AA is a school-procurement blocker, not polish, and retrofitting it across every screen
- * costs several times what building it in does. So: 44px targets, visible focus rings that are
- * never removed, `prefers-reduced-motion` honoured, text that reflows to 320px, and nothing that
- * conveys meaning by colour alone.
- */
+
 
 *, *::before, *::after { box-sizing: border-box; }
 
 html { -webkit-text-size-adjust: 100%; }
 
-/* The ambient light the app is lit by.
-
-   Two radial gradients, no image. This is what the landing page has used all along, and putting
-   the two side by side on a phone in dark mode is what settled the question: the sign-in screen
-   with its practice-room photograph at 0.48 and the studio dashboard with no photograph at all
-   were indistinguishable. The photographs are 216 KB across seven files, fetched over a school
-   connection, to render as noise on the one background they are laid over.
-
-   A gradient's peak luminance is chosen rather than discovered, so it cannot surprise the contrast
-   floor the way a photograph's bright band did — and it needs no per-screen measurement, which is
-   why it can be on every screen instead of the seven that carry a `data-room`.
-
-   Fixed, so it does not travel with the scroll and become a thing being looked at. */
 body::before {
   content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
@@ -41,7 +12,7 @@ body::before {
 }
 :root:not([data-theme="dark"]) body::before,
 :root[data-theme="light"] body::before {
-  /* A wash that reads as light on black reads as a stain on white, so it is barely there. */
+  
   background:
     radial-gradient(58vw 40vh at 50% -8%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%);
 }
@@ -58,31 +29,14 @@ body {
   background: var(--canvas);
   color: var(--ink);
   font: 400 17px/1.45 ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
-  /* The tab bar is fixed; this keeps the last card clear of it, plus the home indicator. */
+  
   padding-bottom: calc(76px + env(safe-area-inset-bottom));
   min-height: 100vh;
 
-  /* **Every long string on these screens was typed by somebody, and none of them has to contain a
-     space.** An assignment title is free text an instructor writes — `Rosauro_Concerto_mvt2_mm45-88`
-     is how a teacher names a file — a studio name is free text, and so is a display name. The
-     server bounds their *length* (`TextLimits`), which is not the same constraint at all: a legal
-     56-character token with no break opportunity in it made the page 448px wide on a 320px phone,
-     and an assignment title is peer-visible, so one instructor's naming habit would do that to
-     every performer on the roster.
-
-     Inherited rather than listed per element, because the places user text can appear are not a
-     list anybody can keep — the same reason `.numeral` replaced an enumeration of the elements
-     numbers happen to live in. It cannot touch a figure: `overflow-wrap` does not apply under
-     `white-space: nowrap`, which is what every `.numeral` and `.pill` already carries, so
-     "11h 51m" is as unbreakable after this as before. `anywhere` rather than `break-word` because
-     only `anywhere` is taken into account for min-content — and a flex or grid track sized to an
-     unbreakable child is exactly how these overflows happened. */
+  
   overflow-wrap: anywhere;
 }
 
-/* Type: two tiers that are read (`ink`, `muted`) and one that is not (`faint`, held to the 3.0 UI
-   floor for icons and dividers only). The third level of hierarchy is size and weight — this
-   palette cannot carry a third legible colour. */
 h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 h1 { font-size: 1.6rem; }
 h2 { font-size: 1.15rem; }
@@ -96,64 +50,12 @@ p { margin: 0; }
   letter-spacing: 0.08em; color: var(--muted);
 }
 
-/* Numerals never change width mid-count, so a running total does not jitter.
-
-   **And they never wrap.** "A number must never wrap" is a rule this file states twice, on
-   `.pill` and on `.plan-count`, and both times it was written after finding a split number on a
-   real screen — "1 of 13" broken after "of", "3 of / 5" reading as two numbers. It was never
-   applied to the class that *marks something as a number*. At 320px the performer's own week
-   headline broke as "3 hr" over "40 min" and the studio total as "11h" over "51m". Stating the
-   rule here is what makes it hold everywhere instead of everywhere somebody remembered.
-
-   Every `.numeral` in this app is a short phrase — a count, a duration, "3 of 5" — so none of
-   them has anything to gain from wrapping, and the containers they sit in are all
-   `minmax(0, 1fr)` tracks or shrinkable flex rows that take the squeeze themselves. */
-/* **`hidden` is a hint, and every `display` in this file outranks it.**
- *
- * The browser's own rule is `[hidden] { display: none }`, which is an ordinary declaration at the
- * bottom of the cascade — so any class here that sets `display` silently defeats it. Twelve places
- * in `screens.js` set `.hidden` and nothing in these stylesheets handled the attribute, so each of
- * them worked only by luck: a `<p>` with no display rule hid correctly, and anything carrying
- * `.button` or a flex class did not.
- *
- * Measured: the recording indicator and `Mark this spot` both read `hidden === true` and
- * `display: flex`, and were painted at 44x292 on the practice screen — so a performer saw a live
- * recording bar and a mark control while nothing was recording. The one element on the screen whose
- * whole job is to say *this is happening now* was saying it permanently.
- *
- * `!important` is right here and almost nowhere else: this is not competing with an author's
- * intent, it is restoring the semantics of an attribute the markup already used. */
 [hidden] { display: none !important; }
 
 .numeral { font-variant-numeric: tabular-nums; white-space: nowrap; }
-/* A phrase that must never break inside itself — a date range, a duration — inside a label that
-   *is* allowed to wrap. The two together are what let a line break where breaking means
-   something: "This month ·" over "Aug 3 – Aug 30", never "Aug" over "3 – Aug 30". Making the
-   whole label `nowrap` instead is what put the studio dashboard 38px wider than a 320px phone. */
+
 .nobr { white-space: nowrap; }
 
-/* ------------------------------------------------------------------ layout */
-
-/* **Text scales with the reader's preference; the gutters do not.**
- *
- * These were `1.25rem`, and a rem gutter grows with the root font — so somebody who turns text up
- * to 200% on a 320px phone was spending **80px of 320 on page gutters alone**, and another 70 on
- * card padding: 47% of the screen given to whitespace, leaving 170px for content. That is the
- * opposite of what the setting asks for. Somebody who enlarges text wants bigger *text*, on the
- * screen where margins are already the scarcest thing they have.
- *
- * Measured on the instructor's dashboard at 320px / 200%: the roster's name column was squeezed to
- * 104px, which is where "3-week streak" — a pill that must not wrap, because a broken number reads
- * as a different number — ran 14px past the edge of the phone and the page scrolled sideways.
- * `web/README.md`'s console script checks exactly that and had never been run at this text size.
- *
- * `min()` caps the growth without touching the ordinary case: at 320px `6vw` is 19.2px against the
- * 20px it was, and at 375px and wider the rem still wins outright. Only the enlarged-text case
- * changes, which is the only case that was broken. Page: 334px wide against a 320px viewport
- * before, 320 after; the card goes 240 → 288 and the pill fits without wrapping.
- *
- * `gap` is left in rem on purpose — vertical rhythm should breathe with the text, and vertical
- * space is not the scarce axis on a phone. */
 .page {
   max-width: 46rem;
   margin: 0 auto;
@@ -162,43 +64,22 @@ p { margin: 0; }
   gap: 1.25rem;
 }
 
-/* `minmax(0, 1fr)` and not the default `auto`: an auto track is sized to its widest child's
-   max-content and **will not shrink below it**, so one long unbreakable child silently widens the
-   whole page. That is what happened on the performer's own week at 375px — a `nowrap` pill in a
-   148px column sized its track to 244px, the page grew to 432px, and the entire app scrolled
-   sideways including the tab bar. A stack is a vertical list; it has no business setting the
-   page's width. */
 .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
 .row { display: flex; align-items: center; gap: 0.75rem; }
-.row-between { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+
+.row-between {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.75rem; flex-wrap: wrap;
+}
 .grow { flex: 1 1 auto; min-width: 0; }
 
-/* A short action word beside a flexible block of text, which must not be the thing that gives way.
- *
- * **Measured at 375 x 812 with the root font doubled**, which is the shipping minimum width at the
- * text size somebody who needs it actually uses: the demo bar's `Leave` was **37px wide across
- * three line boxes**, and the roster header's `Manage` was **22px across six** — one letter per
- * line, both of them, beside a paragraph that had taken the whole row. Nothing overflowed and
- * nothing painted past the edge, which is why every sweep so far called this clean: the
- * measurements asked about the document's width. And `targets_test.js` cannot see it either,
- * because it asserts a 44px *height* floor and this failure makes a control **taller**.
- *
- * `flex-shrink: 0` is the whole fix and it is the same one this codebase already applies to
- * numerals for the same reason — *without `flex-shrink: 0` the box shrinks below its content*.
- * Applied by class rather than to every `.row-between` child, because a settings row's trailing
- * value ("Completion first", "All year") is a phrase that *should* wrap rather than squeeze the
- * label it sits beside. */
 .no-shrink { flex-shrink: 0; }
-
-/* ------------------------------------------------------------------ surfaces */
 
 .card {
   background: var(--surface);
   border: 1px solid var(--hairline);
   border-radius: 20px;
-  /* Capped for the reason `.page`'s gutters are: a rem pad grows with the reader's text size, and
-     on a 320px phone at 200% this alone took 70px of the width the text needed. `5.5vw` is 17.6px
-     at 320 — exactly what the rem gave — so nothing moves until the text is enlarged. */
+  
   padding: min(1.1rem, 5.5vw);
 }
 .card--tinted { background: var(--accent-soft); color: var(--on-accent-soft); }
@@ -206,14 +87,12 @@ p { margin: 0; }
 
 .divider { height: 1px; background: var(--hairline); border: 0; margin: 0; }
 
-/* ------------------------------------------------------------------ controls */
-
 button, .button {
   font: inherit;
   font-weight: 600;
   border-radius: 14px;
   border: 1px solid transparent;
-  /* 44px is the floor for a touch target — WCAG 2.5.5 and the app's own `Layout.touchTarget`. */
+  
   min-height: 44px;
   padding: 0.6rem 1rem;
   cursor: pointer;
@@ -230,23 +109,12 @@ button, .button {
 .button--plain {
   background: transparent;
   border-color: transparent;
-  /* **The min-height is not removed.** An earlier version set `min-height: 0` here to make text
-     buttons sit inline, and that quietly defeated the 44px floor above: the demo bar's "Leave" was
-     27px and every focus-point row was 21px. Both are things somebody taps with a thumb, and
-     neither was visible as a bug — a target too small to hit reliably looks exactly like one that
-     is fine. Padding does the inline-ness instead. */
+  
   padding: 0.4rem 0.2rem;
   justify-content: flex-start;
   text-align: left;
 }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
-
-/* ------------------------------------------------------------------ fields
-
-   `font: inherit` is the whole reason these are styled at all: a browser's default form font is
-   ~13px and does not follow the page, so every field would be the one place in the app that
-   ignores the reader's text size. `min-height` is the same 44px floor the buttons carry — a field
-   is a target too, and the one an unsteady thumb misses first. */
 
 input, textarea, select {
   font: inherit;
@@ -257,7 +125,10 @@ input, textarea, select {
   padding: 0.6rem 0.75rem;
   min-height: 44px;
   width: 100%;
-  /* iOS zooms the page when a field under 16px is focused, and never zooms back out. */
+  
+  min-width: 0;
+  max-width: 100%;
+  
   font-size: max(1rem, 16px);
 }
 textarea { min-height: 5rem; resize: vertical; }
@@ -265,12 +136,6 @@ textarea { min-height: 5rem; resize: vertical; }
 .field { display: grid; gap: 0.3rem; }
 .field__label { font-size: 0.82rem; font-weight: 600; color: var(--muted); }
 
-/* A field with a control beside it: the password box and its Show button.
-
-   `min-width: 0` on the input because a grid item's default `min-width: auto` refuses to shrink
-   below its content, which on a 375px phone pushes the button off the row instead of narrowing
-   the box. `no-shrink` on the button for the reason that class exists: squeezed, "Show" wraps to
-   one letter per line, which this app has already fixed twice elsewhere. */
 .field__with-action { display: grid; grid-template-columns: 1fr auto; gap: 0.4rem; align-items: stretch; }
 .field__with-action > input { min-width: 0; }
 .reveal {
@@ -278,50 +143,26 @@ textarea { min-height: 5rem; resize: vertical; }
   padding-inline: 0.85rem; min-height: 44px; font-size: 0.85rem;
 }
 
-/* A checkbox is the one control that must NOT stretch to its column, and the label beside it is
-   the target — so the row reverses `field`'s stacking and the label takes the width. */
 .check-list .field {
   grid-template-columns: auto 1fr;
   align-items: center;
   gap: 0.6rem;
   min-height: 44px;
 }
-/* A line of the compact plan, and whether it has been worked.
- *
- * The distinction used to be written in JavaScript as `color: var(--muted)` on a worked point —
- * on an `li` already carrying `.caption`, which this stylesheet paints `--muted` twenty lines
- * above. So it set the colour it already had, and worked and unworked lines were the same pixels.
- * The list is tickable, which made it worse than cosmetic: the only thing that moved when
- * somebody tapped was the count above the list.
- *
- * `FocusPlanView` uses three signals for the same state. These are its two typographic ones; the
- * green check belongs to the full checklist, which is a different control on a different screen.
- */
+
 .plan-line { color: var(--ink); }
-/* The child selector is load-bearing, and leaving it off was the same bug one level in. When the
-   plan is tickable each line's text lives inside a `<button>`, and **a button does not inherit
-   `text-decoration`** — `color` does, so the ink-to-muted half painted and the strikethrough set
-   on the `li` was a second no-op. Measured in a browser: the `li` computed `line-through` and the
-   button inside it computed `none`. Put the rule where the text is. */
+
 .plan-line.is-worked,
 .plan-line.is-worked > * { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--faint); }
 
 .check-list .field__label { order: 2; font-size: 1rem; color: var(--ink); font-weight: 400; }
-/* target-floor: the row is the target, not the box. `.check-list label` above carries the 44px and
-   the whole row is clickable through the `<label>`, so a 22px box beside it is the affordance
-   rather than the hit area — which is also what makes it possible to tick with a thumb at all. */
+
 input.check {
   order: 1;
   width: 22px; height: 22px; min-height: 22px;
   accent-color: var(--accent-fill);
   margin: 0;
 }
-
-/* ------------------------------------------------------------------ what just happened
-
-   Two voices, deliberately unalike. An error is an event with an actor — it is red and it has a
-   role of `alert`. Everything else is a condition: it states itself once, quietly, and clears
-   itself. Never colour alone (WCAG 1.4.1) — both carry their own words. */
 
 .notice {
   border-radius: 12px;
@@ -332,15 +173,6 @@ input.check {
 }
 .notice--error { background: var(--live-soft); color: var(--on-live-soft); }
 
-/* A condition that is **safe**, which is not the same as an error and must not be red.
- *
- * *Three colours, three jobs. Red needs a hand on it now — recording and destroying, and nothing
- * else.* A session the server set aside needs no hand on it now: the practice is on the device,
- * it counts toward the week already, and only the performer may throw it away. `SessionRow` on
- * iOS draws exactly this state `Palette.accent` and says why in a comment — *"Amber either way:
- * neither of these needs a hand on it now, and the practice is safe in both."* The web drew it in
- * the **recording red**, which is the one colour in this product that means something is wrong
- * right now, on the screen a fourteen-year-old opens after practising. */
 .notice--holding { background: var(--accent-soft); color: var(--on-accent-soft); }
 
 .offline-bar {
@@ -353,8 +185,6 @@ input.check {
   text-align: center;
 }
 
-/* The running clock. Tabular numerals so it does not jitter once a second, which is the one place
-   in the app somebody watches a number change. */
 .session-clock {
   font-size: 3.2rem;
   font-weight: 700;
@@ -362,36 +192,16 @@ input.check {
   line-height: 1.1;
 }
 
-/* Never removed, only styled. An invisible focus ring is a keyboard user navigating blind —
-   WCAG 2.4.7, and the single easiest way to make an app unusable without noticing. */
 :focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
   border-radius: 6px;
 }
 
-/* **The one exception, and it is not a removed focus ring.** Every screen change moves focus to
-   the new screen's `h1` so a screen reader is told where it landed — see `render()`, and the
-   measurement behind it: without this, activating a tab drops focus to `<body>` and a keyboard user
-   tabs from the top of the document again to reach what they just asked for.
-
-   That heading is `tabindex="-1"`, so it is reachable by script and by nothing else. A ring on it
-   is therefore never orientation for a keyboard user, because no keyboard user can arrive there.
-   It is a box drawn around a word nobody selected — reported from the live site as "an orange box
-   around IPT" after tapping Forgot your password, where the door's heading is the wordmark itself.
-
-   Scoped to the heading, and to the heading only. Every control keeps its ring. */
 h1[tabindex="-1"]:focus, h1[tabindex="-1"]:focus-visible {
   outline: none;
 }
 
-/* --- the welcome tour ----------------------------------------------------------------
-   Shipped with markup and no rules: the dots were `<span>`s with no size, so the one thing the
-   iOS design note insists on — *three cards and a dot for each, so the whole thing is a known
-   quantity before it starts* — was invisible, and somebody was deciding whether to bail out of an
-   unknown number of screens after all. Centred rather than top-aligned for the same reason the
-   iOS card is: three short paragraphs pinned under the status bar with half a screen of nothing
-   below them reads as a page that failed to load. */
 .welcome {
   display: flex; flex-direction: column; justify-content: center;
   gap: 18px; min-height: min(72vh, 560px); max-width: 34rem; margin: 0 auto;
@@ -399,16 +209,13 @@ h1[tabindex="-1"]:focus, h1[tabindex="-1"]:focus-visible {
 .welcome-card { text-align: center; }
 .welcome-body { color: var(--muted); }
 .welcome-dots { display: flex; gap: 7px; justify-content: center; }
-/* The current one is a capsule rather than a bigger circle: at 7px a size change alone is not a
-   difference anybody can see, and colour alone would carry it for nobody who cannot see colour. */
+
 .welcome-dot {
   width: 7px; height: 7px; border-radius: 999px;
   background: color-mix(in srgb, var(--faint) 55%, transparent);
 }
 .welcome-dot--on { width: 20px; background: var(--accent); }
 
-/* The name, set the way `iptmusic.com` and `Wordmark` set it: the T in amber. Three surfaces drew
-   this and only the marketing page applied the brand to it. */
 .wordmark-t { color: var(--accent); }
 
 a { color: var(--accent); }
@@ -431,21 +238,11 @@ a { color: var(--accent); }
   clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
 }
 
-/* ------------------------------------------------------------------ the demo bar */
-
 .demo-bar {
   background: var(--accent-soft);
   color: var(--on-accent-soft);
   border-bottom: 1px solid var(--hairline);
-  /* 0.35rem on top, not 0.6rem. Measured rather than eyeballed: "Demo studio" is an 11.2px
-     uppercase line in a 16.24px line box, so about 4px of leading sits above the caps before the
-     padding is counted at all. At 0.6rem the optical gap above the text was 14px against 11.2px
-     below it, which reads as the bar hanging.
-
-     `safe-area-inset-top` because this is the topmost element on the page and the document is
-     `viewport-fit=cover`: installed to a home screen it runs under the status bar, and nothing
-     else on the page was insetting for that. In a browser tab the value is 0 and this is simply
-     the smaller padding. */
+  
   padding: calc(0.35rem + env(safe-area-inset-top)) 1.25rem 0.7rem;
   position: sticky;
   top: 0;
@@ -454,11 +251,8 @@ a { color: var(--accent); }
 .demo-bar__inner { max-width: 46rem; margin: 0 auto; display: grid; gap: 0.5rem; }
 .demo-bar .micro { color: var(--accent); }
 
-/* A real radio group, not buttons pretending to be one: the arrow keys work, the current seat is
-   announced, and `aria-checked` says which without relying on the amber fill. */
 .segmented { display: flex; gap: 0.25rem; background: var(--inset); border-radius: 15px; padding: 4px; }
-/* target-floor: 40px inside the strip's own 4px of padding is 48px of reachable target, and the
-   two options fill the width between them — there is nothing between them to miss into. */
+
 .segmented [role="radio"] {
   flex: 1 1 0;
   background: transparent;
@@ -471,15 +265,6 @@ a { color: var(--accent); }
   color: var(--on-accent-fill);
 }
 
-/* A radio group that reads as a list rather than a strip.
-
-   `.segmented` above is right for two seats and wrong for four levels each carrying a sentence:
-   `button`'s base rule is a centred flex row, so the label sat *beside* its description with the
-   description wrapping to three lines, and at 375px "Essential only" wrapped as well. Found by
-   looking, which is the only way it could have been — every assertion about this control passed.
-
-   The selection is marked three ways and **colour is only one of them**: a filled ring, a border,
-   and `aria-checked`. The tab bar states the same rule two rules down. */
 .options { display: grid; gap: 0.5rem; }
 .options [role="radio"] {
   display: grid;
@@ -492,8 +277,7 @@ a { color: var(--accent); }
   padding: 0.75rem 0.9rem;
   border-color: var(--hairline);
 }
-/* The ring, spanning both text rows so it sits against the label rather than floating between
-   them. Decoration only — `aria-checked` is what a screen reader reads. */
+
 .options [role="radio"]::before {
   content: "";
   grid-row: 1 / span 2;
@@ -513,13 +297,9 @@ a { color: var(--accent); }
   border-color: var(--accent);
   background: radial-gradient(circle, var(--accent) 0 46%, transparent 47%);
 }
-/* The detail is a sentence, and `button` sets 600 on everything inside it. A paragraph in
-   semibold reads as a heading and is what made all four levels look equally emphasised. */
+
 .options [role="radio"] .caption { font-weight: 400; }
 
-/* A person in the roster. The whole row opens what can be done to them, so the target is the row
-   rather than a chevron — and the default marker is replaced by one that does not shove the name
-   sideways when it rotates. */
 .roster-summary {
   min-height: 44px;
   display: flex;
@@ -543,8 +323,6 @@ a { color: var(--accent); }
 details[open] > .roster-summary::after { transform: rotate(-135deg); }
 @media (prefers-reduced-motion: reduce) { .roster-summary::after { transition: none; } }
 
-/* ------------------------------------------------------------------ tab bar */
-
 .tabbar {
   position: fixed;
   left: 0; right: 0; bottom: 0;
@@ -558,63 +336,33 @@ details[open] > .roster-summary::after { transform: rotate(-135deg); }
   list-style: none; margin: 0 auto; padding: 0;
   max-width: 46rem; display: flex; justify-content: space-around;
 }
-/* Four tabs whose labels grow with the reader's text size, inside a viewport that does not.
-   Measured on the narrowest phone this ships to, at a 24px root — 150%, which is what somebody
-   with low vision actually sets: the tabs came to **338px inside 320**, and the page scrolled
-   sideways with the bar running off the edge. The web gates check 320/375/768/1440 and had only
-   ever checked them at the default text size, so this was invisible to all of them.
 
-   `flex: 1 1 0` with `min-width: 0` lets a tab give way; the label ellipsises as a last resort,
-   which is what the platform's own tab bars do and is safe here because the glyph, the amber and
-   `aria-current` all still name the current tab. **A number may never truncate — a tab label is
-   not a number.** `min-height: 44px` is untouched: the target floor is not what gives. */
 .tabbar li { flex: 1 1 0; min-width: 0; display: flex; }
 .tabbar a {
   display: grid; justify-items: center; gap: 2px;
   padding: 0.35rem 0.35rem; min-width: 0; min-height: 44px; width: 100%;
   color: var(--muted); text-decoration: none; font-size: 0.68rem; font-weight: 600;
 }
-/* `min-width: 0` is the load-bearing half and it is easy to leave off: a grid or flex child's
-   *automatic minimum size* is its min-content, and for `white-space: nowrap` text that is the whole
-   string — so the label refused to shrink and the bar stayed 84px a tab inside 74px of room. The
-   same trap this codebase already recorded as `min-height: 0` on the band-room display, turned
-   sideways. Measured both ways: without it the page still scrolled at 361px. */
+
 .tabbar .tab-label {
   min-width: 0; max-width: 100%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* The current tab is amber *and* bold *and* carries `aria-current` — never colour alone
-   (WCAG 1.4.1). */
-.tabbar a[aria-current="page"] { color: var(--accent); }
+
+.tabbar a[aria-current="page"] {
+  color: var(--accent);
+  font-weight: 800;
+  box-shadow: inset 0 2px 0 0 var(--accent);
+}
 .tabbar .tab-glyph { font-size: 1.15rem; line-height: 1; }
 
-/* ------------------------------------------------------------------ pieces */
-
-/* **The widest thing these tiles hold is a duration, and a duration grows without limit.** A
-   season total for an ordinary studio passes a thousand hours, and `1204h 07m` wants 149px where
-   two columns give it 103 on a 320px phone, 131 on a 375px one, and only 144 even at four columns
-   on a tablet — so it was never a small-screen case, it was every screen, waiting for the studio
-   to be a few months old.
-   `repeat(auto-fit, minmax(…))` was tried first and is what the tiles must NOT do: it dropped a
-   375px phone to one column, which is four near-empty boxes and pushes the primary action under
-   the tab bar — a real regression for the ordinary studio whose numbers are small, paid to protect
-   the mature one. The fix is content-driven instead: only the tile that needs the room takes it,
-   via `.stat--wide` below. */
 .stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
 
-/* One column where two cannot hold even a short duration: at 320px the column is 103px and
-   `11h 51m` already wants 114. This is the same trade iOS's `StatRow` makes at an accessibility
-   text size — it stops being a row, and each tile takes the width. */
 @media (max-width: 22rem) {
   .stat-grid { grid-template-columns: minmax(0, 1fr); }
 }
 .stat { background: var(--surface); border: 1px solid var(--hairline); border-radius: 14px; padding: 0.9rem; }
-/* **The number the "never wrap" rule named and never protected.** `.pill` and `.plan-count` both
-   carry it, and `web/README.md`'s console script *measures* this element by name — but nothing
-   ever stopped it wrapping. On a 320px phone the studio total broke as "11h" over "51m", which
-   reads as two numbers on a screen whose whole job is one. The tiles sit in a
-   `repeat(2, minmax(0, 1fr))` grid, so this cannot widen the page; it takes the squeeze as a
-   smaller column, not as a split number. */
+
 .stat__value {
   font-size: 1.7rem;
   font-weight: 700;
@@ -623,11 +371,6 @@ details[open] > .roster-summary::after { transform: rotate(-135deg); }
 }
 .stat__value--accent { color: var(--accent); }
 
-/* A tile whose number is too long for a column takes the whole row instead. `stat()` decides
-   which, from the value's own length, because the only value here that can be long is a duration
-   and the threshold is where `DurationText.compact` gains a third hour digit. Content-driven
-   rather than viewport-driven on purpose: a studio with small numbers keeps the compact grid on
-   every screen, and only the studio that has actually practised a thousand hours pays for it. */
 .stat--wide { grid-column: 1 / -1; }
 
 .meter {
@@ -637,14 +380,9 @@ details[open] > .roster-summary::after { transform: rotate(-135deg); }
 .meter__fill--met { background: var(--met); }
 
 .pill {
-  /* `justify-self` matters: `.stack` is a grid, and a grid child stretches to the column unless
-     told not to. Without it these rendered as full-width bars on the performer's week, which read
-     as another progress meter rather than as a label. */
+  
   justify-self: start;
-  /* **A number must never wrap.** "1 of 13" broken after "of" is the same disease as "270" split
-     across two lines reading as 27 and 0 — found on the listening queue at 375px, where the
-     position pill sits beside a name long enough to squeeze it. Every pill in this app is a short
-     label by nature, so none of them has anything to gain from wrapping. */
+  
   white-space: nowrap;
   display: inline-flex; align-items: center; gap: 0.3rem;
   padding: 0.2rem 0.6rem; border-radius: 999px;
@@ -652,54 +390,19 @@ details[open] > .roster-summary::after { transform: rotate(-135deg); }
   background: var(--inset); color: var(--muted);
 }
 .pill--met { background: var(--met-soft); color: var(--on-met-soft); }
-/* The `nowrap` above exists so "1 of 13" and "270" can never be split, and every pill that
-   carries a *number* keeps it. This is for the few that carry a sentence — "Everything assigned
-   this week is done" is 36 characters and has nothing to protect, and refusing to wrap it is how
-   it pushed the page 57px wider than the phone it was on. Sentences wrap.
 
-   **And a wrapped pill stops being a pill.** `border-radius: 999px` on a one-line label is a
-   capsule; on the four-line box that same sentence becomes in a 93px column it is a green blob
-   with the text pushed into its middle, which is what it looked like on the performer's practice
-   screen at 320px. The radius has to come down with the line count, so the shape stays a label
-   rather than turning into a shape. Squarer corners and a little more side padding is what a
-   multi-line tag wants. */
 .pill--wraps { white-space: normal; border-radius: 12px; padding: 0.3rem 0.6rem; text-align: left; }
 .pill--accent { background: var(--accent-soft); color: var(--on-accent-soft); }
 
-/* How much of the studio has worked one line of a plan — "3 of 5", beside the instructor's own
-   words on the assignment card.
-
-   **The same wrap the pill above already pays for, in an element that is not a pill.** At 375px an
-   instruction long enough to fill the row squeezed this to "3 of / 5", which reads as two numbers
-   and is the disease `A number must never wrap` names. The console script in `web/README.md` did
-   not catch it either: that one measures `.pill` and `.stat__value`, and a list of the elements
-   somebody remembered stops covering things exactly the way every other list here has.
-
-   `flex-shrink: 0` as well as `nowrap`, because in a flex row `nowrap` alone lets the box shrink
-   below its content and clip — and *a clipped number is not a smaller number, it is a wrong one*.
-   The instruction beside it takes the squeeze instead, which is right: it wraps into sentences. */
 .plan-count {
   white-space: nowrap;
   flex: 0 0 auto;
 }
 
-/* **The circle scales with the text inside it, or the initials break inside the circle.**
- *
- * This was `width: 36px; height: 36px` around `font-size: 0.75rem` — a box in px holding text in
- * rem. A reader who raises their browser's default font size, which is the ordinary way to make a
- * page readable, scales the text and not the circle: measured at a 200% root font, "MW" reported
- * two line boxes, so a performer's initials broke in half inside a 36px disc on every row of the
- * roster, the standings and the listening queue.
- *
- * `2.25rem` is 36px at the default and identical to look at; it just moves with the reader. Found
- * by running `Tools/check_web_wrapping.py`'s probe at a larger root size, and it was the **only**
- * rule in this file sizing a fixed box around scalable text — `.tabbar a` pairs `min-height` with
- * rem, and a floor grows. */
 .avatar {
   width: 2.25rem; height: 2.25rem; border-radius: 999px;
   display: grid; place-items: center;
-  /* No color here: the label is measured per paint fill (`--on-paint-*`), and a hardcoded
-     black was the 2.05:1 lesson waiting to reoccur the day a fill changed. */
+  
   font-size: 0.75rem; font-weight: 700;
   flex: 0 0 auto;
 }
@@ -707,8 +410,6 @@ details[open] > .roster-summary::after { transform: rotate(-135deg); }
 .rank { width: 1.6rem; text-align: right; color: var(--muted); font-weight: 700; }
 
 .prose { padding: 1.25rem; color: var(--muted); }
-
-/* ------------------------------------------------------------------ the prompt */
 
 dialog {
   border: 1px solid var(--hairline);
@@ -722,31 +423,14 @@ dialog {
 }
 dialog::backdrop { background: rgb(0 0 0 / 0.55); }
 
-/* ------------------------------------------------------------------ motion */
-
 @media (prefers-reduced-motion: no-preference) {
   .meter__fill { transition: width 0.5s ease-out; }
 }
 
-/* The four studio numbers, side by side once there is room for them.
- *
- * This said "and two columns of roster" — twice, in two near-identical comments left over from an
- * edit — and there is no roster rule here or anywhere else in this file. The roster is one column
- * at every width. A comment describing a rule the stylesheet does not have is the same fault as a
- * sentence in the app claiming a mechanism the code does not have, and this project has removed
- * three of those; it is worse in a stylesheet, where the next person reads the promise and goes
- * looking for the bug that is stopping it.
- *
- * `.page` caps at 46rem, so this is the only layout change between a phone and a desktop: the four
- * numbers stop being a 2×2 block and become a row. */
 @media (min-width: 44rem) {
   .stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
-/* A card that is also a button. The card keeps its own padding and border, so this element only
-   carries the interaction — resetting everything the button style would otherwise impose on it. */
-/* target-floor: the card inside it is the target. This resets the button styling so a whole
-   roster row can be interactive — the row is well over 44px and the button is the row. */
 .row-button {
   display: block;
   width: 100%;
@@ -760,80 +444,15 @@ dialog::backdrop { background: rgb(0 0 0 / 0.55); }
   color: inherit;
 }
 
-/*
- * The tab bar is `position: fixed` and `body` reserves its height as padding, which is right for
- * every screen except the one that *is* the screen. Set by the shell for `#/display` only.
- */
 body.no-chrome { padding-bottom: 0; }
 
-/*
- * The roster, two-up once the screen can hold two phone-width rows side by side.
- *
- * **An iPad was reading as a tall phone.** Every screen is one 46rem column, which is the right
- * measure for prose and for a form, and wrong for a list of forty people: in landscape an iPad
- * spent 222px of dead space on each side while showing four performers at a time. A director
- * scanning who needs them on Monday was paging through a list the device had room to show at once.
- *
- * The column is *not* widened to fix it. A roster row puts a name at one end and a percentage at
- * the other, so a wider row moves them further apart and reads worse — the fix is more rows per
- * screen, not longer ones. At 46rem two tracks are ~350px each, which is what a row already gets
- * on a 375pt phone, so nothing is squeezed and nothing needed re-designing.
- *
- * `rem` rather than a pixel breakpoint, so the layout folds back to one column when somebody
- * enlarges their text — the moment two columns stop being readable, and exactly when a pixel
- * breakpoint would have kept them.
- *
- * 20rem, measured rather than reasoned. The first attempt was `35ch`, on the argument that what
- * decides whether two rows fit is how wide a row's *text* is; `ch` turned out to be 10.7px in this
- * font at 17px, so `35ch` is **375px** and two of them plus the gap need 762 of the 696 a 46rem
- * page has. It silently stayed one column and looked exactly like the rule not applying. 20rem is
- * 320px, a track comes out at 342, and that is wider than the 335px a row already gets on a 375pt
- * phone.
- *
- * `align-items: start` because a roster row is read across, not down. Stretch makes both cards in a
- * row the same height and centres the shorter one's content inside it, which drops its name 11px
- * below its neighbour's; the eye scanning for a name then has two baselines per row instead of one.
- * Ragged card bottoms are the cheaper cost.
- */
 .roster-list {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
   align-items: start;
 }
 
-/* ------------------------------------------------------------------ the band-room screen */
-
-/*
- * A leaderboard meant to be read from the back of a rehearsal room, not a phone screen scaled up.
- *
- * Everything here is sized in `vw`/`vh` with a `clamp` either side, because the distance a name has
- * to carry is a property of the *room* and the only proxy for it is how big the display is. A fixed
- * point size is right for a phone held at arm's length and wrong for a projector at forty feet.
- *
- * It commits to the dark palette on both appearances, the way `LaunchView` and `AppLockView` do —
- * a bright screen at the front of a dim band room is a lamp pointed at the ensemble, and the light
- * theme exists for a phone in daylight. That is `.dark-locked`, which `gen_web_tokens.py` generates
- * from `Brand.swift`: writing these values out here would be a second, unmeasured palette, and
- * *colour is measured, not chosen.*
- */
 .display {
-  /* **`height`, not `min-height`, and the difference is the whole contract of this screen.**
-   *
-   * `min-height: 100vh` guarantees a floor and says nothing about a ceiling, so the content was
-   * free to grow past the viewport — and it did. A full board of ten at 1280x720, the resolution a
-   * band-room projector actually runs at, came to 728px against 720 and the totals under the board
-   * sat 8px below the fold, on the one screen in this product with *nobody standing at it to
-   * scroll*. `.display-board` already had `min-height: 0` from the last time this bit, but a flex
-   * child can only be made to shrink inside a parent that has a fixed budget, and this parent had
-   * none.
-   *
-   * Measured by cloning rows into the live page, which is how the same failure was found at 900px
-   * before: 10 rows at 720 was 728 and is 720; the board absorbs the 8px and a row goes 46px to
-   * 45.2, which is not a difference anybody reads from the back of a room.
-   *
-   * `dvh` because a browser's own chrome is part of the viewport it does not give you, and this
-   * screen is sometimes an iPad propped on a stand rather than a projector. `overflow: hidden` is
-   * the backstop: if some future row cannot be squeezed, clipping is the honest failure here — a
-   * scrollbar on a wall display is a control nobody can reach. */
+  
   height: 100dvh;
   overflow: hidden;
   display: flex;
@@ -863,9 +482,7 @@ body.no-chrome { padding-bottom: 0; }
   margin: 0;
   padding: 0;
   flex: 1;
-  /* `min-height: 0` or a flex child refuses to shrink below its content and pushes the footer off
-     the bottom regardless of what the rows are sized at — the default `min-height: auto` is the
-     single commonest reason a flex column overflows. */
+  
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -875,23 +492,13 @@ body.no-chrome { padding-bottom: 0; }
 
 .display-row {
   display: grid;
-  /* Rank and points are fixed columns so the names all start and end on the same line — a ragged
-     left edge is what makes a list of ten read as ten separate things instead of one board. */
+  
   grid-template-columns: clamp(2rem, 4vw, 4.5rem) 1fr auto clamp(3rem, 6vw, 7rem);
   align-items: baseline;
   gap: clamp(0.5rem, 1.5vw, 1.5rem);
   padding: clamp(0.2rem, 0.8vh, 0.8rem) 0;
   border-bottom: 1px solid var(--hairline);
-  /*
-   * Sized off the **shorter** of width and height, because a board that needs scrolling on a wall
-   * is a board whose bottom half does not exist: nobody is standing at the screen to scroll it, and
-   * the totals live down there. Width alone gave 45px names on a 1600×900 laptop and pushed the
-   * footer off the bottom.
-   *
-   * `3.2vh` is the number that makes a **full** board of ten fit, and it was measured rather than
-   * reasoned: at 4vh the four-row demo looked fine and ten rows came to 958px against 900 available,
-   * which nobody would have seen until a forty-person studio put it on a wall.
-   */
+  
   font-size: clamp(1.1rem, min(2.8vw, 3.2vh), 3rem);
 }
 
@@ -900,15 +507,12 @@ body.no-chrome { padding-bottom: 0; }
 .display-rank { color: var(--muted); text-align: right; font-weight: 700; }
 .display-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Amber, because a streak is progress and progress is the product's voice. */
 .display-streak {
   font-size: clamp(0.7rem, 1.3vw, 1.3rem);
   color: var(--accent);
   white-space: nowrap;
 }
 
-/* *A number must never wrap, and must never truncate* — "270" broken across two lines reads as 27
-   and 0. This one is on a wall, where nobody can lean in to check. */
 .display-points { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .display-empty {
@@ -926,11 +530,6 @@ body.no-chrome { padding-bottom: 0; }
 .display-total { font-size: clamp(0.9rem, 1.8vw, 1.8rem); margin: 0; }
 .display-note { font-size: clamp(0.75rem, 1.2vw, 1.2rem); color: var(--muted); margin: 0; }
 
-/*
- * Deliberately quiet and deliberately still a real target. It is on a wall behind a director who
- * needs it once, so it does not compete with the board — but 44px is the floor everywhere in this
- * app and a control nobody can hit is not made acceptable by being unimportant.
- */
 .display-exit {
   align-self: flex-start;
   min-height: 44px;
@@ -940,22 +539,6 @@ body.no-chrome { padding-bottom: 0; }
   border: 1px solid var(--hairline);
 }
 
-/*
- * The season summary, as text somebody can read before they decide to send it.
- *
- * Monospaced and pre-wrapped because the report is **laid out with spaces** — two leading spaces
- * indent a performer under their section — and a proportional font makes that read as ragged rather
- * than as structure. `readonly` rather than disabled: a disabled control cannot be selected, and
- * selecting the text is what somebody whose browser refuses the clipboard falls back to.
- *
- * **`pre-wrap`, not `pre`, and the difference is only ever visible on a phone.** Under `pre` a
- * report line runs past 390 points and the box scrolls sideways, so the screenshot at the width
- * this product actually ships to showed "13 clips recorde", "1 of 3 weeks," and "Play it with the
- * recordi" — this heading says the text is here *so somebody can read it before they decide to
- * send it*, and they could not. `pre-wrap` keeps every space, so the indentation the paragraph
- * above defends survives; it only stops a long line from being cut off. The value is untouched
- * either way, so what gets copied and what gets printed are exactly what they were.
- */
 .season-text {
   width: 100%;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -971,27 +554,22 @@ body.no-chrome { padding-bottom: 0; }
   padding: 0.75rem;
 }
 
-/* Printing the page is the other half of "something to forward" — a booster club gets a sheet of
-   paper. Everything but the report itself is chrome that a printer should not spend ink on. */
+.season-print { display: none; }
+
 @media print {
   .tabbar, .demo-bar, .offline-bar, .season-text ~ .row, .caption { display: none !important; }
-  .season-text {
+  
+  .season-text { display: none !important; }
+  .season-print {
+    display: block;
     border: none;
     background: transparent;
     color: #000;
-    height: auto;
-    overflow: visible;
     white-space: pre-wrap;
+    font: inherit;
   }
 }
 
-/*
- * A section heading in the audience picker, which is also the control that takes the whole section.
- *
- * A real button rather than a heading with a click handler: it is a control, a keyboard has to reach
- * it, and a screen reader has to announce what pressing it does. Held to the 44px floor like every
- * other target here — it is the one an instructor presses most, once per section per assignment.
- */
 .section-pick {
   display: flex;
   align-items: center;
@@ -1011,46 +589,13 @@ body.no-chrome { padding-bottom: 0; }
 .section-pick .micro { text-transform: uppercase; letter-spacing: 0.9px; font-size: 0.7rem; font-weight: 600; }
 .section-pick .grow { flex: 1; }
 
-/* ==========================================================================================
-   The practice room behind the page — `RoomBackdrop`, transcribed
-   ==========================================================================================
-
-   The iPhone has put a photograph of an empty practice room behind its emptiest screens since
-   v13; the web client was flat canvas on all of them, so a director evaluating IPT on the
-   Chromebook this client exists for met a plainer product than the one in the screenshots. Same
-   class of divergence as everything else this phase found, in the one place it reads as taste
-   rather than as a missing feature.
-
-   ## Where these are allowed, and where they are not
-
-   `RoomBackdrop` states the rule and it is the whole reason this is safe: **a photograph behind
-   text breaks the one guarantee the app has**, because no test can measure contrast against a
-   picture whose brightness changes per pixel and per crop. So they go only on screens that are
-   mostly empty and carry no data — the door, the confirm step, choosing a studio, and the
-   listening queue once it is *empty*. Never behind a dashboard, a leaderboard, a week or a
-   settings list, where a number being hard to read is the whole failure.
-
-   ## The three numbers are iOS's, not new ones
-
-   Opacity, scrim and blur are copied rather than re-chosen, because they are not taste: they are
-   what `make backdrop` allowed after the first attempt put `muted` at 2.9:1 in dark mode over the
-   bright part of three of the four rooms — under the 4.5:1 floor everything else here is held to,
-   and invisible to the eye that approved it. *A photograph cannot be checked by looking at it.*
-   `web/README.md` carries the console script that measures the composite in a browser, and the
-   numbers it read.
-
-   The bright part of every one of these photographs is high in the frame — a lamp, a window — and
-   the controls are always at the bottom, so the scrim thickens downwards and reaches flat canvas
-   before it reaches anything anybody presses. */
-
 main[data-room]::before,
 main[data-room]::after {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
-  /* Decoration and nothing else: it must never take a tap meant for the screen. `aria-hidden` is
-     not needed because a pseudo-element is not in the accessibility tree at all. */
+  
   pointer-events: none;
 }
 
@@ -1058,31 +603,9 @@ main[data-room]::before {
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
-  /* Dark photographs on a light page have to be nearly gone; on a dark page they can breathe, but
-     only as far as the measurement allows.
-   *
-   * **0.34 with a 34% scrim over it meant the photograph contributed at most 22% of the visible
-   * pixel at the very top of the page, and about 1% below the 82% mark** — measured, in a browser,
-   * against `--canvas` at #08090A. What that renders is black with a suggestion of noise in it,
-   * which is what somebody looking at the deployed client reported as "black containers". A file
-   * shipped in order to render black is worse than no file: it costs bytes on a school Chromebook
-   * and buys nothing.
-   *
-   * It got there honestly. `make backdrop` measured **contrast** — it found `muted` at 2.9:1 over
-   * the bright part of three rooms and darkened until the text was legible — and never asked
-   * whether the subject of the measurement survived it. *A measurement can optimise one variable
-   * and destroy the thing being measured.*
-   *
-   * The scrim was also defending almost nothing. Reading the DOM back on the sign-in screen, only
-   * **four** elements sit directly on the backdrop: the wordmark, the tagline, and the privacy
-   * link. Everything else is inside an opaque card, whose contrast the photograph cannot touch.
-   * So the binding constraint was `muted` on two of those four, and the answer is to move those
-   * two rather than to keep flattening the picture — see `main[data-room] .tagline` below. */
+  
   opacity: 0.48;
-  /* Enough to stop an edge in the photograph reading as an edge in the interface — a music stand
-     that looks like a divider is worse than no photograph at all. Small, because
-     `Tools/build_web_backdrops.py` already blurs before encoding: most of the softening is baked
-     into the file, where it costs bytes rather than a compositing pass on a school Chromebook. */
+  
   filter: blur(2px);
 }
 
@@ -1094,18 +617,9 @@ main[data-room="snare"]::before { background-image: url("../images/room-snare.jp
 main[data-room="window"]::before { background-image: url("../images/room-window.jpg"); }
 main[data-room="door"]::before { background-image: url("../images/room-door.jpg"); }
 
-/* The scrim. `--canvas` rather than a hex, so it follows the generated palette in both
-   appearances and there is no second, unmeasured colour in this file. */
 main[data-room] {
-  /* Named once rather than written into both light selectors below: two copies of a gradient is
-     two things to keep in step, and nothing would report them drifting. Light mode begins more
-     veiled because even a faint dark image over an off-white canvas costs contrast at the top of
-     the page, where the headings are. */
-  /* The same vignette shape as the dark one, for the same reason: a fix applied to one appearance
-   * only is the fault this file already records once, where the light opacity was applied in dark
-   * mode and looked fine. Light mode fights the opposite problem — a dark photograph on a white
-   * page is a smudge, not a glare — so the masthead stop is what matters and the middle can stay
-   * near where it was. */
+  
+  
   --room-scrim-light: linear-gradient(
     to bottom,
     color-mix(in srgb, var(--canvas) 88%, transparent) 0%,
@@ -1117,22 +631,6 @@ main[data-room] {
   );
 }
 
-/* **The gradient used to run weak-to-strong down the page, and that is backwards.** It was
- * 34% canvas at the top rising to 97% at 82% — so it protected the bottom of the screen, where
- * every element sits inside an opaque card and needs no protection at all, and left the top
- * barest, which is exactly where the four elements that stand *directly* on the photograph
- * are: the wordmark, the tagline and the policy link.
-     *
- * Measured across all seven rooms, the brightest pixel in the top band composited to 0.35
- * luminance on `room-percussion`, which is **1.26:1** against the amber in the wordmark. It
- * did not show as a fault because `background-size: cover` happens to crop that room's lamp
- * away at a desktop aspect ratio — a contrast floor that holds because of the viewport is not
- * a floor.
-     *
- * So it is a vignette now: opaque enough at the masthead that no photograph can reach the
- * text, thinnest through the middle band where the room is actually seen and nothing but a
- * card sits, and closing again at the bottom as it always did. The picture is *more* visible
- * than before, not less, because the darkness is spent where it buys something. */
 main[data-room]::after {
   background: linear-gradient(
     to bottom,
@@ -1145,42 +643,12 @@ main[data-room]::after {
   );
 }
 
-/* **Light is the override, exactly as `tokens.css` writes it** — this app is dark-first, and the
-   first draft of this block had it backwards: `:root:not([data-theme="dark"])` also matches a
-   browser sitting on system-dark, because a viewer who has never touched a toggle carries no
-   `data-theme` at all. So the light opacity was applied in dark mode, which looked *fine* — a
-   fainter photograph reads as a design choice, not as a bug — and would have quietly thrown away
-   two thirds of the picture on the appearance the app was designed in. Caught by reading the
-   computed style back rather than by looking at it, which is the whole rule about photographs. */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) main[data-room]::before { opacity: 0.14; }
   :root:not([data-theme="dark"]) main[data-room]::after { background: var(--room-scrim-light); }
 }
 :root[data-theme="light"] main[data-room]::before { opacity: 0.14; }
 :root[data-theme="light"] main[data-room]::after { background: var(--room-scrim-light); }
-
-/* ==========================================================================================
-   Pointer feedback
-   ==========================================================================================
-
-   **Nothing in this client responded to a pointer** — no hover, no press — on the one client whose
-   entire reason for existing is a Chromebook with a trackpad. A control that does not answer a
-   cursor reads as a picture of a control, and it is the difference between an app and a page.
-
-   ## No new colours, on purpose
-
-   Every value below is a token `ContrastTests` already proves in both appearances: `--raised` is in
-   `theme.surfaces`, so every text tier is measured on it, and `--accent` is held to the UI floor on
-   every surface. The primary button's fill is deliberately **not** touched — brightening an amber
-   somebody measured is choosing a colour by another name, and the label sitting on it is the pair
-   this project has already shipped wrong once at 2.05:1. It gets a ring instead, which carries no
-   text.
-
-   ## Why `hover: hover` and `pointer: fine`
-
-   A touch device reports a hover it cannot revoke: tap a button and it stays "hovered" until
-   something else is tapped, which reads as a control stuck mid-press. Both queries are needed —
-   a stylus reports `hover: none` with `pointer: fine`, and some hybrids report the reverse. */
 
 @media (hover: hover) and (pointer: fine) {
   button:hover:not(:disabled),
@@ -1195,8 +663,6 @@ main[data-room]::after {
   a:hover { text-decoration: underline; }
 }
 
-/* The press. Kept for touch as well as pointer — it is the only acknowledgement a tap gets before
-   the screen changes, and on a slow connection that gap is where somebody taps twice. */
 button:active:not(:disabled),
 .button:active { transform: scale(0.985); }
 
@@ -1206,44 +672,15 @@ button:active:not(:disabled),
   }
 }
 
-/* Selected text, which otherwise takes the browser's own blue — the one colour on the page nobody
-   measured, over a surface this palette chose. */
 ::selection { background: var(--accent-soft); color: var(--on-accent-soft); }
 
-
-/* One line of a plan in the assignment editor: the instruction, its tempo, and Remove.
-
-   **The instruction never gives up width.** `FocusPlanView` on iOS states the rule and this file
-   broke it the moment a tempo field was added beside the text: at 375 points the three controls
-   split a 298px card three ways and the instructor's own words came out at about 95px, showing
-   "Hands se|". *These lines are the instructor's teaching, present at the moment they cannot be in
-   the room, and they are the last thing on this card that should give up width.*
-
-   So the instruction takes the whole row and the tempo and Remove sit beneath it, at **every**
-   width. A basis that wraps only when it has to was tried first and is worse than it sounds: the
-   breakpoint depends on the card, the gaps and the button's own text, so the row broke differently
-   at 375 and at 1280 and would break differently again in a language with a longer word for
-   "Remove". One row of extra height, and a layout with one shape rather than three. */
 .plan-row { flex-wrap: wrap; }
 .plan-row > .grow { flex: 1 0 100%; }
 
-/* ------------------------------------------------------------------ a take that is running
- *
- * **The whole of what recording looked like was a line of muted caption text.** A performer could
- * not tell the app was recording — the caption tier is where hints live — and `--live`, the colour
- * this product reserves for exactly this, was not on the screen. `Brand.swift` generates it,
- * `tokens.css` has carried it since, and the recorder never used it.
- *
- * *Three colours, three jobs: red needs a hand on it now — recording and destroying, and nothing
- * else.* A running take is the canonical case, and it was the one place the rule was not applied.
- */
 .live-bar {
   display: flex;
   align-items: center;
-  /* **Wraps rather than squeezing.** At an accessibility text size the word, the clock and the
-     countdown do not fit one line on a 390px phone, and a flex row that cannot wrap resolves that
-     by shrinking its children — which is how a figure ends up broken across lines. Two lines is
-     the right answer; a split number never is. */
+  
   flex-wrap: wrap;
   gap: 0.6rem;
   margin: 0 0 0.35rem;
@@ -1259,19 +696,16 @@ button:active:not(:disabled),
   height: 0.7rem;
   border-radius: 50%;
   background: var(--live);
-  /* The one animation in this app that repeats forever, and it earns it: a still dot is a label,
-     a beating one is a state. Held to a gentle range so it reads at a glance without pulling the
-     eye off the music. */
+  
   animation: live-pulse 1.6s ease-in-out infinite;
 }
 
 .live-clock {
-  /* `font-variant-numeric` and `white-space` come from `.numeral`, which is where every figure in
-     this app gets them — restating them here would be a second construction of the same rule. */
+  
   flex-shrink: 0;
   font-weight: 650;
   font-size: 1.05rem;
-  /* A clock that changes width every second is a clock somebody watches instead of playing. */
+  
   letter-spacing: 0.01em;
 }
 
@@ -1280,21 +714,15 @@ button:active:not(:disabled),
   50%      { opacity: 0.45; transform: scale(0.82); }
 }
 
-/* **Nothing moves for somebody who asked for nothing to move.** A recording indicator is exactly
-   the case where a still, high-contrast state has to remain readable, so the dot stays fully
-   opaque rather than losing its animation and its meaning together. */
 @media (prefers-reduced-motion: reduce) {
   .live-dot { animation: none; opacity: 1; }
 }
 
-/* The mark landed. Silent on a repeat, because two taps a second apart are one slip of the thumb
-   and telling somebody off for it mid-take is worse than doing nothing. */
 .is-marked {
   border-color: var(--accent);
   color: var(--accent);
 }
 
-/* The word, at the weight a label wants rather than the weight the clock wants. */
 .live-word {
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -1302,35 +730,12 @@ button:active:not(:disabled),
   font-size: 0.78rem;
 }
 
-
-/* ------------------------------------------------------------- text standing on a photograph
- *
- * The four elements that are not inside a card. Raised off `--muted` because `--muted` is what
- * held the whole backdrop down: at #9C9CA6 the 4.5:1 floor allows a background of only 3.6%
- * luminance, and `--canvas` is 0.27% — so the photograph had a ceiling thirteen times lower than
- * the one the ink tier gives it, and every version of this was spent flattening the picture to
- * protect two lines of small text.
- *
- * Moving them is the cheaper trade in both directions: the tagline and the policy link are more
- * readable, and the room behind them is finally a room. **This is not a third text tier** — it is
- * these elements using `--ink`, which is the tier they should have been in the moment they stopped
- * standing on a flat canvas.
- */
 main[data-room] .tagline,
 main[data-room] .policy-link,
 main[data-room] > p > a {
   color: var(--ink);
 }
 
-/* The input level, which says "hearing you" where the dot says "recording".
- *
- * `recorder.js` has had `attachMeter` since the recorder was written and no screen ever passed
- * `onLevel`, so it ran nowhere. Its own docstring is the argument for drawing it: a recorder with
- * no visible response is one people stop trusting and start testing, and a take that turns out to
- * be silence is forty minutes gone.
- *
- * Takes the rest of the row and drops to its own line when the row wraps, so it never squeezes the
- * clock — a figure must never be shrunk to make room for decoration. */
 .live-level {
   flex: 1 1 6rem;
   min-width: 3rem;
@@ -1348,14 +753,10 @@ main[data-room] > p > a {
   background: var(--live);
   transform: scaleX(0);
   transform-origin: left center;
-  /* Compositor-only, and short: a meter that lags is worse than none, because it stops answering
-     the question somebody is asking it. */
+  
   transition: transform 60ms linear;
 }
 
-/* **Not hidden for reduced motion.** This is information rather than decoration — it is the only
-   thing on the screen that answers "is the microphone hearing me". The transition goes; the
-   readout stays. */
 @media (prefers-reduced-motion: reduce) {
   .live-level__fill { transition: none; }
 }

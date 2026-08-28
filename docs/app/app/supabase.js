@@ -47,6 +47,9 @@ function humanize(body, status) {
   const hint = (body?.hint ?? "").toString().trim();
   if (/^IPT_[A-Z_]+$/.test(raw.trim()) && hint) return hint;
 
+  if (raw.includes("IPT_STUDIO_SILENT")) {
+    return "This studio has recording turned off, so a session can't carry one. The practice still counts.";
+  }
   if (lower.includes("rate limit") && lower.includes("email")) {
     return "Too many sign-up emails right now. Wait a few minutes and try again.";
   }
@@ -94,20 +97,39 @@ function humanize(body, status) {
 let session = null;
 let refreshTimer = null;
 
+let sharedDevice = false;
+
+export function useSharedDevice(shared) {
+  sharedDevice = Boolean(shared);
+}
+
+function stores() {
+  const out = [];
+  try { out.push(sessionStorage); } catch { /* disabled, and the next line may still work */ }
+  try { out.push(localStorage); } catch { /* both disabled: one sitting, in memory */ }
+  return out;
+}
+
 function loadSession() {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
+  for (const store of stores()) {
+    try {
+      const raw = store.getItem(SESSION_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch {
+    }
   }
+  return null;
 }
 
 function saveSession(next) {
   session = next;
   try {
-    if (next) localStorage.setItem(SESSION_KEY, JSON.stringify(next));
-    else localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
+    if (next) {
+      const store = sharedDevice ? sessionStorage : localStorage;
+      store.setItem(SESSION_KEY, JSON.stringify(next));
+    }
   } catch {
   }
   scheduleRefresh();
@@ -403,11 +425,16 @@ export function remove(table, query) {
 
 
 export async function uploadClip(objectPath, blob) {
-  return request(`/storage/v1/object/${CLIP_BUCKET_PATH(objectPath)}`, {
-    method: "POST",
-    body: blob,
-    headers: { "content-type": "audio/mp4", "x-upsert": "false" },
-  });
+  try {
+    return await request(`/storage/v1/object/${CLIP_BUCKET_PATH(objectPath)}`, {
+      method: "POST",
+      body: blob,
+      headers: { "content-type": "audio/mp4", "x-upsert": "false" },
+    });
+  } catch (error) {
+    if (error?.status === 409) return { path: objectPath, alreadyThere: true };
+    throw error;
+  }
 }
 
 const CLIP_BUCKET_PATH = (p) => `${CLIP_BUCKET}/${p}`;

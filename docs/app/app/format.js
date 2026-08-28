@@ -126,3 +126,19 @@ export function progressPercent(fraction, isMet) {
   const floored = Math.floor(clamped * 100);
   return isMet ? floored : Math.min(floored, 99);
 }
+
+export function clockValue(time) {
+  const hour = String(time?.hour ?? 0).padStart(2, "0");
+  const minute = String(time?.minute ?? 0).padStart(2, "0");
+  return `${hour}:${minute}`;
+}
+
+export function timeFromClock(value) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(String(value ?? "").trim());
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return { hour, minute };
+}

@@ -14,7 +14,7 @@ import {
   standingStreak,
   weekMet,
 } from "./judgement.js";
-import { amountPhrase, clock, compactDuration, completionPhrase, count, groupedCode, longDuration, noun, progressPercent, receiptSentence, targetPhrase, weekPhrase, whenPhrase } from "./format.js";
+import { amountPhrase, clock, clockValue, compactDuration, completionPhrase, count, groupedCode, longDuration, noun, progressPercent, receiptSentence, targetPhrase, timeFromClock, weekPhrase, whenPhrase } from "./format.js";
 import { instructorPhrase, refusal, refusalSentence } from "./selfreport.js";
 import {
   cleanTempo,
@@ -148,6 +148,7 @@ export function doorScreen({
   const name = el("input", { type: "text", autocomplete: "name", required: true, id: "auth-name" });
   name.value = draft?.displayName ?? "";
   const email = el("input", { type: "email", autocomplete: "email", required: true, id: "auth-email" });
+  const shared = el("input", { type: "checkbox", class: "check", id: "auth-shared" });
   email.value = value ?? "";
   const password = el("input", {
     type: "password",
@@ -187,7 +188,7 @@ export function doorScreen({
             role: role.value,
             bornOn: born.value,
           });
-        } else onSignIn?.(credentials);
+        } else onSignIn?.({ ...credentials, sharedDevice: shared.checked });
       },
     },
     el("h2", { text: isNew ? "Create an account" : "Sign in" }),
@@ -196,6 +197,11 @@ export function doorScreen({
     isNew && field("Your name", name, "What your studio sees. Your instructor is looking for it on a roster."),
     field("Email", email),
     field("Password", password, isNew ? "At least 8 characters." : undefined),
+    !isNew && el("div", { class: "check-list" }, field(
+      "This is a shared computer",
+      shared,
+      "Signs you out when you close this tab, instead of staying signed in.",
+    )),
     isNew && field("You are", role),
     isNew && field(AGE_QUESTION, born, AGE_REASON),
     el("button", {
@@ -397,6 +403,7 @@ export function confirmScreen({ email, onBack, onResend, busy = false, message =
 export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCancel = null, problem = null, busy = false, weekStarts = [] }) {
   const studioName = el("input", { type: "text", required: true, id: "studio-name" });
   const weekStart = { value: String(weekStarts.find((d) => d.isStandard)?.value ?? 2) };
+  const wordsReady = weekStarts.length > 0;
   const code = el("input", {
     type: "text",
     required: true,
@@ -463,7 +470,17 @@ export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCanc
               + "It cannot be changed later, because it decides which week every past session counts in.",
           }),
         ),
-        el("button", { style: "width:100%", type: "submit", disabled: busy, text: "Create studio" }),
+        !wordsReady && el("p", {
+          class: "caption",
+          text: "Getting the week-start options. A studio's week cannot be changed once it is made, "
+            + "so this waits rather than choosing one for you.",
+        }),
+        el("button", {
+          style: "width:100%",
+          type: "submit",
+          disabled: busy || !wordsReady,
+          text: "Create studio",
+        }),
       ),
     ),
     onCancel
@@ -817,12 +834,12 @@ export function assignmentsScreen(store, { onPrompt, onNew, onEdit, onDuplicate,
           : el("h3", { text: assignment.title }),
         assignment.is_optional
           ? audience.length
-            ? pill(`${metCount} of ${audience.length} took it on`)
+            ? pill(`${metCount} of ${audience.length} took it on`, undefined, { wraps: true })
             : pill("Optional")
           : audience.length
           ? pill(`${metCount} of ${audience.length} met it this week`,
-                 metCount === audience.length ? "met" : undefined)
-          : pill(performers.length ? "No one assigned" : "No performers yet"),
+                 metCount === audience.length ? "met" : undefined, { wraps: true })
+          : pill(performers.length ? "No one assigned" : "No performers yet", undefined, { wraps: true }),
       ),
       assignment.section && el("p", { class: "caption", text: assignment.section }),
       bylines.line(assignment) && el("p", { class: "caption", text: bylines.line(assignment) }),
@@ -1141,7 +1158,7 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
     atCap.hidden = !full;
   };
 
-  const addPoint = (text = "", tempo = null) => {
+  const addPoint = (text = "", tempo = null, id = null) => {
     if (points.children.length >= MAX_POINTS) return null;
     const input = el("input", { type: "text", maxlength: "80" });
     input.value = text;
@@ -1154,7 +1171,11 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
     beat.value = tempo == null ? "" : String(tempo);
     const row = el(
       "div",
-      { class: "row plan-row", style: "gap:0.5rem; align-items:end" },
+      {
+        class: "row plan-row",
+        style: "gap:0.5rem; align-items:end",
+        ...(id ? { "data-point-id": id } : {}),
+      },
       el("div", { class: "grow" }, field("Thing to work on", input)),
       el("div", {}, field("♩ =", beat)),
       el("button", {
@@ -1169,7 +1190,9 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
     renumber();
     return input;
   };
-  for (const point of assignment?.focus_points ?? []) addPoint(point.text, point.tempo ?? null);
+  for (const point of assignment?.focus_points ?? []) {
+    addPoint(point.text, point.tempo ?? null, point.id ?? null);
+  }
   renumber();
 
   const wholeStudio = el("input", { type: "checkbox", id: "a-whole", class: "check" });
@@ -1259,6 +1282,7 @@ export function assignmentEditorScreen(store, { assignment = null, onSave, onCan
             takeMinutes: Number(takeLength.value) || null,
             focusPoints: [...points.querySelectorAll("[data-point]")]
               .map((row, position) => ({
+                id: row.dataset.pointId || undefined,
                 text: row.querySelector('input[type="text"]').value.trim(),
                 tempo: cleanTempo(row.querySelector('input[type="number"]').value),
                 position,
@@ -1680,6 +1704,14 @@ export function practiceScreen(store, {
   const spanStart = viewed.weeks[0].start;
   const inRange = store.logs()
     .filter((l) => l.startedAt >= spanStart && l.startedAt < week.end);
+
+  const loggedSeconds = inRange.reduce((n, l) => n + (l.duration ?? 0), 0);
+  const uncountedSeconds = Math.max(0, loggedSeconds - totalSeconds);
+  const uncountedNote = () => uncountedSeconds > 0 && el("p", {
+    class: "caption",
+    text: `${compactDuration(uncountedSeconds)} of this isn't counted toward the work: sessions `
+      + "under two minutes, and any logged against work that is no longer assigned to you.",
+  });
   const mySessions = inRange;
 
   const myMarks = new Map();
@@ -1736,7 +1768,8 @@ export function practiceScreen(store, {
           { class: "grow stack", style: "gap:0.45rem; min-width:8.75rem" },
           el("div", { class: "numeral", style: "font-size:1.25rem; font-weight:700", text: longDuration(totalSeconds) }),
           el("p", { class: "caption", text: "practiced" }),
-          streak >= 2 && pill(`${streak}-week streak`, "accent"),
+          uncountedNote(),
+          streak >= 2 && pill(`${streak}-week streak`, "accent", { wraps: true }),
           isMet && pill("Everything assigned this week is done", "met", { wraps: true }),
         ),
       )
@@ -2311,11 +2344,21 @@ export function standingsScreen(store, { onDisplay } = {}) {
       text: "Put the top ten on the screen",
       onClick: () => onDisplay(),
     }),
-    el(
-      "ol",
-      { class: "stack", style: "list-style:none; margin:0; padding:0" },
-      standings.map((s) => {
-        const person = people[s.performerId];
+    standings.length === 0
+      ? emptyState(
+        "No standings yet",
+        "Once performers join and start logging, this ranks the studio.",
+      )
+      : standings.every((s) => (s.points ?? 0) === 0)
+      ? emptyState(
+        "Nothing on the board yet",
+        "The first practice of the week puts the first name up here.",
+      )
+      : el(
+        "ol",
+        { class: "stack", style: "list-style:none; margin:0; padding:0" },
+        standings.map((s) => {
+          const person = people[s.performerId];
         const isMe = person?.id === me.id;
         return el(
           "li",
@@ -2325,14 +2368,14 @@ export function standingsScreen(store, { onDisplay } = {}) {
             "aria-current": isMe ? "true" : undefined,
           },
           el("span", { class: "rank numeral", text: `${s.rank}` }),
-          avatar(person),
+          avatar(person ?? { id: s.performerId, display_name: "Someone" }),
           el(
             "div",
             { class: "grow stack", style: "gap:0.2rem" },
             el(
               "div",
               { class: "row", style: "gap:0.5rem; flex-wrap:wrap" },
-              el("span", { style: "font-weight:600", text: person.display_name }),
+              el("span", { style: "font-weight:600", text: person?.display_name ?? "Someone" }),
               isMe && pill("You", "accent"),
             ),
             el(
@@ -2340,7 +2383,6 @@ export function standingsScreen(store, { onDisplay } = {}) {
               { class: "row", style: "gap: 0.5rem; flex-wrap: wrap" },
               el("span", {
                 class: "caption",
-                style: "white-space: nowrap",
                 text: `${completionPhrase(s.assignmentsMet, s.assignmentsAssigned)} of assigned work`,
               }),
               el("span", {
@@ -2713,6 +2755,7 @@ export function remindersScreen({
   volumes,
   isInstructor,
   onVolume,
+  onPreference = null,
   onEnable,
   onDisable,
   busy = false,
@@ -2838,6 +2881,89 @@ export function remindersScreen({
         ),
       ),
     ),
+    subscribed && preferences && card(
+      { class: "stack" },
+      el("h2", { text: "When" }),
+      field(
+        isInstructor ? "Daily digest" : "Daily reminder",
+        (() => {
+          const at = el("input", { type: "time", id: "daily-time" });
+          at.value = clockValue(preferences.dailyTime);
+          at.addEventListener("change", () => {
+            const parsed = timeFromClock(at.value);
+            if (parsed) onPreference?.({ dailyTime: parsed });
+          });
+          return at;
+        })(),
+        isInstructor
+          ? "When the day's submissions are summarized."
+          : "After rehearsal, before it gets late.",
+      ),
+
+      (() => {
+        const on = el("input", { type: "checkbox", class: "check", id: "quiet-hours" });
+        on.checked = preferences.quietHours != null;
+        const from = el("input", { type: "time", id: "quiet-from" });
+        const to = el("input", { type: "time", id: "quiet-to" });
+        from.value = clockValue(preferences.quietHours?.start ?? { hour: 21, minute: 30 });
+        to.value = clockValue(preferences.quietHours?.end ?? { hour: 7, minute: 30 });
+        const times = el(
+          "div",
+          { class: "stack", style: "gap:0.5rem", hidden: on.checked ? undefined : true },
+          field("From", from),
+          field("To", to),
+        );
+        const send = () => {
+          if (!on.checked) return onPreference?.({ quietHours: null });
+          const start = timeFromClock(from.value);
+          const end = timeFromClock(to.value);
+          if (start && end) onPreference?.({ quietHours: { start, end } });
+        };
+        on.addEventListener("change", () => { times.hidden = !on.checked; send(); });
+        from.addEventListener("change", send);
+        to.addEventListener("change", send);
+        return el(
+          "div",
+          { class: "stack", style: "gap:0.5rem" },
+          el("div", { class: "check-list" }, field(
+            "Quiet hours",
+            on,
+            on.checked ? "Nothing arrives between these times." : "Reminders can arrive at any time.",
+          )),
+          times,
+        );
+      })(),
+    ),
+
+    subscribed && preferences && card(
+      { class: "stack" },
+      el("h2", { text: "What" }),
+      el(
+        "div",
+        { class: "check-list" },
+        ...(isInstructor
+          ? [
+              ["wantsListeningNudge", "Takes waiting to be heard",
+               "A nudge when a recording has been waiting a few days. Nothing arrives if nobody is waiting."],
+              ["wantsWeeklySummary", "Weekly summary", "One note as the practice week closes."],
+            ]
+          : [
+              ["wantsStreakAlerts", "Streak about to break",
+               "Near the end of a week where a streak you've built is still on the line."],
+              ["wantsLastChance", "Last day of the practice week",
+               "One reminder on the final day if a target is still open."],
+              ["wantsWeeklyWrap", "Weekly wrap-up",
+               "What you practiced and where your streak stands, once the week closes."],
+            ]
+        ).map(([key, title, detailText]) => {
+          const box = el("input", { type: "checkbox", class: "check", id: `pref-${key}` });
+          box.checked = preferences[key] !== false;
+          box.addEventListener("change", () => onPreference?.({ [key]: box.checked }));
+          return field(title, box, detailText);
+        }),
+      ),
+    ),
+
     capability === "granted" && card(
       { class: "stack" },
       el("h2", { text: "What this can't do yet" }),
@@ -3050,6 +3176,37 @@ export function scoringScreen(store, { presets, onChoose, onBack, busy = false, 
         ),
         problem && notice(problem, { kind: "error", role: "alert" }),
       ),
+
+    card(
+      { class: "stack" },
+      el("h2", { text: "What it pays" }),
+      ...[
+        ["Meeting a weekly target", `+${rules.completionPoints}`, null],
+        ["Each extra week in a row", `+${rules.streakBonusPerWeek}`, `up to ${rules.streakBonusCap}`],
+        ...(recordsAudio(store)
+          ? [["A clip attached", `+${rules.clipBonus}`, `up to ${rules.clipBonusWeeklyCap} a week`]]
+          : []),
+        [`Every ${rules.minutesPerBlock} minutes practiced`, `+${rules.minutePointsPerBlock}`,
+         `up to ${rules.minutePointsWeeklyCap} a week`],
+      ].map(([label, points, note]) =>
+        el(
+          "div",
+          { class: "row", style: "gap:0.85rem; align-items:baseline" },
+          el(
+            "div",
+            { class: "grow stack", style: "gap:0.1rem" },
+            el("span", { text: label }),
+            note && el("span", { class: "caption", text: note }),
+          ),
+          el("span", { class: "numeral no-shrink", style: "color: var(--accent)", text: points }),
+        )
+      ),
+      el("p", {
+        class: "caption",
+        text: "Time is worth the least on purpose. Finishing the work is what counts: leaving a "
+          + "timer running all week scores less than one completed assignment.",
+      }),
+    ),
 
     card(
       { class: "stack" },
@@ -3460,6 +3617,7 @@ export function seasonScreen(
       "aria-label": "The season summary, as text",
       text,
     }),
+    el("pre", { class: "season-print", "aria-hidden": "true", text }),
     el(
       "div",
       { class: "row", style: "gap:0.5rem; flex-wrap:wrap" },
