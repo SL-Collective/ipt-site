@@ -163,7 +163,7 @@ export function uncoveredInstructions({ assignments = [], weeks = [], marks = []
     const audience = assignmentAudience({ assignment, performers, weeks: activeWeeks, memberSince });
     if (audience.length === 0) continue;
     const its = byAssignment.get(assignment.id) ?? [];
-    const coverage = focusCoverage({ points, marks: its, rosterCount: audience.length });
+    const coverage = focusCoverage({ points, marks: its, audience: audience.map((p) => p.id) });
     for (const line of coverage.untouched) out.push(`${assignment.title}: ${line.point.text}`);
   }
 

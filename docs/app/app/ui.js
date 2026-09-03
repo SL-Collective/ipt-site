@@ -59,6 +59,7 @@ export function avatar(person) {
 export function performerRow(person, week, {
   streak = 0, onOpen = null,
   periodLabel = "this week", metNoun = "met this week",
+  showsInstrument = true,
 } = {}) {
   const rate = week.assigned ? `${week.met} of ${week.assigned}` : completionPhrase(week.met, week.assigned);
   const fraction = week.assigned ? week.met / week.assigned : 0;
@@ -66,7 +67,7 @@ export function performerRow(person, week, {
 
   const body = el(
     "div",
-    { class: "grow stack", style: "gap: 0.4rem" },
+    { class: "grow stack", style: "gap: 0.4rem; flex-basis: 0" },
     el(
       "div",
       { class: "row-between" },
@@ -77,7 +78,7 @@ export function performerRow(person, week, {
     el(
       "div",
       { class: "row", style: "gap: 0.5rem; flex-wrap: wrap" },
-      person.instrument && el("span", { class: "caption", text: person.instrument }),
+      showsInstrument && person.instrument && el("span", { class: "caption", text: person.instrument }),
       streak >= 2 && pill(`${streak}-week streak`, "accent", { wraps: true }),
       week.clips > 0 && el("span", { class: "caption", text: count(week.clips, "clip") }),
       el("span", { class: "caption", text: compactDuration(week.seconds) }),
@@ -135,11 +136,11 @@ export function ring(fraction, centreText, subText) {
   );
 }
 
-export function heading(title, trailing) {
+export function heading(title, trailing, { level = 2 } = {}) {
   return el(
     "div",
     { class: "row-between" },
-    el("h2", { text: title }),
+    el(level === 3 ? "h3" : "h2", { text: title }),
     typeof trailing === "string" ? el("span", { class: "caption numeral", text: trailing })
       : (trailing || null),
   );
@@ -229,5 +230,17 @@ export function weekStrip(rows) {
           + ` background:${!r.hasWork || r.seconds === 0 ? "var(--inset)" : r.isMet ? "var(--met)" : "var(--accent)"}`,
       })
     ),
+  );
+}
+
+export function rowMenu(label, items) {
+  const live = items.filter(Boolean);
+  if (!live.length) return null;
+  return el(
+    "details",
+    { class: "row-menu no-shrink" },
+    el("summary", { class: "row-menu__button", "aria-label": label },
+       el("span", { "aria-hidden": "true", text: "\u22ef" })),
+    el("div", { class: "row-menu__items stack" }, ...live),
   );
 }

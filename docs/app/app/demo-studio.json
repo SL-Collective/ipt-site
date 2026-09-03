@@ -118,10 +118,20 @@
     },
     {
       "focusPoints" : [
-        "Hands separate through the roll figures",
-        "mm. 17–24 four times clean before moving on",
-        "Sticking as written, no rewrites",
-        "One run at tempo, recorded"
+        {
+          "tempo" : 72,
+          "text" : "Hands separate through the roll figures"
+        },
+        {
+          "text" : "mm. 17–24 four times clean before moving on"
+        },
+        {
+          "text" : "Sticking as written, no rewrites"
+        },
+        {
+          "tempo" : 88,
+          "text" : "One run at tempo, recorded"
+        }
       ],
       "id" : "assignment-1",
       "isOptional" : false,
@@ -133,9 +143,15 @@
     },
     {
       "focusPoints" : [
-        "Count the two bars of rest out loud every time",
-        "Dynamics at letter C, it is marked piano",
-        "Play it with the recording once"
+        {
+          "text" : "Count the two bars of rest out loud every time"
+        },
+        {
+          "text" : "Dynamics at letter C, it is marked piano"
+        },
+        {
+          "text" : "Play it with the recording once"
+        }
       ],
       "id" : "assignment-2",
       "isOptional" : false,
@@ -526,7 +542,7 @@
         "question" : "A performer's practice isn't showing up."
       },
       {
-        "answer" : "Settings → Scoring → No points. The standings disappear rather than sitting there empty, and assignments, practice and recordings work exactly the same. Plenty of programs run without a leaderboard.",
+        "answer" : "You → Scoring → No points. The standings disappear rather than sitting there empty, and assignments, practice and recordings work exactly the same. Plenty of programs run without a leaderboard.",
         "question" : "Can I turn the points off?"
       }
     ],
@@ -548,7 +564,7 @@
         "question" : "A performer's practice isn't showing up."
       },
       {
-        "answer" : "This studio is set to No points, so there is no leaderboard and no scores anywhere. Settings → Scoring turns them back on.",
+        "answer" : "This studio is set to No points, so there is no leaderboard and no scores anywhere. You → Scoring turns them back on.",
         "question" : "Where did the standings go?"
       }
     ],
@@ -562,7 +578,7 @@
         "question" : "Why did somebody's streak not break over the holidays?"
       },
       {
-        "answer" : "Not while this studio is set not to record. Settings → Recording turns it back on. Until it is on, the app captures no audio at all and there is nothing to store.",
+        "answer" : "Not while this studio is set not to record. You → Recording turns it back on. Until it is on, the app captures no audio at all and there is nothing to store.",
         "question" : "Can performers record a take?"
       },
       {
@@ -570,7 +586,7 @@
         "question" : "A performer's practice isn't showing up."
       },
       {
-        "answer" : "This studio is set to No points, so there is no leaderboard and no scores anywhere. Settings → Scoring turns them back on.",
+        "answer" : "This studio is set to No points, so there is no leaderboard and no scores anywhere. You → Scoring turns them back on.",
         "question" : "Where did the standings go?"
       }
     ],
@@ -584,7 +600,7 @@
         "question" : "Why did somebody's streak not break over the holidays?"
       },
       {
-        "answer" : "Not while this studio is set not to record. Settings → Recording turns it back on. Until it is on, the app captures no audio at all and there is nothing to store.",
+        "answer" : "Not while this studio is set not to record. You → Recording turns it back on. Until it is on, the app captures no audio at all and there is nothing to store.",
         "question" : "Can performers record a take?"
       },
       {
@@ -592,7 +608,7 @@
         "question" : "A performer's practice isn't showing up."
       },
       {
-        "answer" : "Settings → Scoring → No points. The standings disappear rather than sitting there empty, and assignments and practice work exactly the same. Plenty of programs run without a leaderboard.",
+        "answer" : "You → Scoring → No points. The standings disappear rather than sitting there empty, and assignments and practice work exactly the same. Plenty of programs run without a leaderboard.",
         "question" : "Can I turn the points off?"
       }
     ],
@@ -616,7 +632,7 @@
         "title" : "Start a session before you play"
       },
       {
-        "body" : "Recording is optional. If you add one, your instructor can hear how it sounded and write back about it. Mark this spot flags a moment while you are recording, so they go straight to the part you meant.",
+        "body" : "Recording is optional. If you add one, your instructor can hear how it sounded and write back about it. Mark this spot flags a moment for them, while you record or when you play it back afterwards, so they go straight to the part you meant.",
         "title" : "Add a recording if you want to"
       },
       {

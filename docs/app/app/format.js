@@ -15,6 +15,25 @@ export function compactDuration(seconds) {
   return `${hours}h ${String(minutes).padStart(2, "0")}m`;
 }
 
+export function markerPhrase(count, isOwn) {
+  if (!Number.isFinite(count) || count < 1) return null;
+  const who = isOwn ? "You" : "They";
+  return count === 1 ? `${who} marked one spot` : `${who} marked ${count} spots`;
+}
+
+export function startPhrase(count) {
+  if (!Number.isFinite(count) || count < 1) return null;
+  return count === 1
+    ? "Starts just before the spot they marked"
+    : `Starts just before the first of ${count} spots they marked`;
+}
+
+export const MARKER_LEAD_IN_SECONDS = 3;
+
+export function playbackStart(at) {
+  return Math.max(0, at - MARKER_LEAD_IN_SECONDS);
+}
+
 export function clock(seconds) {
   const total = Math.max(0, Math.floor(seconds));
   const h = Math.floor(total / 3600);

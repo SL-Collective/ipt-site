@@ -276,6 +276,7 @@ export class SupabaseStore {
         records_audio: studio.records_audio ?? true,
         join_code: studio.join_code,
         id: studio.id,
+        owner_id: studio.owner_id ?? null,
       },
       rules: effectiveRules(studio.scoring, studio.records_audio ?? true),
       weeks: weeksBetween(new Date(studio.created_at), now, studio.week_starts_on, zone),
@@ -386,6 +387,19 @@ export class SupabaseStore {
   performers() { return this.roster().filter((p) => p.role === "performer"); }
   assignments() { return this.#snapshot?.assignments ?? []; }
   logs() { return this.#snapshot?.logs ?? []; }
+
+  async hasPracticeHistory() {
+    try {
+      const me = currentUserId();
+      if (!me) return false;
+      const rows = await selectAll("practice_logs", query({
+        performer_id: `eq.${uuid(me)}`, select: "id", order: "id", limit: "1",
+      }));
+      return (rows ?? []).length > 0;
+    } catch {
+      return false;
+    }
+  }
   facts() { return this.#snapshot?.facts ?? []; }
   focusMarks() { return this.#snapshot?.focusMarks ?? []; }
   terms() { return this.#snapshot?.terms ?? []; }
@@ -552,6 +566,35 @@ export class SupabaseStore {
   async setScoring(rules) {
     const rows = await patch("studios", query({ id: `eq.${uuid(this.#studioId)}`, select: "*" }), {
       scoring: rules ?? null,
+    });
+    if (!rows?.[0]) throw StoreError.notPermitted();
+    await this.reload();
+    return this.studio();
+  }
+
+  async rotateJoinCode() {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const code = randomJoinCode();
+      try {
+        await rpc("rotate_join_code", { p_studio: uuid(this.#studioId), p_code: code });
+        await this.reload();
+        return this.studio();
+      } catch (error) {
+        if (String(error?.message ?? "").includes("23505")) continue;
+        if (isMissingFunction(error)) {
+          throw StoreError.invalidDraft("Changing the join code needs an update on the server that has not been applied yet.");
+        }
+        throw error;
+      }
+    }
+    throw StoreError.invalidDraft("No unused code was found. Try again.");
+  }
+
+  async renameStudio(name) {
+    const trimmed = String(name ?? "").trim();
+    if (!trimmed || trimmed.length > 80) throw StoreError.invalidDraft("A studio name is between 1 and 80 characters.");
+    const rows = await patch("studios", query({ id: `eq.${uuid(this.#studioId)}`, select: "*" }), {
+      name: trimmed,
     });
     if (!rows?.[0]) throw StoreError.notPermitted();
     await this.reload();
@@ -748,6 +791,17 @@ export class SupabaseStore {
     });
     await this.reload();
     await this.applyPending();
+  }
+
+  async unacknowledgeLog(id) {
+    const rows = await patch("practice_logs", query({ id: `eq.${uuid(id)}` }), {
+      heard_at: null,
+      instructor_note: null,
+    });
+    if (!rows?.[0]) throw StoreError.notPermitted();
+    await this.reload();
+    await this.applyPending();
+    return logFrom(rows[0]);
   }
 
   async acknowledgeLog(id, note = null) {

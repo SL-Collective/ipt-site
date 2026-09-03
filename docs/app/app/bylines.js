@@ -5,6 +5,11 @@ export function bylinesNeeded(assignments, members) {
   return authors.size > 1;
 }
 
+export function heardFrom(instructorCount, ownerName) {
+  if (instructorCount > 1 || !ownerName) return "From your instructor";
+  return `From ${ownerName}`;
+}
+
 export function assignmentBylines(assignments, members, viewer) {
   const shown = bylinesNeeded(assignments, members);
   const names = new Map(members.map((m) => [m.id, m.display_name]));

@@ -1,4 +1,6 @@
 
+import { clock } from "./format.js";
+
 const KEY = "ipt.recording";
 
 export const STANDARD_COUNT_IN_SECONDS = 3;
@@ -56,11 +58,25 @@ function sleep(ms, signal) {
 export const MARKER_DEBOUNCE_SECONDS = 1.0;
 
 export function acceptsMark(at, markers) {
-  const last = markers[markers.length - 1];
-  if (last == null) return true;
-  return at - last >= MARKER_DEBOUNCE_SECONDS;
+  return !markers.some((m) => Math.abs(at - m) < MARKER_DEBOUNCE_SECONDS);
 }
 
 export function marking(at, markers) {
-  return acceptsMark(at, markers) ? [...markers, at] : markers;
+  return acceptsMark(at, markers) ? [...markers, at].sort((a, b) => a - b) : markers;
+}
+
+export function removingMark(at, markers) {
+  let nearest = null;
+  for (const m of markers) {
+    if (nearest === null || Math.abs(m - at) < Math.abs(nearest - at)) nearest = m;
+  }
+  if (nearest === null || Math.abs(nearest - at) >= 0.01) return markers;
+  return markers.filter((m) => m !== nearest);
+}
+
+
+export function lossPhrase(duration, markers) {
+  if (!(markers > 0)) return null;
+  const spots = markers === 1 ? "1 marked spot" : `${markers} marked spots`;
+  return `${clock(duration)} with ${spots}. It cannot be brought back.`;
 }

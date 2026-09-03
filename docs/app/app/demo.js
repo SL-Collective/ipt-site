@@ -37,7 +37,12 @@ export async function buildDemoStudio({
     target: { kind: a.targetKind, amount: a.targetAmount },
     is_optional: a.isOptional,
     take_minutes: a.takeMinutes ?? null,
-    focus_points: a.focusPoints.map((text, position) => ({ id: `${a.id}-fp-${position}`, text, position })),
+    focus_points: a.focusPoints.map((point, position) => ({
+      id: `${a.id}-fp-${position}`,
+      text: point.text,
+      tempo: point.tempo ?? null,
+      position,
+    })),
     opens_at: weeks[Math.min(a.opensInWeek, lastWeek)].start.toISOString(),
     closes_at: null,
     whole_studio: a.audience == null,
@@ -83,6 +88,7 @@ export async function buildDemoStudio({
       created_at: studioCreatedAt.toISOString(),
       scoring: data.scoring ?? null,
       records_audio: data.recordsAudio ?? true,
+      owner_id: "instructor-0",
     },
     rules: effectiveRules(data.scoring, data.recordsAudio ?? true),
     weeks,
@@ -225,6 +231,8 @@ export class DemoStore {
   deleteStudio() { refuse("manageRoster"); }
   setScoring() { refuse("setScoring"); }
   setRecordsAudio() { refuse("manageRoster"); }
+  renameStudio() { refuse("manageRoster"); }
+  rotateJoinCode() { refuse("manageRoster"); }
   correctMember() { refuse("manageRoster"); }
 
   saveTerm() { refuse("setTerms"); }
@@ -248,6 +256,7 @@ export class DemoStore {
   applyPending() {}
   selectStudio() {}
   acknowledgeLog() { refuse("acknowledgeSession"); }
+  unacknowledgeLog() { refuse("acknowledgeSession"); }
   setFocusMark() { refuse("markFocusPoint"); }
   sendNudge() { refuse("sendNudge"); }
 
@@ -256,4 +265,5 @@ export class DemoStore {
   async registerPushSubscription() {}
   async forgetPushSubscription() {}
   async replaceReminderPlan() {}
+  async hasPracticeHistory() { return false; }
 }

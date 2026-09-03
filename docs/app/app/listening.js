@@ -42,6 +42,12 @@ export function savingPhrase(rate, backlogSeconds) {
   return `About ${longDuration(at)} instead of ${longDuration(backlogSeconds)}`;
 }
 
+export function nextUnheard(done, from) {
+  for (let i = from + 1; i < done.length; i += 1) if (!done[i]) return i;
+  for (let i = 0; i <= from && i < done.length; i += 1) if (!done[i]) return i;
+  return -1;
+}
+
 export function finishedPhrase(heard) {
   if (heard === 0) return "Nothing waiting to be heard.";
   if (heard === 1) return "One clip heard. That's everyone.";
@@ -94,6 +100,13 @@ export function heardPhrase(log, now = new Date(), timeZone = undefined) {
   return `Waiting to be heard for ${days} days`;
 }
 
+export function successionPhrase(handedOver) {
+  if (!(handedOver > 0)) return null;
+  return handedOver === 1
+    ? "1 studio has another instructor in it and passes to them instead."
+    : `${handedOver} studios have another instructor in them and pass to them instead.`;
+}
+
 export function deletionCost({ studios, logs, roster, profileId, selectedStudioId = null }) {
   const owned = studios.filter((s) => s.owner_id === profileId);
 
@@ -120,11 +133,9 @@ export function deletionCost({ studios, logs, roster, profileId, selectedStudioI
   const clips = counted.filter((l) => l.hasClip).length;
   if (clips) parts.push(plural(clips, "1 recording", "recordings"));
   const seconds = counted.reduce((n, l) => n + l.duration, 0);
-  if (seconds >= 300) parts.push(`${Math.floor(seconds / 3600)} hr ${String(Math.floor((seconds % 3600) / 60)).padStart(2, "0")} min of logged practice`);
+  if (seconds >= 300) parts.push(`${longDuration(seconds)} of logged practice`);
 
-  const succession = selectedIsSaved
-    ? "1 studio isn't deleted: somebody else instructs in it, so it passes to them."
-    : null;
+  const succession = successionPhrase(selectedIsSaved ? 1 : 0);
 
   if (!parts.length) {
     return {
@@ -152,9 +163,7 @@ export function removalCost({ logs, performerId }) {
   const clips = theirs.filter((l) => l.hasClip).length;
   if (clips) parts.push(clips === 1 ? "1 recording" : `${clips} recordings`);
   const seconds = theirs.reduce((n, l) => n + l.duration, 0);
-  if (seconds >= 300) {
-    parts.push(`${Math.floor(seconds / 3600)} hr ${String(Math.floor((seconds % 3600) / 60)).padStart(2, "0")} min`);
-  }
+  if (seconds >= 300) parts.push(longDuration(seconds));
   const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
   return `This takes ${list} out of the studio's standings and totals, including weeks `
     + `already finished. ${undoable}`;

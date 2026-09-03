@@ -3,6 +3,8 @@ import { CLIP_BUCKET, CONFIG } from "./config.js";
 
 const SESSION_KEY = "ipt.session";
 
+export const PASSWORD_TOO_SHORT = "That password is too short. Use at least 8 characters.";
+
 export class StoreError extends Error {
   constructor(kind, message, status) {
     super(message);
@@ -66,7 +68,7 @@ function humanize(body, status) {
     return "That doesn't look like an email address that can receive mail. Check it for typos.";
   }
   if (lower.includes("password should be at least") || lower.includes("weak_password")) {
-    return "That password is too short. Use at least 8 characters.";
+    return PASSWORD_TOO_SHORT;
   }
   if (lower.includes("email not confirmed")) {
     return "Check your email and tap the link to confirm your address, then sign in.";

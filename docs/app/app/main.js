@@ -1,5 +1,13 @@
 
 import { el, replace } from "./dom.js";
+import {
+  CONFIRM_ACTION,
+  CONFIRM_TITLE,
+  checkEmail,
+  confirmation,
+  sentTo,
+} from "./email-change.js";
+import { studioExitConfirmation } from "./settings-summary.js";
 import { field } from "./ui.js";
 import { assignmentCost, deletionCost, removalCost } from "./listening.js";
 import { markMilestoneSeen, seenMilestones, markWelcomeSeen, seenWelcomes } from "./milestones.js";
@@ -35,6 +43,7 @@ import {
   signIn,
   signUp,
   StoreError, useSharedDevice,
+  PASSWORD_TOO_SHORT,
 } from "./supabase.js";
 import { requestDurableStorage } from "./outbox.js";
 import {
@@ -87,7 +96,11 @@ const state = {
   editing: null,
   viewing: null,
   rosterSearch: "",
+  groupBySection: (() => { try { return localStorage.getItem("ipt.groupBySection") === "true"; } catch { return false; } })(),
   weekStarts: [],
+  weekStartsFailed: false,
+  hasPracticed: null,
+  askedPracticeHistory: false,
   viewedSpan: null,
   demoMilestonesSeen: null,
   suggestions: [],
@@ -306,7 +319,7 @@ function report(error) {
       break;
     case "notSignedIn":
       state.store = null;
-      state.session = null;
+      endSession();
       state.editing = null;
       state.viewing = null;
       state.purchase = undefined;
@@ -694,7 +707,7 @@ async function leaveStudio() {
   const studio = state.store.studio();
   const sure = await askToConfirm({
     title: `Leave ${studio.name}?`,
-    message: "You stop seeing this studio. Your instructor keeps the sessions and recordings you already sent them; the studio's standings and totals stop counting you. Rejoining with the join code brings it all back.",
+    message: studioExitConfirmation(state.store.isInstructor),
     confirmText: "Leave it",
   });
   if (!sure) return;
@@ -709,6 +722,27 @@ async function leaveStudio() {
   }
 }
 
+
+async function rotateJoinCode() {
+  const sure = await askToConfirm({
+    title: "Replace the join code?",
+    message: "Everyone already in this studio stays in. The old code stops working now, and you "
+      + "read out the new one.",
+    confirmText: "Replace it",
+  });
+  if (!sure) return;
+  await settingsWrite(async () => {
+    await state.store.rotateJoinCode();
+    announce("The join code was replaced");
+  });
+}
+
+async function renameStudio(name) {
+  await settingsWrite(async () => {
+    await state.store.renameStudio(name);
+    announce("The studio was renamed");
+  });
+}
 
 async function saveProfile(draft) {
   await settingsWrite(async () => {
@@ -757,23 +791,19 @@ function save(text, name, type) {
 }
 
 async function changeEmail(wanted) {
-  const current = state.store.profile()?.email;
-  if (wanted === current) {
-    settingsSaid("That is already your address.");
-    return;
-  }
+  const problem = checkEmail(wanted, state.store.profile()?.email);
+  if (problem) { settingsSaid(problem); return; }
+
   const sure = await askToConfirm({
-    title: "Change your sign-in address?",
-    message: `IPT will send a confirmation link to ${wanted}. Nothing changes until you follow it, `
-      + `so you keep signing in with the address you have now until then. If ${wanted} is wrong, `
-      + `the link goes nowhere and nothing happens.`,
-    confirmText: "Send the link",
+    title: CONFIRM_TITLE,
+    message: confirmation(wanted),
+    confirmText: CONFIRM_ACTION,
   });
   if (!sure) { settingsSaid(""); return; }
 
   await settingsWrite(async () => {
     await state.store.updateEmail(wanted);
-    settingsSaid(`Check ${wanted} for the link. Until you follow it, sign in with your old address.`);
+    settingsSaid(sentTo(wanted));
     announce("A confirmation link was sent to the new address");
   });
 }
@@ -1086,6 +1116,7 @@ function paintScreen() {
   if (state.mode === "door") {
     show(doorScreen({
       mode: state.auth.mode,
+      now: new Date(),
       value: state.auth.email,
       problem: state.auth.problem,
       message: state.auth.message,
@@ -1144,12 +1175,16 @@ function paintScreen() {
 
   if (state.mode === "setup") {
     if (!state.weekStarts.length) loadWeekStarts();
+    if (!state.askedPracticeHistory) loadPracticeHistory();
     show(studioSetupScreen({
       profile: state.store.profile(),
+      hasPracticed: state.hasPracticed,
       problem: state.auth.problem,
       busy: state.auth.busy,
       onCreate: handleCreateStudio,
       weekStarts: state.weekStarts,
+      weekStartsFailed: state.weekStartsFailed,
+      onRetryWeekStarts: () => { state.weekStarts = []; loadWeekStarts(); },
       onJoin: handleJoinStudio,
       onSignOut: handleSignOut,
       onCancel: state.store.hasStudio
@@ -1164,6 +1199,7 @@ function paintScreen() {
     if (!state.selfReportMark) loadSessionMark();
     show(performerScreen(state.store, {
       performer: state.viewing.performer,
+      now: new Date(),
       ...spanControls(state.store),
       selfReportMark: state.selfReportMark,
       suggestions: state.suggestions,
@@ -1179,6 +1215,7 @@ function paintScreen() {
   if (state.editing) {
     show(assignmentEditorScreen(state.store, {
       assignment: state.editing.assignment,
+      now: new Date(),
       busy: state.auth.busy,
       problem: state.editing.problem,
       onSave: saveAssignment,
@@ -1202,8 +1239,9 @@ function paintScreen() {
       onCountIn: (seconds) => { saveCountInSeconds(seconds); },
       onSave: saveSession,
       onBlocked: state.inDemo ? ((name) => showPrompt(name)) : null,
+      onConfirm: askToConfirm,
       onCancel: () => {
-        state.session = null;
+        endSession();
         clearOpenSession();
         render();
         announce("Session discarded");
@@ -1238,10 +1276,12 @@ function paintScreen() {
       if (!state.playbackRates.length) loadPlaybackRates();
       screen = listeningScreen(store, {
         rate: state.playbackRate,
+        now: new Date(),
         rates: state.playbackRates,
         onRateChange: (value) => { state.playbackRate = value; },
         clipURL: (path) => store.clipURL(path),
         onAcknowledge: acknowledge,
+        onUnacknowledge: unacknowledge,
         onBack: () => { location.hash = "#/studio"; },
       });
       title = "Listening";
@@ -1249,6 +1289,7 @@ function paintScreen() {
     case "#/standings":
       screen = isDemo || store.standingsAvailable
         ? standingsScreen(store, {
+          now: new Date(),
           onDisplay: store.isInstructor && (isDemo || store.standingsAvailable)
             ? () => { location.hash = "#/display"; }
             : null,
@@ -1259,6 +1300,7 @@ function paintScreen() {
     case "#/add-session":
       screen = addSessionScreen(store, {
         busy: state.addSession.busy,
+        now: new Date(),
         problem: state.addSession.problem,
         onCancel: () => go("#/practice"),
         onSave: addSession,
@@ -1268,6 +1310,7 @@ function paintScreen() {
     case "#/season":
       screen = seasonScreen(store, {
         canShare: typeof navigator !== "undefined" && typeof navigator.share === "function",
+        now: new Date(),
         said: state.seasonSaid,
         onCopy: copySeason,
         onShare: shareSeason,
@@ -1392,6 +1435,8 @@ function paintScreen() {
           ? () => { location.hash = "#/roster"; }
           : null,
         onSetRecordsAudio: store.isInstructor ? setRecordsAudio : null,
+        onRenameStudio: store.isInstructor ? renameStudio : null,
+        onRotateJoinCode: store.isInstructor ? rotateJoinCode : null,
         onReminders: isDemo ? null : () => { location.hash = "#/reminders"; },
         onSeason: () => { location.hash = "#/season"; },
       });
@@ -1401,6 +1446,7 @@ function paintScreen() {
       if (!state.selfReportMark) loadSessionMark();
       screen = practiceScreen(store, {
         onPrompt,
+        now: new Date(),
         onClipURL: (path) => store.clipURL(path),
         ...spanControls(store),
         seenMilestoneKeys: isDemo ? state.demoMilestonesSeen : seenMilestones(),
@@ -1424,8 +1470,15 @@ function paintScreen() {
       loadStudioOffers();
       screen = studioScreen(store, {
         onPrompt,
+        now: new Date(),
         ...spanControls(store),
         rosterSearch: state.rosterSearch,
+        groupBySection: state.groupBySection,
+        onGroupBySection: (on) => {
+          state.groupBySection = on;
+          try { localStorage.setItem("ipt.groupBySection", String(on)); } catch { /* a private window forgets; the screen still groups */ }
+          render();
+        },
         onRosterSearch: (value) => {
           const field = document.getElementById("roster-search");
           const at = field ? field.selectionStart : null;
@@ -1538,7 +1591,7 @@ async function handleSignOut() {
   await state.store?.signOut?.();
   state.store = null;
   state.viewedSpan = null;
-  state.session = null;
+  endSession();
   state.editing = null;
   state.viewing = null;
   state.purchase = undefined;
@@ -1596,7 +1649,7 @@ async function enterStudio() {
   state.viewedSpan = null;
   state.inDemo = false;
   forgetExportedWords();
-  state.session = null;
+  endSession();
   state.purchase = undefined;
   state.auth = { ...state.auth, busy: false, problem: null, message: null };
 
@@ -1706,6 +1759,12 @@ async function startSession(assignment) {
   announce(`Practicing ${assignment.title}`);
 }
 
+function endSession() {
+  const url = state.session?.draft?.previewURL;
+  if (url) URL.revokeObjectURL(url);
+  state.session = null;
+}
+
 async function recordingCapability(assignment) {
   if (state.store?.studio?.()?.records_audio === false) {
     return { canRecord: false, reason: null };
@@ -1749,7 +1808,7 @@ async function saveSession(draft) {
     return;
   }
 
-  state.session = null;
+  endSession();
   clearOpenSession();
   for (const focusPointId of week ? draft.focusPointIds ?? [] : []) {
     state.store.setFocusMark({
@@ -1892,6 +1951,16 @@ async function removeAssignment() {
     announce("Assignment deleted");
   } catch (error) {
     report(error);
+  }
+}
+
+async function unacknowledge(log) {
+  try {
+    await state.store.unacknowledgeLog(log.id);
+    announce("Taken back");
+  } catch (error) {
+    report(error);
+    throw error;
   }
 }
 
@@ -2045,12 +2114,21 @@ async function handOverStudio(member) {
 }
 
 
+async function loadPracticeHistory() {
+  state.askedPracticeHistory = true;
+  state.hasPracticed = await state.store.hasPracticeHistory();
+  render();
+}
+
 async function loadWeekStarts() {
   if (state.weekStarts.length) return;
+  state.weekStartsFailed = false;
   try {
     state.weekStarts = (await vocabulary()).weekStarts ?? [];
+    state.weekStartsFailed = state.weekStarts.length === 0;
   } catch {
     state.weekStarts = [];
+    state.weekStartsFailed = true;
   }
   render();
 }
@@ -2167,7 +2245,12 @@ async function drainOutbox() {
 }
 
 addEventListener("online", () => {
+  const wasOffline = state.offline;
   state.offline = false;
+  if (!state.store?.flush || state.inDemo) {
+    if (wasOffline) render();
+    return;
+  }
   drainOutbox();
 });
 addEventListener("offline", () => {
@@ -2314,7 +2397,7 @@ function sendPasswordReset(email) {
 
 function saveNewPassword(password) {
   if ((password ?? "").length < 8) {
-    state.auth = { ...state.auth, problem: "At least 8 characters." };
+    state.auth = { ...state.auth, problem: PASSWORD_TOO_SHORT };
     render();
     return;
   }

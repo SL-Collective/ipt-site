@@ -14,16 +14,19 @@ export function cleanTempo(raw) {
 
 export function focusPointPhrase(point) {
   const tempo = cleanTempo(point?.tempo);
-  return tempo == null ? point.text : `${point.text} (♩ = ${tempo})`;
+  return tempo == null ? point.text : `${point.text} (♩\u00a0=\u00a0${tempo})`;
 }
 
 export function linePhrase(line) {
   return `${line.workedCount} of ${line.rosterCount}`;
 }
 
-export function focusCoverage({ points = [], marks = [], rosterCount = 0 }) {
+export function focusCoverage({ points = [], marks = [], audience = [] }) {
+  const roll = audience instanceof Set ? audience : new Set(audience);
+  const rosterCount = roll.size;
   const byPoint = new Map();
   for (const mark of marks) {
+    if (!roll.has(mark.performerId)) continue;
     const who = byPoint.get(mark.focusPointId) ?? new Set();
     who.add(mark.performerId);
     byPoint.set(mark.focusPointId, who);
@@ -102,6 +105,13 @@ export function focusProgress({ points = [], worked = [] }) {
     nextUp: remaining[0] ?? null,
     fraction: total > 0 ? workedCount / total : 0,
     phrase: hasPlan ? `${workedCount} of ${total} worked on` : null,
+    summaryPhrase: !hasPlan
+      ? null
+      : hasPlan && workedCount === total
+      ? "Everything on the plan worked"
+      : remaining[0]
+      ? (workedCount === 0 ? `Next: ${remaining[0].text}` : `${remaining.length} left · ${remaining[0].text}`)
+      : `${workedCount} of ${total} worked on`,
   };
 }
 
