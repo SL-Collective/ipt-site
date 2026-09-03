@@ -413,7 +413,7 @@ export function confirmScreen({ email, onBack, onResend, busy = false, message =
   );
 }
 
-export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCancel = null, problem = null, busy = false, weekStarts = [], weekStartsFailed = false, onRetryWeekStarts = null, hasPracticed = null, onExport = null, exporting = false, exportProblem = null }) {
+export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCancel = null, problem = null, busy = false, weekStarts = [], weekStartsFailed = false, onRetryWeekStarts = null, hasPracticed = null, onExport = null, exporting = false, exportProblem = null, onSaveEmail = null, onDeleteAccount = null }) {
   const studioName = el("input", { type: "text", required: true, id: "studio-name" });
   const weekStart = { value: String(weekStarts.find((d) => d.isStandard)?.value ?? 2) };
   const wordsReady = weekStarts.length > 0;
@@ -530,6 +530,12 @@ export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCanc
         }),
       ),
     ),
+    onSaveEmail && emailCard(profile, onSaveEmail),
+    onDeleteAccount && deleteAccountCard(
+      "Everything IPT holds about you, permanently. The confirmation says exactly how much before anything happens.",
+      onDeleteAccount,
+    ),
+    (onSaveEmail || onDeleteAccount) && policyLinks(),
     onCancel
       ? el("button", { class: "button--quiet", style: "width:100%", type: "button", onClick: onCancel, text: "Back to my studio" })
       : el("button", { class: "button--quiet", style: "width:100%", type: "button", onClick: onSignOut, text: "Sign out" }),
@@ -3109,36 +3115,7 @@ export function youScreen(store, {
         );
       })(),
     ),
-    onSaveEmail && card(
-      { class: "stack" },
-      el("h2", { text: SETTINGS_LABEL }),
-      el("p", {
-        class: "caption",
-        text: SETTINGS_DETAIL,
-      }),
-      (() => {
-        const address = el("input", { type: "email", id: "me-email", required: true });
-        address.value = me?.email ?? "";
-        const said = el("p", { class: "caption", role: "status", text: "" });
-        return el(
-          "form",
-          {
-            class: "stack",
-            onSubmit: (event) => {
-              event.preventDefault();
-              const wanted = address.value.trim();
-              if (!wanted) { said.textContent = "Enter the address you want to use."; return; }
-              said.textContent = "Sending…";
-              onSaveEmail(wanted);
-            },
-          },
-          field("Email address", address),
-          el("button", { class: "button--primary", style: "width:100%", type: "submit",
-                         text: "Change my address" }),
-          said,
-        );
-      })(),
-    ),
+    onSaveEmail && emailCard(me, onSaveEmail),
     onLeaveStudio && card(
       { class: "stack" },
       el("h2", { text: "Leaving" }),
@@ -3166,24 +3143,74 @@ export function youScreen(store, {
     ),
     onSignOut && el("button", { class: "button--quiet", style: "width:100%", type: "button", onClick: onSignOut, text: "Sign out" }),
     onLeave && el("button", { class: "button--quiet", style: "width:100%", type: "button", onClick: onLeave, text: "Leave the demo" }),
-    onDeleteAccount && el(
-      "details",
-      { class: "card stack" },
-      el("summary", { style: "font-weight:600; min-height:44px; display:flex; align-items:center", text: "Delete your account" }),
-      el("p", { class: "caption", text: deletionCost({
-        studios: store.joinedStudios?.() ?? [],
-        logs: store.logs(),
-        roster: store.roster(),
-        profileId: me.id,
-      }).phrase }),
-      el("p", { class: "caption", text: "It cannot be undone, and support cannot bring it back." }),
-      el("button", {
-        style: "width:100%; color: var(--live)",
-        type: "button",
-        onClick: onDeleteAccount,
-        text: "Delete my account",
-      }),
+    onDeleteAccount && deleteAccountCard(deletionCost({
+      studios: store.joinedStudios?.() ?? [],
+      logs: store.logs(),
+      roster: store.roster(),
+      profileId: me.id,
+    }).phrase, onDeleteAccount),
+  );
+}
+
+function emailCard(me, onSaveEmail) {
+  const address = el("input", { type: "email", id: "me-email", required: true });
+  address.value = me?.email ?? "";
+  const said = el("p", { class: "caption", role: "status", text: "" });
+  return card(
+    { class: "stack" },
+    el("h2", { text: SETTINGS_LABEL }),
+    el("p", { class: "caption", text: SETTINGS_DETAIL }),
+    el(
+      "form",
+      {
+        class: "stack",
+        onSubmit: (event) => {
+          event.preventDefault();
+          const wanted = address.value.trim();
+          if (!wanted) { said.textContent = "Enter the address you want to use."; return; }
+          said.textContent = "Sending…";
+          onSaveEmail(wanted);
+        },
+      },
+      field("Email address", address),
+      el("button", { class: "button--primary", style: "width:100%", type: "submit",
+                     text: "Change my address" }),
+      said,
     ),
+  );
+}
+
+function deleteAccountCard(phrase, onDeleteAccount) {
+  return el(
+    "details",
+    { class: "card stack" },
+    el("summary", { style: "font-weight:600; min-height:44px; display:flex; align-items:center", text: "Delete your account" }),
+    el("p", { class: "caption", text: phrase }),
+    el("p", { class: "caption", text: "It cannot be undone, and support cannot bring it back." }),
+    el("button", {
+      style: "width:100%; color: var(--live)",
+      type: "button",
+      onClick: onDeleteAccount,
+      text: "Delete my account",
+      id: "delete-account",
+    }),
+  );
+}
+
+function policyLinks() {
+  const link = (href, text) => el("a", {
+    href, target: "_blank", rel: "noopener", class: "caption policy-link",
+    style: "min-height:44px; padding:0 0.9rem; display:flex; align-items:center", text,
+  });
+  const dot = () => el("span", {
+    class: "caption", "aria-hidden": "true", style: "color: var(--muted); align-self: center", text: "·",
+  });
+  return el(
+    "div",
+    { class: "row", style: "gap: 0; justify-content: center; flex-wrap: wrap" },
+    link("https://iptmusic.com/privacy", "Privacy policy"), dot(),
+    link("https://iptmusic.com/terms", "Terms of use"), dot(),
+    link("https://iptmusic.com/refunds", "Refunds"),
   );
 }
 

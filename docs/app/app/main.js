@@ -757,22 +757,21 @@ async function exportEverything() {
   state.exporting = true;
   render();
   try {
-    const { buildDocument, filename, toCSV, toJSON } = await import("./export.js");
+    const { buildDocument, buildOwnRecord } = await import("./export.js");
     const store = state.store;
-    const mine = store.isInstructor
-      ? store.logs()
-      : store.logs().filter((l) => l.performerId === store.profile()?.id);
-
-    const clipURLs = {};
-    for (const log of mine) {
-      if (!log.clip?.path) continue;
-      try { clipURLs[log.clip.path] = await store.clipURL(log.clip.path); } catch { /* absent */ }
+    if (!store.isInstructor) {
+      const record = await store.ownRecord();
+      const clipURLs = await clipLinks(record.logs);
+      const documents = buildOwnRecord(store.profile(), record, { clipURLs });
+      if (!documents.length) return;
+      await saveDocuments(documents);
+      announce("Your data was downloaded");
+      return;
     }
-
+    const clipURLs = await clipLinks(store.logs());
     const document_ = buildDocument(store, { clipURLs });
     if (!document_) return;
-    save(toJSON(document_), filename(document_, "json"), "application/json");
-    save(toCSV(document_), filename(document_, "csv"), "text/csv");
+    await saveDocuments([document_]);
     announce("Your data was downloaded");
   } catch {
     settingsSaid("That didn't work. Try again in a moment.");
@@ -788,33 +787,42 @@ async function exportOwnRecord() {
   state.recordProblem = null;
   render();
   try {
-    const { buildOwnRecord, filename, toCSV, toJSON } = await import("./export.js");
+    const { buildOwnRecord } = await import("./export.js");
     const store = state.store;
     const record = await store.ownRecord();
-    const clipURLs = {};
-    for (const log of record.logs) {
-      if (!log.clip?.path) continue;
-      try { clipURLs[log.clip.path] = await store.clipURL(log.clip.path); } catch { /* absent */ }
-    }
-    const documents = buildOwnRecord(store.profile(), record, { clipURLs });
+    const documents = buildOwnRecord(store.profile(), record, { clipURLs: await clipLinks(record.logs) });
     if (!documents.length) {
       state.recordProblem = "There was nothing to write. Try again in a moment.";
       return;
     }
-    for (const document_ of documents) {
-      const tag = documents.length > 1
-        ? `-${(document_.studioName || document_.studioID).replaceAll(" ", "-").replace(/[^\p{L}\p{N}-]/gu, "")}`
-        : "";
-      const named = (ext) => filename(document_, ext).replace(`.${ext}`, `${tag}.${ext}`);
-      save(toJSON(document_), named("json"), "application/json");
-      save(toCSV(document_), named("csv"), "text/csv");
-    }
+    await saveDocuments(documents);
     announce("Your data was downloaded");
   } catch {
     state.recordProblem = "That didn't work. Try again in a moment.";
   } finally {
     state.exporting = false;
     render();
+  }
+}
+
+async function clipLinks(logs) {
+  const clipURLs = {};
+  for (const log of logs) {
+    if (!log.clip?.path) continue;
+    try { clipURLs[log.clip.path] = await state.store.clipURL(log.clip.path); } catch { /* absent */ }
+  }
+  return clipURLs;
+}
+
+async function saveDocuments(documents) {
+  const { filename, toCSV, toJSON } = await import("./export.js");
+  for (const document_ of documents) {
+    const tag = documents.length > 1
+      ? `-${(document_.studioName || document_.studioID).replaceAll(" ", "-").replace(/[^\p{L}\p{N}-]/gu, "")}`
+      : "";
+    const named = (ext) => filename(document_, ext).replace(`.${ext}`, `${tag}.${ext}`);
+    save(toJSON(document_), named("json"), "application/json");
+    save(toCSV(document_), named("csv"), "text/csv");
   }
 }
 
@@ -1219,6 +1227,8 @@ function paintScreen() {
       onExport: state.inDemo ? null : exportOwnRecord,
       exporting: state.exporting,
       exportProblem: state.recordProblem,
+      onSaveEmail: state.inDemo || state.store.hasStudio ? null : changeEmail,
+      onDeleteAccount: state.inDemo || state.store.hasStudio ? null : deleteAccount,
       problem: state.auth.problem,
       busy: state.auth.busy,
       onCreate: handleCreateStudio,
@@ -1910,9 +1920,13 @@ async function sendNudge(message) {
 }
 
 async function deleteAccount() {
+  let logs = state.store.logs();
+  if (!state.store.hasStudio) {
+    try { logs = (await state.store.ownRecord()).logs; } catch (error) { report(error); return; }
+  }
   const cost = deletionCost({
     studios: state.store.joinedStudios?.() ?? [],
-    logs: state.store.logs(),
+    logs,
     roster: state.store.roster(),
     profileId: state.store.profile()?.id,
     selectedStudioId: state.store.studio()?.id ?? null,
