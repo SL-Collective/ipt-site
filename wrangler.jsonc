@@ -23,6 +23,7 @@
     // `/privacy`, `/terms` and `/refunds` are directories holding an `index.html`, and Apple and
     // Stripe have each stored one of those bare paths. Explicit because two external reviews
     // depend on it, and a default is not a decision anybody wrote down.
-    "html_handling": "auto-trailing-slash"
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
   }
 }
