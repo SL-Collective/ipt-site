@@ -8,6 +8,8 @@ import {
   detail as welcomeDetail,
   firstName as welcomeFirstName,
   greeting as welcomeGreeting,
+  recordDetail as welcomeRecordDetail,
+  recordHeading as welcomeRecordHeading,
 } from "./studio-welcome.js";
 import {
   weekTitle,
@@ -411,7 +413,7 @@ export function confirmScreen({ email, onBack, onResend, busy = false, message =
   );
 }
 
-export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCancel = null, problem = null, busy = false, weekStarts = [], weekStartsFailed = false, onRetryWeekStarts = null, hasPracticed = null }) {
+export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCancel = null, problem = null, busy = false, weekStarts = [], weekStartsFailed = false, onRetryWeekStarts = null, hasPracticed = null, onExport = null, exporting = false, exportProblem = null }) {
   const studioName = el("input", { type: "text", required: true, id: "studio-name" });
   const weekStart = { value: String(weekStarts.find((d) => d.isStandard)?.value ?? 2) };
   const wordsReady = weekStarts.length > 0;
@@ -438,6 +440,17 @@ export function studioSetupScreen({ profile, onCreate, onJoin, onSignOut, onCanc
       id: "studioless-detail",
     }),
     problem && notice(problem, { kind: "error" }),
+    hasPracticed === true && onExport && card(
+      { class: "stack" },
+      el("h2", { text: welcomeRecordHeading }),
+      el("p", { class: "caption", text: welcomeRecordDetail }),
+      exportProblem && el("p", { class: "caption", role: "alert", text: exportProblem }),
+      el("button", {
+        type: "button", style: "width:100%", onClick: onExport, id: "studioless-export",
+        text: exporting ? "Putting it together…" : "Export",
+        disabled: exporting || undefined,
+      }),
+    ),
     card(
       { class: "stack" },
       el(

@@ -62,11 +62,12 @@ function assignmentFrom(row) {
   };
 }
 
-function logFrom(row) {
+export function logFrom(row) {
   return {
     id: row.id,
     performerId: row.performer_id,
     assignmentId: row.assignment_id,
+    studioId: row.studio_id,
     startedAt: new Date(row.started_at),
     recordedAt: new Date(row.created_at ?? row.started_at),
     duration: row.duration_seconds,
@@ -79,6 +80,30 @@ function logFrom(row) {
     heardAt: row.heard_at ? new Date(row.heard_at) : null,
     instructorNote: row.instructor_note ?? null,
     selfReported: row.self_reported === true,
+  };
+}
+
+export function markFrom(row) {
+  return {
+    id: row.id,
+    performerId: row.performer_id,
+    assignmentId: row.assignment_id,
+    focusPointId: row.focus_point_id,
+    weekStart: new Date(row.week_start),
+    markedAt: new Date(row.created_at ?? row.week_start),
+    studioId: row.studio_id,
+  };
+}
+
+export function nudgeFrom(row) {
+  return {
+    id: row.id,
+    fromInstructorId: row.from_instructor,
+    toPerformerId: row.to_performer,
+    message: row.message,
+    createdAt: new Date(row.created_at),
+    seenAt: row.seen_at ? new Date(row.seen_at) : null,
+    studioId: row.studio_id,
   };
 }
 
@@ -286,24 +311,11 @@ export class SupabaseStore {
       serverFacts,
       logs: serverLogs,
       facts: serverFacts,
-      focusMarks: (focusMarks ?? []).map((m) => ({
-        id: m.id,
-        performerId: m.performer_id,
-        assignmentId: m.assignment_id,
-        focusPointId: m.focus_point_id,
-        weekStart: new Date(m.week_start),
-      })),
+      focusMarks: (focusMarks ?? []).map(markFrom),
       terms: (terms ?? []).map((t) => ({
         id: t.id, name: t.name, starts_on: t.starts_on, ends_on: t.ends_on ?? null,
       })),
-      nudges: (nudges ?? []).map((n) => ({
-        id: n.id,
-        fromInstructorId: n.from_instructor,
-        toPerformerId: n.to_performer,
-        message: n.message,
-        createdAt: new Date(n.created_at),
-        seenAt: n.seen_at ? new Date(n.seen_at) : null,
-      })),
+      nudges: (nudges ?? []).map(nudgeFrom),
       standings: standings.rows,
       standingsAvailable: standings.available,
       pending: [],
@@ -399,6 +411,29 @@ export class SupabaseStore {
     } catch {
       return false;
     }
+  }
+  async ownRecord() {
+    const me = currentUserId();
+    if (!me) throw StoreError.notSignedIn();
+    const [logs, marks, nudges, labels] = await Promise.all([
+      selectAll("practice_logs", query({
+        performer_id: `eq.${uuid(me)}`, select: "*", order: "started_at.desc,id",
+      })),
+      selectAll("focus_marks", query({ performer_id: `eq.${uuid(me)}`, select: "*", order: "id" })),
+      selectAll("nudges", query({
+        to_performer: `eq.${uuid(me)}`, select: "*", order: "created_at.desc,id",
+      })),
+      rpc("my_record_labels", {}).catch((error) => {
+        if (isMissingFunction(error)) return null;
+        throw error;
+      }),
+    ]);
+    return {
+      logs: (logs ?? []).map(logFrom),
+      marks: (marks ?? []).map(markFrom),
+      nudges: (nudges ?? []).map(nudgeFrom),
+      labels: labels ?? { studios: [], assignments: [], focusPoints: [], people: [] },
+    };
   }
   facts() { return this.#snapshot?.facts ?? []; }
   focusMarks() { return this.#snapshot?.focusMarks ?? []; }

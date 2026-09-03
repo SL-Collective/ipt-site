@@ -17,12 +17,56 @@ export function buildDocument(store, { clipURLs = {}, now = new Date() } = {}) {
   const marks = isInstructor
     ? store.focusMarks()
     : store.focusMarks().filter((m) => m.performerId === me.id);
-  const nudges = isInstructor ? [] : store.nudges().filter((n) => n.toPerformer === me.id);
+  const nudges = isInstructor ? [] : store.nudges().filter((n) => n.toPerformerId === me.id);
 
+  return documentFor({
+    scope: isInstructor ? "instructor" : "performer",
+    studioName: studio.name, studioID: studio.id, me, logs, marks, nudges,
+    titles, points, names, clipURLs, now,
+  });
+}
+
+export function buildOwnRecord(me, record, { clipURLs = {}, now = new Date() } = {}) {
+  if (!me) return [];
+  const labels = record.labels ?? {};
+  const logs = (record.logs ?? []).filter((l) => l.performerId === me.id);
+  const marks = (record.marks ?? []).filter((m) => m.performerId === me.id);
+  const nudges = (record.nudges ?? []).filter((n) => n.toPerformerId === me.id);
+
+  const order = (labels.studios ?? []).map((s) => s.id);
+  const named = new Set(order);
+  const unnamed = [...new Set([...logs, ...marks, ...nudges].map((r) => r.studioId))]
+    .filter((id) => id && !named.has(id))
+    .sort();
+  order.push(...unnamed);
+
+  const studioNames = new Map((labels.studios ?? []).map((s) => [s.id, s.name]));
+  const titles = new Map((labels.assignments ?? []).map((a) => [a.id, a.title]));
+  const points = new Map((labels.focusPoints ?? []).map((f) => [f.id, f.text]));
+  const names = new Map((labels.people ?? []).map((p) => [p.id, p.name]));
+  names.set(me.id, me.display_name);
+
+  return order.flatMap((studioID) => {
+    const doc = documentFor({
+      scope: "performer",
+      studioName: studioNames.get(studioID) ?? "",
+      studioID,
+      me,
+      logs: logs.filter((l) => l.studioId === studioID),
+      marks: marks.filter((m) => m.studioId === studioID),
+      nudges: nudges.filter((n) => n.studioId === studioID),
+      titles, points, names, clipURLs, now,
+    });
+    return doc.sessions.length || doc.ticks.length || doc.notes.length ? [doc] : [];
+  });
+}
+
+function documentFor({ scope, studioName, studioID, me, logs, marks, nudges, titles, points, names, clipURLs, now }) {
+  const studio = { id: studioID, name: studioName };
   return {
     version: VERSION,
     exportedAt: iso(now),
-    scope: isInstructor ? "instructor" : "performer",
+    scope,
     studioName: studio.name,
     studioID: studio.id,
     personName: me.display_name,
@@ -66,9 +110,9 @@ export function buildDocument(store, { clipURLs = {}, now = new Date() } = {}) {
       .map((nudge) => ({
         id: nudge.id,
         studioID: studio.id,
-        fromInstructorID: nudge.fromInstructor,
-        fromInstructorName: names.get(nudge.fromInstructor) ?? null,
-        toPerformerID: nudge.toPerformer,
+        fromInstructorID: nudge.fromInstructorId,
+        fromInstructorName: names.get(nudge.fromInstructorId) ?? null,
+        toPerformerID: nudge.toPerformerId,
         message: nudge.message,
         createdAt: iso(nudge.createdAt),
         seenAt: nudge.seenAt ? iso(nudge.seenAt) : null,

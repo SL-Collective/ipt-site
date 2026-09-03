@@ -89,6 +89,7 @@ const state = {
   report: null,
   guidanceNote: null,
   exporting: false,
+  recordProblem: null,
   push: null,
   durableStorage: null,
   welcome: null,
@@ -781,6 +782,42 @@ async function exportEverything() {
   }
 }
 
+async function exportOwnRecord() {
+  if (state.exporting) return;
+  state.exporting = true;
+  state.recordProblem = null;
+  render();
+  try {
+    const { buildOwnRecord, filename, toCSV, toJSON } = await import("./export.js");
+    const store = state.store;
+    const record = await store.ownRecord();
+    const clipURLs = {};
+    for (const log of record.logs) {
+      if (!log.clip?.path) continue;
+      try { clipURLs[log.clip.path] = await store.clipURL(log.clip.path); } catch { /* absent */ }
+    }
+    const documents = buildOwnRecord(store.profile(), record, { clipURLs });
+    if (!documents.length) {
+      state.recordProblem = "There was nothing to write. Try again in a moment.";
+      return;
+    }
+    for (const document_ of documents) {
+      const tag = documents.length > 1
+        ? `-${(document_.studioName || document_.studioID).replaceAll(" ", "-").replace(/[^\p{L}\p{N}-]/gu, "")}`
+        : "";
+      const named = (ext) => filename(document_, ext).replace(`.${ext}`, `${tag}.${ext}`);
+      save(toJSON(document_), named("json"), "application/json");
+      save(toCSV(document_), named("csv"), "text/csv");
+    }
+    announce("Your data was downloaded");
+  } catch {
+    state.recordProblem = "That didn't work. Try again in a moment.";
+  } finally {
+    state.exporting = false;
+    render();
+  }
+}
+
 function save(text, name, type) {
   const url = URL.createObjectURL(new Blob([text], { type }));
   const link = Object.assign(document.createElement("a"), { href: url, download: name });
@@ -1179,6 +1216,9 @@ function paintScreen() {
     show(studioSetupScreen({
       profile: state.store.profile(),
       hasPracticed: state.hasPracticed,
+      onExport: state.inDemo ? null : exportOwnRecord,
+      exporting: state.exporting,
+      exportProblem: state.recordProblem,
       problem: state.auth.problem,
       busy: state.auth.busy,
       onCreate: handleCreateStudio,

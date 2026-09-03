@@ -9,6 +9,11 @@ export function greeting(name, hasPracticed) {
   return hasPracticed ? `You're not in a studio, ${name}.` : `You're in, ${name}.`;
 }
 
+export const recordHeading = "Your record";
+export const recordDetail =
+  "Every session you logged, your notes and your recordings, as a file. "
+  + "One file for each studio you were in.";
+
 export function detail(isInstructor, hasPracticed) {
   if (hasPracticed) {
     return "Nothing you logged has been deleted. Rejoining the studio you were in shows it "

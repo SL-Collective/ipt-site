@@ -57,6 +57,7 @@ export async function buildDemoStudio({
         id: `session-${index}`,
         performerId: s.performerID,
         assignmentId: s.assignmentID,
+        studioId: "demo-studio",
         startedAt,
         recordedAt: startedAt,
         duration: s.duration,
@@ -136,6 +137,7 @@ export async function buildDemoStudio({
       assignmentId: m.assignmentID,
       focusPointId: `${m.assignmentID}-fp-${m.pointIndex}`,
       weekStart: weeks[Math.min(m.week, lastWeek)].start,
+      studioId: "demo-studio",
     })),
   };
 }
@@ -266,4 +268,5 @@ export class DemoStore {
   async forgetPushSubscription() {}
   async replaceReminderPlan() {}
   async hasPracticeHistory() { return false; }
+  async ownRecord() { return { logs: [], marks: [], nudges: [], labels: { studios: [], assignments: [], focusPoints: [], people: [] } }; }
 }
