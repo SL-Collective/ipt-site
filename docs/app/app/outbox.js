@@ -6,12 +6,19 @@ const DB_NAME = "ipt";
 const DB_VERSION = 1;
 const STORE = "outbox";
 
+export function isTransient(error) {
+  if (!error) return false;
+  if (error.transient === true || error.kind === "network") return true;
+  const s = Number(error.status);
+  return s >= 500 || s === 429 || s === 408;
+}
+
 const REFUSAL_LIMIT = 5;
 const CLIP_ATTEMPT_LIMIT = 5;
 
 
 export function decideAfterFailure(item, error) {
-  const isNetwork = error?.kind === "network";
+  const isNetwork = isTransient(error);
   const next = {
     ...item,
     attempts: item.attempts + 1,
@@ -26,7 +33,7 @@ export function decideAfterFailure(item, error) {
 }
 
 export function decideAfterClipFailure(item, error) {
-  if (error?.kind === "network") {
+  if (isTransient(error)) {
     return { ...item, attempts: item.attempts + 1, lastError: error.message, action: "retryLater" };
   }
   const next = { ...item, clipAttempts: item.clipAttempts + 1 };

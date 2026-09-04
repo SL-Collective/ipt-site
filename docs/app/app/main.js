@@ -47,33 +47,18 @@ import {
 } from "./supabase.js";
 import { requestDurableStorage } from "./outbox.js";
 import {
-  addSessionScreen,
-  assignmentEditorScreen,
-  assignmentsScreen,
   confirmScreen,
   doorScreen,
-  resetPasswordScreen,
-  helpScreen,
-  listeningScreen,
-  performerScreen,
-  practiceScreen,
-  remindersScreen,
-  rosterScreen,
-  scoringScreen,
-  sessionScreen,
-  standingsScreen,
-  standingsUnavailableScreen,
-  displayScreen,
-  seasonScreen,
-  studioScreen,
-  duplicateOf,
-  studioSetupScreen,
-  termProblems,
-  termsScreen,
   parentRouteScreen,
-  welcomeScreen,
-  youScreen,
-} from "./screens.js";
+  resetPasswordScreen,
+  studioSetupScreen,
+} from "./door.js";
+
+let studioScreens = null;
+async function loadStudioScreens() {
+  if (!studioScreens) studioScreens = await import("./screens.js");
+  return studioScreens;
+}
 
 const root = document.getElementById("app");
 const announcer = document.getElementById("announcer");
@@ -1137,8 +1122,15 @@ function render() {
 function paintScreen() {
   const isDemo = state.inDemo;
 
+  if (state.mode === "studio" && !studioScreens) {
+    loadStudioScreens().then(render);
+    show(el("main", { id: "main", class: "page" }, el("h1", { text: "Just a moment…" })));
+    document.title = titleFor("IPT");
+    return;
+  }
+
   if (state.welcome !== null && state.mode === "studio") {
-    show(welcomeScreen(state.store, {
+    show(studioScreens.welcomeScreen(state.store, {
       help: state.vocabulary?.help ?? null,
       page: state.welcome,
       onPage: (n) => { state.welcome = n; render(); },
@@ -1247,7 +1239,7 @@ function paintScreen() {
 
   if (state.viewing) {
     if (!state.selfReportMark) loadSessionMark();
-    show(performerScreen(state.store, {
+    show(studioScreens.performerScreen(state.store, {
       performer: state.viewing.performer,
       now: new Date(),
       ...spanControls(state.store),
@@ -1263,7 +1255,7 @@ function paintScreen() {
   }
 
   if (state.editing) {
-    show(assignmentEditorScreen(state.store, {
+    show(studioScreens.assignmentEditorScreen(state.store, {
       assignment: state.editing.assignment,
       now: new Date(),
       busy: state.auth.busy,
@@ -1279,7 +1271,7 @@ function paintScreen() {
   }
 
   if (state.session) {
-    show(sessionScreen(state.store, {
+    show(studioScreens.sessionScreen(state.store, {
       assignment: state.session.assignment,
       capabilities: state.session.capabilities,
       countIns: state.session.countIns ?? [],
@@ -1309,13 +1301,13 @@ function paintScreen() {
   let title;
   switch (route) {
     case "#/assignments":
-      screen = assignmentsScreen(store, {
+      screen = studioScreens.assignmentsScreen(store, {
         onPrompt,
         onNew: () => { state.editing = { assignment: null }; render(); },
         onEdit: (assignment) => { state.editing = { assignment }; render(); },
         onFinish: finishAssignment,
         onDuplicate: (assignment) => {
-          state.editing = { assignment: duplicateOf(assignment) };
+          state.editing = { assignment: studioScreens.duplicateOf(assignment) };
           render();
           announce(`Setting ${assignment.title} again. Check it over and save`);
         },
@@ -1324,7 +1316,7 @@ function paintScreen() {
       break;
     case "#/listening":
       if (!state.playbackRates.length) loadPlaybackRates();
-      screen = listeningScreen(store, {
+      screen = studioScreens.listeningScreen(store, {
         rate: state.playbackRate,
         now: new Date(),
         rates: state.playbackRates,
@@ -1338,17 +1330,17 @@ function paintScreen() {
       break;
     case "#/standings":
       screen = isDemo || store.standingsAvailable
-        ? standingsScreen(store, {
+        ? studioScreens.standingsScreen(store, {
           now: new Date(),
           onDisplay: store.isInstructor && (isDemo || store.standingsAvailable)
             ? () => { location.hash = "#/display"; }
             : null,
         })
-        : standingsUnavailableScreen();
+        : studioScreens.standingsUnavailableScreen();
       title = "Standings";
       break;
     case "#/add-session":
-      screen = addSessionScreen(store, {
+      screen = studioScreens.addSessionScreen(store, {
         busy: state.addSession.busy,
         now: new Date(),
         problem: state.addSession.problem,
@@ -1358,7 +1350,7 @@ function paintScreen() {
       title = "Add practice";
       break;
     case "#/season":
-      screen = seasonScreen(store, {
+      screen = studioScreens.seasonScreen(store, {
         canShare: typeof navigator !== "undefined" && typeof navigator.share === "function",
         now: new Date(),
         said: state.seasonSaid,
@@ -1370,7 +1362,7 @@ function paintScreen() {
       title = "The season";
       break;
     case "#/display":
-      screen = displayScreen(store, {
+      screen = studioScreens.displayScreen(store, {
         awake: wakeSupported,
         onExit: leaveDisplay,
       });
@@ -1378,7 +1370,7 @@ function paintScreen() {
       title = "Display";
       break;
     case "#/help":
-      screen = helpScreen(store, {
+      screen = studioScreens.helpScreen(store, {
         help: state.vocabulary?.help ?? null,
         supportEmail: state.vocabulary?.supportEmail || null,
         onBack: () => { location.hash = "#/you"; },
@@ -1387,7 +1379,7 @@ function paintScreen() {
       if (!state.vocabulary) loadExportedWords();
       break;
     case "#/terms":
-      screen = termsScreen(store, {
+      screen = studioScreens.termsScreen(store, {
         onSave: saveTerm,
         onDelete: deleteTerm,
         onBack: () => { location.hash = "#/you"; },
@@ -1397,7 +1389,7 @@ function paintScreen() {
       title = "Terms";
       break;
     case "#/scoring":
-      screen = scoringScreen(store, {
+      screen = studioScreens.scoringScreen(store, {
         presets: state.vocabulary?.scoringPresets ?? [],
         onChoose: chooseScoring,
         onBack: () => { location.hash = "#/you"; },
@@ -1408,7 +1400,7 @@ function paintScreen() {
       if (!state.vocabulary) loadExportedWords();
       break;
     case "#/roster":
-      screen = rosterScreen(store, {
+      screen = studioScreens.rosterScreen(store, {
         onSetRole: setMemberRole,
         onRemove: removeMember,
         onHandOver: handOverStudio,
@@ -1421,7 +1413,7 @@ function paintScreen() {
       break;
     case "#/reminders":
       loadPush();
-      screen = remindersScreen({
+      screen = studioScreens.remindersScreen({
         capability: state.push?.capability() ?? null,
         subscribed: state.reminders.subscribed,
         configured: remindersConfigured(),
@@ -1447,7 +1439,7 @@ function paintScreen() {
           .catch(() => {})
           .finally(() => { state.loadingPurchase = false; });
       }
-      screen = youScreen(store, {
+      screen = studioScreens.youScreen(store, {
         purchase: state.purchase,
         onCreateAccount: state.inDemo ? () => { leaveDemo(); goToSignUp(); } : null,
         scoringPresets: state.vocabulary?.scoringPresets ?? [],
@@ -1494,7 +1486,7 @@ function paintScreen() {
       break;
     case "#/practice":
       if (!state.selfReportMark) loadSessionMark();
-      screen = practiceScreen(store, {
+      screen = studioScreens.practiceScreen(store, {
         onPrompt,
         now: new Date(),
         onClipURL: (path) => store.clipURL(path),
@@ -1518,7 +1510,7 @@ function paintScreen() {
       break;
     default:
       loadStudioOffers();
-      screen = studioScreen(store, {
+      screen = studioScreens.studioScreen(store, {
         onPrompt,
         now: new Date(),
         ...spanControls(store),
@@ -1685,6 +1677,7 @@ async function switchStudio(id) {
 
 async function afterStudioChange(message) {
   state.auth = { ...state.auth, busy: false, problem: null };
+  await loadStudioScreens();
   state.mode = "studio";
   await openWelcomeIfNew();
   location.hash = tabsFor(state.store)[0].href;
@@ -1717,6 +1710,7 @@ async function enterStudio() {
     return;
   }
 
+  await loadStudioScreens();
   state.mode = "studio";
   await openWelcomeIfNew();
   await state.store.applyPending();
@@ -2054,7 +2048,7 @@ function humanProblem(error) {
 }
 
 async function saveTerm(draft) {
-  const problems = termProblems(draft);
+  const problems = studioScreens.termProblems(draft);
   if (problems.length > 0) {
     state.settings = { busy: false, problem: problems.join(" ") };
     render();
@@ -2321,6 +2315,7 @@ async function enterDemo() {
   state.demoMilestonesSeen = new Set();
   state.demoWelcomedSeats = new Set();
   state.inDemo = true;
+  await loadStudioScreens();
   state.mode = "studio";
   state.store.viewAs("instructor");
   await openWelcomeIfNew();

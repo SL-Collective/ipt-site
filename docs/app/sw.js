@@ -1,5 +1,5 @@
 
-const CACHE = "ipt-shell-885cb97a";
+const CACHE = "ipt-shell-b1a02a78";
 
 const SHELL = [
   "./",
@@ -11,6 +11,7 @@ const SHELL = [
   "./app/format.js",
   "./app/ui.js",
   "./app/screens.js",
+  "./app/door.js",
   "./app/age-gate.js",
   "./app/export.js",
   "./app/judgement.js",

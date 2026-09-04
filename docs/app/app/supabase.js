@@ -11,6 +11,11 @@ export class StoreError extends Error {
     this.kind = kind;
     this.status = status;
   }
+  get transient() {
+    if (this.kind === "network") return true;
+    const s = Number(this.status);
+    return s >= 500 || s === 429 || s === 408;
+  }
   static notSignedIn() {
     return new StoreError("notSignedIn", "You're signed out. Sign in and try again.");
   }
